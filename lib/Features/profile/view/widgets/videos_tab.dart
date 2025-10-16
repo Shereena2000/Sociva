@@ -1,67 +1,104 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:provider/provider.dart';
+import 'package:social_media_app/Features/profile/view_model/profile_view_model.dart';
 
 class VideoTabs extends StatelessWidget {
   const VideoTabs({super.key});
 
-  final List<String> videoThumbnails = const [
-    "https://i.pinimg.com/736x/1a/9f/89/1a9f896244aa7117bb89ebe335c78fd2.jpg",
-    "https://i.pinimg.com/1200x/9a/c5/68/9ac568d1040525e58b0418ab75593283.jpg",
-    "https://i.pinimg.com/736x/7e/92/78/7e92783602862f8517a9187c2cfe6a95.jpg",
-    "https://i.pinimg.com/736x/72/49/2b/72492bf177b7474d53048f0191fe7e6d.jpg",
-    "https://i.pinimg.com/736x/68/c0/5a/68c05a4d5a876b5558f5f622c87d062c.jpg",
-    "https://i.pinimg.com/1200x/64/92/26/6492263dcf99ede01991e89319f8dee4.jpg",
-    "https://i.pinimg.com/736x/bd/68/11/bd681155d2bd24325d2746b9c9ba690d.jpg",
-    "https://i.pinimg.com/736x/f9/31/40/f931402d8a1e39e15d70c0d34ce979a3.jpg",
-  ];
-
-  final List<String> viewCounts = const [
-    "2.1M",
-    "6.8M",
-    "4.6M",
-    "1.8M",
-    "2.8M",
-    "4.9M",
-    "2.5M",
-    "3.2M",
-  ];
-
-  final List<String> durations = const [
-    "0:25",
-    "0:45",
-    "1:20",
-    "0:15",
-    "0:53",
-    "0:32",
-    "0:27",
-    "1:05",
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return MasonryGridView.count(
-      crossAxisCount: 2,
-      mainAxisSpacing: 4,
-      crossAxisSpacing: 4,
-      padding: const EdgeInsets.all(4),
-      itemCount: videoThumbnails.length * 3,
-      itemBuilder: (context, index) {
-        final videoIndex = index % videoThumbnails.length;
-        
-        return _buildVideoCard(
-          videoThumbnails[videoIndex],
-          viewCounts[videoIndex],
-   
-          index,
+    final viewModel = context.watch<ProfileViewModel>();
+
+    return StreamBuilder(
+      stream: viewModel.getVideosStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Colors.red,
+                  size: 60,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading videos',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final videos = snapshot.data ?? [];
+
+        if (videos.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.videocam_outlined,
+                  color: Colors.grey[400],
+                  size: 60,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No videos yet',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Your videos will appear here',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return MasonryGridView.count(
+          crossAxisCount: 2,
+          mainAxisSpacing: 4,
+          crossAxisSpacing: 4,
+          padding: const EdgeInsets.all(4),
+          itemCount: videos.length,
+          itemBuilder: (context, index) {
+            final post = videos[index];
+            
+            return _buildVideoCard(
+              post.mediaUrl,
+              index,
+            );
+          },
         );
       },
     );
   }
 
   Widget _buildVideoCard(
-    String thumbnail,
-    String views,
-
+    String videoUrl,
     int index,
   ) {
     return GestureDetector(
@@ -75,7 +112,7 @@ class VideoTabs extends StatelessWidget {
           children: [
             // Video thumbnail
             Image.network(
-              thumbnail,
+              videoUrl,
               fit: BoxFit.cover,
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) return child;
@@ -90,6 +127,17 @@ class VideoTabs extends StatelessWidget {
                           : null,
                       color: Colors.white,
                     ),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  height: 200,
+                  color: Colors.grey[800],
+                  child: const Icon(
+                    Icons.videocam,
+                    color: Colors.white54,
+                    size: 60,
                   ),
                 );
               },
@@ -118,13 +166,10 @@ class VideoTabs extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top row - Duration and Audio
+                    // Top row - Audio icon
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        // Duration badge
-                      
-                        // Audio/Mute icon
                         Container(
                           width: 28,
                           height: 28,
@@ -166,7 +211,7 @@ class VideoTabs extends StatelessWidget {
                     
                     const Spacer(),
                     
-                    // Bottom - View count
+                    // Bottom - Video indicator
                     Row(
                       children: [
                         const Icon(
@@ -174,9 +219,9 @@ class VideoTabs extends StatelessWidget {
                           color: Colors.white,
                           size: 14,
                         ),
-                        const SizedBox(width: 2),
+                        const SizedBox(width: 4),
                         Text(
-                          views,
+                          'Video',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,

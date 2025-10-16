@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:social_media_app/Features/profile/view/ui.dart';
 import 'package:social_media_app/Features/wrapper/view/ui.dart';
+import 'package:social_media_app/Features/post/view/create_post/ui.dart';
 
 import '../../Features/splash/view/ui.dart';
 import 'p_pages.dart';
@@ -15,6 +16,9 @@ class Routes {
         return MaterialPageRoute(builder: (context) => WrapperPage());
           case PPages.profilePageUi:
         return MaterialPageRoute(builder: (context) => ProfileScreen());
+
+          case PPages.createPost:
+        return MaterialPageRoute(builder: (context) => const CreatePostScreen());
       default:
         return MaterialPageRoute(
           builder: (context) => Scaffold(

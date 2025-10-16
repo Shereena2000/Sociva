@@ -6,4 +6,7 @@ class PPages {
   static const String wrapperPageUi = "/wrapperPageUi";
 static const String profilePageUi = "/profilePageUi";
 static const String privacyPageUi = "/privacyPageUi";
+  
+
+  static const String createPost = "/createPost";
 }

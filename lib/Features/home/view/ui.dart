@@ -46,6 +46,9 @@ class HomeScreen extends StatelessWidget {
                         // Handle chat tap
                       },
                     ),
+                    const SizedBox(width: 8),
+                    // Add post icon
+                 
                   ],
                 ),
                // Status Section

@@ -1,113 +1,192 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-
-enum PostType { post, story, reel }
-
-class MediaItem {
-  final String imageUrl;
-  final bool isVideo;
-  final String? duration;
-
-  MediaItem({
-    required this.imageUrl,
-    this.isVideo = false,
-    this.duration,
-  });
-}
+import 'package:image_picker/image_picker.dart';
+import 'package:photo_manager/photo_manager.dart';
+import 'package:social_media_app/Features/post/repository/post_repository.dart';
+import '../model/post_model.dart';
 
 class PostViewModel extends ChangeNotifier {
-  int _selectedIndex = 0;
-  bool _isMultipleSelection = false;
-  List<int> _selectedImages = [];
-  PostType _selectedPostType = PostType.post;
+  final PostRepository _postRepository = PostRepository();
+  final ImagePicker _imagePicker = ImagePicker();
 
-  // Sample media items
-  final List<MediaItem> _mediaItems = [
-    MediaItem(
-      imageUrl: 'https://i.pinimg.com/736x/bd/68/11/bd681155d2bd24325d2746b9c9ba690d.jpg',
-      isVideo: false,
-    ),
-    MediaItem(
-      imageUrl: 'https://i.pinimg.com/736x/4c/71/e7/4c71e77e359865054f6890ffeb5a12a7.jpg',
-      isVideo: false,
-    ),
-    MediaItem(
-      imageUrl: 'https://i.pinimg.com/736x/1c/30/69/1c306930cff2cf1f800d2bc52cbad9b0.jpg',
-      isVideo: true,
-      duration: '0:15',
-    ),
-    MediaItem(
-      imageUrl: 'https://i.pinimg.com/736x/b0/41/ab/b041abab5f12ce21f693f0bf2e1f895b.jpg',
-      isVideo: false,
-    ),
-    MediaItem(
-      imageUrl: 'https://i.pinimg.com/736x/35/47/48/354748471cbad482eccf036d1db1a86c.jpg',
-      isVideo: true,
-      duration: '0:30',
-    ),
-    MediaItem(
-      imageUrl: 'https://i.pinimg.com/736x/55/01/5b/55015b434088b4ec5b699d0535af299e.jpg',
-      isVideo: false,
-    ),
-    MediaItem(
-      imageUrl: 'https://i.pinimg.com/736x/a3/82/65/a38265b27a45891fb1e9fe35b86870ef.jpg',
-      isVideo: false,
-    ),
-    MediaItem(
-      imageUrl: 'https://i.pinimg.com/736x/f9/31/40/f931402d8a1e39e15d70c0d34ce979a3.jpg',
-      isVideo: true,
-      duration: '1:20',
-    ),
-    MediaItem(
-      imageUrl: 'https://i.pinimg.com/736x/ac/0d/15/ac0d15ba75eaa9d8942f3f40d4c8d830.jpg',
-      isVideo: false,
-    ),
-    MediaItem(
-      imageUrl: 'https://i.pinimg.com/736x/f7/eb/38/f7eb3825b5a5648193b66ef83b819461.jpg',
-      isVideo: false,
-    ),
-    MediaItem(
-      imageUrl: 'https://i.pinimg.com/736x/d4/9a/ff/d49aff95825d869d6ee9394806a8adb6.jpg',
-      isVideo: true,
-      duration: '0:45',
-    ),
-    MediaItem(
-      imageUrl: 'https://i.pinimg.com/736x/1d/ee/2f/1dee2feb375e52cbf3ae928c153b1f5b.jpg',
-      isVideo: false,
-    ),
-  ];
+  // Post creation properties
+  List<XFile> _deviceMedia = [];
+  List<AssetEntity> _photoAssets = []; // For photo_manager
+  File? _selectedMedia;
+  bool _isVideo = false;
+  String _caption = '';
+  bool _isUploading = false;
 
-  // Getters
-  int get selectedIndex => _selectedIndex;
-  bool get isMultipleSelection => _isMultipleSelection;
-  List<int> get selectedImages => _selectedImages;
-  PostType get selectedPostType => _selectedPostType;
-  List<MediaItem> get mediaItems => _mediaItems;
-  String get selectedImage => _mediaItems[_selectedIndex].imageUrl;
+  // Getters for post creation
+  List<XFile> get deviceMedia => _deviceMedia;
+  List<AssetEntity> get photoAssets => _photoAssets;
+  File? get selectedMedia => _selectedMedia;
+  bool get isVideo => _isVideo;
+  String get caption => _caption;
+  bool get isUploading => _isUploading;
 
-  // Methods
-  void selectImage(int index) {
-    if (_isMultipleSelection) {
-      if (_selectedImages.contains(index)) {
-        _selectedImages.remove(index);
-      } else {
-        _selectedImages.add(index);
+  // Load device media from gallery picker (opens gallery)
+  Future<void> loadDeviceMediaFromGallery() async {
+    try {
+      final List<XFile> images = await _imagePicker.pickMultiImage();
+      if (images.isNotEmpty) {
+        _deviceMedia = images;
+        // Auto-select the first image
+        _selectedMedia = File(images[0].path);
+        _isVideo = images[0].path.toLowerCase().endsWith('.mp4') ||
+            images[0].path.toLowerCase().endsWith('.mov') ||
+            images[0].path.toLowerCase().endsWith('.avi');
+        notifyListeners();
       }
-    } else {
-      _selectedIndex = index;
+    } catch (e) {
+      print('Failed to load device media: $e');
+      // Don't throw, just print error
     }
+  }
+
+  // Legacy method for compatibility
+  Future<void> loadDeviceMedia() async {
+    await loadDeviceMediaFromGallery();
+  }
+
+  // Load device media automatically without opening gallery picker
+  Future<void> loadDeviceMediaAutomatically() async {
+    try {
+      // For now, let's use a simple approach - open gallery picker automatically
+      // but show the images in a grid format like Instagram
+      final List<XFile> images = await _imagePicker.pickMultiImage(
+        limit: 50, // Get up to 50 images
+        imageQuality: 80,
+      );
+      
+      if (images.isNotEmpty) {
+        _deviceMedia = images;
+        // Auto-select the first image
+        _selectedMedia = File(images[0].path);
+        _isVideo = images[0].path.toLowerCase().endsWith('.mp4') ||
+            images[0].path.toLowerCase().endsWith('.mov') ||
+            images[0].path.toLowerCase().endsWith('.avi');
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Failed to load device media automatically: $e');
+      // Don't throw, just print error
+    }
+  }
+
+  // Load existing device media without opening picker (for initialization)
+  Future<void> loadExistingMedia() async {
+    // This method can be used to load media that's already been selected
+    // For now, we'll keep it empty to avoid auto-opening gallery
+  }
+
+  // Take a photo with camera
+  Future<void> takePhoto() async {
+    try {
+      final XFile? photo = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+      );
+      if (photo != null) {
+        _deviceMedia = [photo];
+        _selectedMedia = File(photo.path);
+        _isVideo = false;
+        notifyListeners();
+      }
+    } catch (e) {
+      throw Exception('Failed to take photo: $e');
+    }
+  }
+
+  // Take a video with camera
+  Future<void> takeVideo() async {
+    try {
+      final XFile? video = await _imagePicker.pickVideo(
+        source: ImageSource.camera,
+      );
+      if (video != null) {
+        _deviceMedia = [video];
+        _selectedMedia = File(video.path);
+        _isVideo = true;
+        notifyListeners();
+      }
+    } catch (e) {
+      throw Exception('Failed to take video: $e');
+    }
+  }
+
+  // Select media from device
+  void selectMedia(XFile media) {
+    _selectedMedia = File(media.path);
+    _isVideo = media.path.toLowerCase().endsWith('.mp4') ||
+        media.path.toLowerCase().endsWith('.mov') ||
+        media.path.toLowerCase().endsWith('.avi') ||
+        media.path.toLowerCase().endsWith('.flv') ||
+        media.path.toLowerCase().endsWith('.wmv');
     notifyListeners();
   }
 
-  void toggleMultipleSelection() {
-    _isMultipleSelection = !_isMultipleSelection;
-    if (!_isMultipleSelection) {
-      _selectedImages.clear();
+  // Select photo asset from photo_manager
+  Future<void> selectPhotoAsset(AssetEntity asset) async {
+    try {
+      final File? file = await asset.file;
+      if (file != null) {
+        _selectedMedia = file;
+        _isVideo = asset.type == AssetType.video;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Failed to select photo asset: $e');
     }
+  }
+
+  // Set caption
+  void setCaption(String caption) {
+    _caption = caption;
     notifyListeners();
   }
 
-  void setPostType(PostType type) {
-    _selectedPostType = type;
+  // Create post and upload to Firebase & Cloudinary (without userId)
+  Future<void> createPost() async {
+    if (_selectedMedia == null) {
+      throw Exception('No media selected');
+    }
+
+    _isUploading = true;
+    notifyListeners();
+
+    try {
+      await _postRepository.createPost(
+        mediaFile: _selectedMedia!,
+        isVideo: _isVideo,
+        caption: _caption,
+        userId: 'anonymous', // Default anonymous user
+      );
+
+      // Reset state after successful upload
+      _selectedMedia = null;
+      _caption = '';
+      _isVideo = false;
+      _deviceMedia = [];
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isUploading = false;
+      notifyListeners();
+    }
+  }
+
+  // Get posts stream
+  Stream<List<PostModel>> getPosts() {
+    return _postRepository.getPosts();
+  }
+
+  // Clear selected media
+  void clearSelectedMedia() {
+    _selectedMedia = null;
+    _caption = '';
+    _isVideo = false;
+    _deviceMedia = [];
     notifyListeners();
   }
 }

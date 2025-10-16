@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "923516985033",
+    "project_id": "sociva-e8e40",
+    "storage_bucket": "sociva-e8e40.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:923516985033:android:f1b0eda96963e3090df718",
+        "android_client_info": {
+          "package_name": "com.sociva.social_media"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1fmxBQv5P9Q5vPqoAjluoUTnVaYuu1Tc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

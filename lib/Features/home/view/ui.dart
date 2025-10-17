@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/home/view_model/home_view_model.dart';
-import 'package:social_media_app/Settings/utils/p_colors.dart';
+import 'package:social_media_app/Features/feed/view/status_viewer_dialog.dart';
+import 'package:social_media_app/Features/profile/status/view/add_status_dialog.dart';
+import 'package:social_media_app/Features/home/view/debug_status_screen.dart';
 import 'package:social_media_app/Settings/utils/p_pages.dart';
 import 'package:social_media_app/Settings/utils/svgs.dart';
 
@@ -34,7 +36,7 @@ class HomeScreen extends StatelessWidget {
 
                       // Status Section
                       const SizedBox(height: 20),
-                      _buildStatusSection(),
+                      _buildStatusSection(context, homeViewModel),
 
                       // Posts section
                       const SizedBox(height: 20),
@@ -46,6 +48,20 @@ class HomeScreen extends StatelessWidget {
             );
           },
         ),
+      ),
+      // Debug FAB - Remove this after testing!
+      floatingActionButton: FloatingActionButton.small(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const DebugStatusScreen(),
+            ),
+          );
+        },
+        backgroundColor: Colors.orange,
+        child: const Icon(Icons.bug_report, size: 20),
+        tooltip: 'Debug Statuses',
       ),
     );
   }
@@ -64,17 +80,28 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        IconButton(
-          icon: SvgPicture.asset(
-            Svgs.searchIcon,
-            colorFilter: const ColorFilter.mode(
-              Colors.white,
-              BlendMode.srcIn,
-            ),
-          ),
-          onPressed: () {
-            // Handle search tap
+        // Debug button (long press for 2 seconds to open)
+        GestureDetector(
+          onLongPress: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const DebugStatusScreen(),
+              ),
+            );
           },
+          child: IconButton(
+            icon: SvgPicture.asset(
+              Svgs.searchIcon,
+              colorFilter: const ColorFilter.mode(
+                Colors.white,
+                BlendMode.srcIn,
+              ),
+            ),
+            onPressed: () {
+              // Handle search tap
+            },
+          ),
         ),
         // Notification icon (heart/love icon)
         IconButton(
@@ -106,100 +133,249 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusSection() {
+  Widget _buildStatusSection(BuildContext context, HomeViewModel homeViewModel) {
+    final currentUserId = homeViewModel.currentUserProfile?.uid;
+    
+    // Separate current user's status from others
+    final currentUserStatus = homeViewModel.statusGroups
+        .where((group) => group.userId == currentUserId)
+        .firstOrNull;
+    
+    final otherUsersStatuses = homeViewModel.statusGroups
+        .where((group) => group.userId != currentUserId)
+        .toList();
+
     return SizedBox(
       height: 140,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
-          // Add Status Card
-          _buildAddStatusCard(),
-          // User Status Cards
-          _buildStatusCard(
-            'Meenu',
-            'https://i.pinimg.com/736x/f9/31/40/f931402d8a1e39e15d70c0d34ce979a3.jpg',
-            'https://i.pinimg.com/736x/ac/0d/15/ac0d15ba75eaa9d8942f3f40d4c8d830.jpg',
-          ),
-          _buildStatusCard(
-            'Ummu',
-            'https://i.pinimg.com/736x/4c/71/e7/4c71e77e359865054f6890ffeb5a12a7.jpg',
-            'https://i.pinimg.com/736x/f7/eb/38/f7eb3825b5a5648193b66ef83b819461.jpg',
-          ),
-          _buildStatusCard(
-            'Chichu Bijoy',
-            'https://i.pinimg.com/736x/55/01/5b/55015b434088b4ec5b699d0535af299e.jpg',
-            'https://i.pinimg.com/736x/d4/9a/ff/d49aff95825d869d6ee9394806a8adb6.jpg',
-          ),
-          _buildStatusCard(
-            'Sarah',
-            'https://i.pinimg.com/736x/1d/ee/2f/1dee2feb375e52cbf3ae928c153b1f5b.jpg',
-            'https://i.pinimg.com/736x/a3/82/65/a38265b27a45891fb1e9fe35b86870ef.jpg',
-          ),
+          // Current user status or Add Status Card
+          if (currentUserStatus != null)
+            // User has status - show status card with add button
+            _buildCurrentUserStatusCard(context, homeViewModel, currentUserStatus)
+          else
+            // User has no status - show add status card
+            _buildAddStatusCard(context, homeViewModel),
+          
+          // Show statuses from other users
+          ...otherUsersStatuses.map((statusGroup) {
+            return _buildStatusCard(
+              context: context,
+              name: statusGroup.userName,
+              profileImage: statusGroup.userProfilePhoto,
+              statusImage: statusGroup.latestStatus?.mediaUrl ?? '',
+              hasUnseenStatus: statusGroup.hasUnseenStatus,
+              onTap: () => _showStatusViewer(context, homeViewModel, statusGroup),
+            );
+          }).toList(),
         ],
       ),
     );
   }
 
-  Widget _buildAddStatusCard() {
-    return Container(
-      width: 80,
-      height: 120,
-      margin: const EdgeInsets.only(right: 10),
-      child: Column(
-        children: [
-          Expanded(
-            child: Container(
-              width: 80,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Stack(
-                children: [
-                  // Main background with user image
-                  Container(
-                    width: 80,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      image: const DecorationImage(
-                        image: NetworkImage(
-                          'https://i.pinimg.com/736x/bd/68/11/bd681155d2bd24325d2746b9c9ba690d.jpg',
+  Widget _buildCurrentUserStatusCard(
+    BuildContext context,
+    HomeViewModel homeViewModel,
+    dynamic currentUserStatus,
+  ) {
+    return GestureDetector(
+      onTap: () => _showStatusViewer(context, homeViewModel, currentUserStatus),
+      child: Container(
+        width: 80,
+        height: 120,
+        margin: const EdgeInsets.only(right: 10),
+        child: Column(
+          children: [
+            Expanded(
+              child: Container(
+                width: 80,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  // Green border for current user's status
+                  border: Border.all(
+                    color: Colors.green,
+                    width: 3,
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    // Status image background
+                    Container(
+                      width: 80,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        image: currentUserStatus.latestStatus?.mediaUrl != null
+                            ? DecorationImage(
+                                image: NetworkImage(currentUserStatus.latestStatus!.mediaUrl),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                    // Dark overlay
+                    Container(
+                      width: 80,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        color: Colors.black.withOpacity(0.3),
+                      ),
+                    ),
+                    // Add button at bottom right
+                    Positioned(
+                      bottom: 4,
+                      right: 4,
+                      child: GestureDetector(
+                        onTap: () => _showAddStatusDialog(context, homeViewModel),
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: const BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.add,
+                            color: Colors.white,
+                            size: 16,
+                          ),
                         ),
-                        fit: BoxFit.cover,
                       ),
                     ),
-                  ),
-                  // Green plus icon at bottom right
-                  Positioned(
-                    bottom: 4,
-                    right: 4,
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: const BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.add,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Add status',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
+            const SizedBox(height: 8),
+            const Text(
+              'My status',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddStatusCard(BuildContext context, HomeViewModel homeViewModel) {
+    final currentUser = homeViewModel.currentUserProfile;
+
+    return GestureDetector(
+      onTap: () => _showAddStatusDialog(context, homeViewModel),
+      child: Container(
+        width: 80,
+        height: 120,
+        margin: const EdgeInsets.only(right: 10),
+        child: Column(
+          children: [
+            Expanded(
+              child: Container(
+                width: 80,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Stack(
+                  children: [
+                    // Main background with user image
+                    Container(
+                      width: 80,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        image: currentUser?.profilePhotoUrl != null && 
+                               currentUser!.profilePhotoUrl.isNotEmpty
+                            ? DecorationImage(
+                                image: NetworkImage(currentUser.profilePhotoUrl),
+                                fit: BoxFit.cover,
+                              )
+                            : const DecorationImage(
+                                image: NetworkImage(
+                                  'https://i.pinimg.com/736x/bd/68/11/bd681155d2bd24325d2746b9c9ba690d.jpg',
+                                ),
+                                fit: BoxFit.cover,
+                              ),
+                      ),
+                    ),
+                    // Green plus icon at bottom right
+                    Positioned(
+                      bottom: 4,
+                      right: 4,
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Add status',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showAddStatusDialog(BuildContext context, HomeViewModel homeViewModel) async {
+    final currentUser = homeViewModel.currentUserProfile;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please complete your profile first'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AddStatusDialog(
+        userName: currentUser.username,
+        userProfilePhoto: currentUser.profilePhotoUrl,
+      ),
+    );
+
+    // Refresh statuses if status was created
+    if (result == true && context.mounted) {
+      homeViewModel.refreshStatuses();
+    }
+  }
+
+  void _showStatusViewer(
+    BuildContext context,
+    HomeViewModel homeViewModel,
+    statusGroup,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => StatusViewerDialog(
+        statusGroup: statusGroup,
+        onStatusViewed: (statusId) {
+          homeViewModel.markStatusAsViewed(statusGroup.userId, statusId);
+        },
       ),
     );
   }
@@ -474,79 +650,119 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusCard(
-    String name,
-    String profileImage,
-    String statusImage,
-  ) {
-    return Container(
-      width: 80,
-      height: 150,
-      margin: const EdgeInsets.only(right: 10),
-      child: Column(
-        children: [
-          Expanded(
-            child: Container(
-              width: 80,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Stack(
-                children: [
-                  // Main status image background
-                  Container(
-                    width: 80,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      image: DecorationImage(
-                        image: NetworkImage(statusImage),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  // Dark overlay
-                  Container(
-                    width: 80,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.black.withOpacity(0.3),
-                    ),
-                  ),
-                  // Small profile circle at the top
-                  Positioned(
-                    top: 4,
-                    left: 4,
-                    child: Container(
-                      width: 24,
-                      height: 24,
+  Widget _buildStatusCard({
+    required BuildContext context,
+    required String name,
+    required String profileImage,
+    required String statusImage,
+    required bool hasUnseenStatus,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 80,
+        height: 150,
+        margin: const EdgeInsets.only(right: 10),
+        child: Column(
+          children: [
+            Expanded(
+              child: Container(
+                width: 80,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  // Blue border for unseen status (like WhatsApp)
+                  border: hasUnseenStatus
+                      ? Border.all(
+                          color: Colors.blue,
+                          width: 3,
+                        )
+                      : null,
+                ),
+                child: Stack(
+                  children: [
+                    // Main status image background
+                    Container(
+                      width: 80,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: PColors.primaryColor,
-                          width: 2,
+                        borderRadius: BorderRadius.circular(10),
+                        image: statusImage.isNotEmpty
+                            ? DecorationImage(
+                                image: NetworkImage(statusImage),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                        color: statusImage.isEmpty ? Colors.grey[800] : null,
+                      ),
+                      child: statusImage.isEmpty
+                          ? Center(
+                              child: Icon(
+                                Icons.image,
+                                color: Colors.grey,
+                                size: 32,
+                              ),
+                            )
+                          : null,
+                    ),
+                    // Dark overlay
+                    Container(
+                      width: 80,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        color: Colors.black.withOpacity(0.3),
+                      ),
+                    ),
+                    // Small profile circle at the top with border
+                    Positioned(
+                      top: 4,
+                      left: 4,
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: hasUnseenStatus ? Colors.blue : Colors.grey,
+                            width: 2,
+                          ),
                         ),
-                        image: DecorationImage(
-                          image: NetworkImage(profileImage),
-                          fit: BoxFit.cover,
+                        child: ClipOval(
+                          child: profileImage.isNotEmpty
+                              ? Image.network(
+                                  profileImage,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.grey,
+                                      child: Icon(Icons.person, size: 16),
+                                    );
+                                  },
+                                )
+                              : Container(
+                                  color: Colors.grey,
+                                  child: Icon(Icons.person, size: 16),
+                                ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
+            const SizedBox(height: 8),
+            Text(
+              name,
+              style: TextStyle(
+                fontSize: 12,
+                color: hasUnseenStatus ? Colors.white : Colors.grey,
+                fontWeight: hasUnseenStatus ? FontWeight.bold : FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

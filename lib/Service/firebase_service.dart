@@ -29,11 +29,20 @@ class FirebaseService {
         userId: userId,
       );
 
+      print('💾 Saving post to Firebase:');
+      print('   PostId: $postId');
+      print('   UserId: $userId');
+      print('   MediaType: $mediaType');
+      print('   Caption: $caption');
+
       await _firestore
           .collection('posts')
           .doc(postId)
           .set(post.toMap());
+      
+      print('✅ Post saved successfully to Firebase');
     } catch (e) {
+      print('❌ Failed to save post: $e');
       throw Exception('Failed to create post: $e');
     }
   }
@@ -68,5 +77,25 @@ class FirebaseService {
     } catch (e) {
       throw Exception('Failed to delete post: $e');
     }
+  }
+
+  // Get posts by specific user ID
+  Stream<List<PostModel>> getUserPosts(String userId) {
+    return _firestore
+        .collection('posts')
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) {
+      // Get all posts and sort them in memory by timestamp
+      final posts = snapshot.docs.map((doc) {
+        return PostModel.fromMap(doc.data());
+      }).toList();
+      
+      // Sort by timestamp in descending order (newest first)
+      posts.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      
+      print('✅ Fetched ${posts.length} posts for user: $userId');
+      return posts;
+    });
   }
 }

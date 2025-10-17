@@ -118,27 +118,33 @@ class CreateProfileViewModel extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      // Check username availability
-      final isUsernameAvailable = await _profileRepository.isUsernameAvailable(
-        usernameController.text.trim(),
-      );
-
-      if (!isUsernameAvailable) {
-        _errorMessage = 'Username is already taken';
-        _isLoading = false;
-        notifyListeners();
-        return false;
+      // Check username availability (only if username changed)
+      final currentUsername = _userProfile?.username;
+      final newUsername = usernameController.text.trim();
+      
+      if (currentUsername != newUsername) {
+        final isUsernameAvailable = await _profileRepository.isUsernameAvailable(newUsername);
+        
+        if (!isUsernameAvailable) {
+          _errorMessage = 'Username is already taken';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
       }
 
-      // Upload image if selected
+      // Upload image if a new image is selected
       String? finalImageUrl = _profilePhotoUrl;
-      if (_selectedImagePath != null && _profilePhotoUrl == null) {
+      if (_selectedImagePath != null) {
         finalImageUrl = await uploadImageToCloudinary();
         if (finalImageUrl == null) {
           _isLoading = false;
           notifyListeners();
           return false;
         }
+      } else if (_userProfile != null && _userProfile!.profilePhotoUrl.isNotEmpty) {
+        // Keep existing profile photo if no new image is selected
+        finalImageUrl = _userProfile!.profilePhotoUrl;
       }
 
       // Create/update profile in Firebase

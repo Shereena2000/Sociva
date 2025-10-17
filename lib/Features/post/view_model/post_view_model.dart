@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:social_media_app/Features/post/repository/post_repository.dart';
 import '../model/post_model.dart';
 
@@ -146,22 +147,30 @@ class PostViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Create post and upload to Firebase & Cloudinary (without userId)
+  // Create post and upload to Firebase & Cloudinary
   Future<void> createPost() async {
     if (_selectedMedia == null) {
       throw Exception('No media selected');
+    }
+
+    // Get current user ID
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('User not logged in');
     }
 
     _isUploading = true;
     notifyListeners();
 
     try {
+      print('📤 Creating post for user: ${user.uid}');
       await _postRepository.createPost(
         mediaFile: _selectedMedia!,
         isVideo: _isVideo,
         caption: _caption,
-        userId: 'anonymous', // Default anonymous user
+        userId: user.uid, // Use actual logged-in user ID
       );
+      print('✅ Post created successfully');
 
       // Reset state after successful upload
       _selectedMedia = null;
@@ -169,6 +178,7 @@ class PostViewModel extends ChangeNotifier {
       _isVideo = false;
       _deviceMedia = [];
     } catch (e) {
+      print('❌ Error creating post: $e');
       rethrow;
     } finally {
       _isUploading = false;

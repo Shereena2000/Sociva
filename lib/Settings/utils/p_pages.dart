@@ -8,4 +8,5 @@ class PPages {
   static const String privacyPageUi = "/privacyPageUi";
   static const String createPost = "/createPost";
   static const String createProfile = "/createProfile";
+
 }

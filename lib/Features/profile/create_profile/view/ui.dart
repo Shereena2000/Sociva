@@ -14,7 +14,7 @@ class CreateProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => CreateProfileViewModel()..initializeUserData(),
+      create: (_) => CreateProfileViewModel()..loadUserProfile(),
       child: const _CreateProfileScreenContent(),
     );
   }
@@ -35,7 +35,7 @@ class _CreateProfileScreenContent extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Create Profile',
+          viewModel.userProfile != null ? 'Edit Profile' : 'Create Profile',
           style: TextStyle(
             color: PColors.white,
             fontSize: 18,
@@ -129,9 +129,11 @@ class _CreateProfileScreenContent extends StatelessWidget {
                     ),
                   ),
 
-                // Create Profile Button
+                // Create/Update Profile Button
                 CustomElavatedTextButton(
-                  text: viewModel.isLoading ? "Creating..." : "Create Profile",
+                  text: viewModel.isLoading 
+                      ? (viewModel.userProfile != null ? "Updating..." : "Creating...") 
+                      : (viewModel.userProfile != null ? "Update Profile" : "Create Profile"),
                   onPressed: viewModel.isLoading ? null : () => _handleCreateProfile(context, viewModel),
                   height: 50,
                 ),
@@ -158,7 +160,7 @@ class _CreateProfileScreenContent extends StatelessWidget {
                       ),
                       SizedBox(height: 16),
                       Text(
-                        'Creating profile...',
+                        viewModel.userProfile != null ? 'Updating profile...' : 'Creating profile...',
                         style: TextStyle(
                           color: PColors.white,
                           fontSize: 16,
@@ -333,18 +335,27 @@ class _CreateProfileScreenContent extends StatelessWidget {
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Profile created successfully!'),
+          content: Text(
+            viewModel.userProfile != null 
+                ? 'Profile updated successfully!' 
+                : 'Profile created successfully!'
+          ),
           backgroundColor: PColors.successGreen,
         ),
       );
       
-      // Navigate back
-      Navigator.pop(context);
+      // Navigate back with success result
+      Navigator.pop(context, true);
     } else if (context.mounted) {
       // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(viewModel.errorMessage ?? 'Failed to create profile'),
+          content: Text(
+            viewModel.errorMessage ?? 
+            (viewModel.userProfile != null 
+                ? 'Failed to update profile' 
+                : 'Failed to create profile')
+          ),
           backgroundColor: PColors.errorRed,
         ),
       );

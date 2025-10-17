@@ -46,4 +46,9 @@ class PostRepository {
   Future<void> deletePost(String postId) {
     return _firebaseService.deletePost(postId);
   }
+
+  // Get posts by specific user ID
+  Stream<List<PostModel>> getUserPosts(String userId) {
+    return _firebaseService.getUserPosts(userId);
+  }
 }

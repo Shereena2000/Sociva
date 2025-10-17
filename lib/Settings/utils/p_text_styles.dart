@@ -25,6 +25,11 @@ class PTextStyles {
     fontSize: 20,
     fontWeight: FontWeight.w700,
   );
+  //   static TextStyle get displaylite => getTextisLandMonents(
+  //   color: PColors.white,
+  //   fontSize: 16,
+  //   fontWeight: FontWeight.w700,
+  // );
   
     static TextStyle get headlineMedium => getTextStyle(
     fontWeight: FontWeight.w500,

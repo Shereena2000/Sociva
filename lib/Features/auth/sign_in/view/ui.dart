@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:social_media_app/Settings/utils/p_text_styles.dart';
+import '../../../../Settings/constants/text_styles.dart';
 import '../../../../Settings/utils/p_pages.dart';
 import '../view_model/sign_in_view_model.dart';
 
@@ -48,24 +50,18 @@ class _SignInScreenContent extends StatelessWidget {
                 
                 // Title
                 Text(
-                  'Welcome\nBack!',
-                  style: TextStyle(
-                    fontSize: 48,
+                  'Welcome Back!',
+                  style: getTextisLandMonents(
+                    fontSize: 50,
                     fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    height: 1.2,
                   ),
                 ),
                 
-                SizedBox(height: 12),
+             
                 
                 Text(
                   'Sign in to continue',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white.withOpacity(0.7),
-                    fontWeight: FontWeight.w400,
-                  ),
+                  style:PTextStyles.bodySmall
                 ),
                 
                 SizedBox(height: size.height * 0.06),

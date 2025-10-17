@@ -7,6 +7,7 @@ import '../../../../Settings/constants/sized_box.dart';
 import '../../../../Settings/utils/p_colors.dart';
 import '../../../../Settings/utils/p_text_styles.dart';
 import '../view_model/profile_view_model.dart';
+import '../../status/view/add_status_dialog.dart';
 import 'widgets/photos_tab.dart';
 import 'widgets/videos_tab.dart';
 
@@ -17,6 +18,13 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ProfileViewModel>(
       builder: (context, viewModel, child) {
+        // Initialize profile data when screen loads
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (viewModel.userProfile == null && !viewModel.isLoading) {
+            viewModel.initializeProfile();
+          }
+        });
+
         return DefaultTabController(
           length: 2,
           child: Scaffold(
@@ -59,96 +67,22 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
-                          _buildProfileHeader(),
+                          _buildProfileHeader(viewModel),
                           SizeBoxH(15),
                           CustomElavatedTextButton(
                             text: "Edit Profile",
-                            onPressed: () { Navigator.pushNamed(context, PPages.createProfile);},
+                            onPressed: () async {
+                              // Navigate to edit profile and wait for result
+                              await Navigator.pushNamed(context, PPages.createProfile);
+                              // Refresh profile after returning from edit screen
+                              if (context.mounted) {
+                                viewModel.fetchUserProfile();
+                              }
+                            },
                             height: 40,
                           ),
                           SizeBoxH(20), // Status List
-                          SizedBox(
-                            height: 90,
-                            child: ListView(
-                              scrollDirection: Axis.horizontal,
-                              children: [
-                                // Add Status Card
-                                Container(
-                                  width: 80,
-                                  margin: const EdgeInsets.only(right: 10),
-                                  child: Column(
-                                    children: [
-                                      Stack(
-                                        children: [
-                                          Container(
-                                            width: 60,
-                                            height: 60,
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey[300],
-                                              borderRadius:
-                                                  BorderRadius.circular(40),
-                                            ),
-                                            child: const CircleAvatar(
-                                              radius: 40,
-                                              backgroundImage: NetworkImage(
-                                                'https://i.pinimg.com/736x/bd/68/11/bd681155d2bd24325d2746b9c9ba690d.jpg',
-                                              ),
-                                            ),
-                                          ),
-                                          Positioned(
-                                            bottom: 0,
-                                            right: 0,
-                                            child: Container(
-                                              width: 24,
-                                              height: 24,
-                                              decoration: const BoxDecoration(
-                                                color: Colors.green,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Icon(
-                                                Icons.add,
-                                                color: PColors.white,
-                                                size: 16,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizeBoxH(8),
-                                      const Text(
-                                        'Add status',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // User Status Cards
-                                _buildStatusCard(
-                                  '🍒',
-                                  'https://i.pinimg.com/736x/f9/31/40/f931402d8a1e39e15d70c0d34ce979a3.jpg',
-                                  'https://i.pinimg.com/736x/ac/0d/15/ac0d15ba75eaa9d8942f3f40d4c8d830.jpg',
-                                ),
-                                _buildStatusCard(
-                                  '🧚🏻‍♀️',
-                                  'https://i.pinimg.com/736x/4c/71/e7/4c71e77e359865054f6890ffeb5a12a7.jpg',
-                                  'https://i.pinimg.com/736x/f7/eb/38/f7eb3825b5a5648193b66ef83b819461.jpg',
-                                ),
-                                _buildStatusCard(
-                                  '💋',
-                                  'https://i.pinimg.com/736x/55/01/5b/55015b434088b4ec5b699d0535af299e.jpg',
-                                  'https://i.pinimg.com/736x/d4/9a/ff/d49aff95825d869d6ee9394806a8adb6.jpg',
-                                ),
-                                _buildStatusCard(
-                                  '🌻',
-                                  'https://i.pinimg.com/736x/1d/ee/2f/1dee2feb375e52cbf3ae928c153b1f5b.jpg',
-                                  'https://i.pinimg.com/736x/a3/82/65/a38265b27a45891fb1e9fe35b86870ef.jpg',
-                                ),
-                              ],
-                            ),
-                          ),
+                          _buildStatusSection(context, viewModel),
                         ],
                       ),
                     ),
@@ -224,7 +158,17 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(ProfileViewModel viewModel) {
+    // Show loading state if profile is loading
+    if (viewModel.isLoading && viewModel.userProfile == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(40.0),
+          child: CircularProgressIndicator(color: PColors.primaryColor),
+        ),
+      );
+    }
+
     return Column(
       children: [
         // Profile picture
@@ -233,77 +177,291 @@ class ProfileScreen extends StatelessWidget {
           height: 120,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            image: const DecorationImage(
-              image: NetworkImage(
-                'https://i.pinimg.com/736x/bd/68/11/bd681155d2bd24325d2746b9c9ba690d.jpg',
-              ),
-              fit: BoxFit.cover,
-            ),
+            color: PColors.darkGray,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: viewModel.userProfile?.profilePhotoUrl != null && 
+                   viewModel.userProfile!.profilePhotoUrl.isNotEmpty
+                ? Image.network(
+                    viewModel.userProfile!.profilePhotoUrl,
+                    fit: BoxFit.cover,
+                    width: 120,
+                    height: 120,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: PColors.darkGray,
+                        child: Icon(
+                          Icons.person,
+                          size: 50,
+                          color: PColors.lightGray,
+                        ),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      );
+                    },
+                  )
+                : Container(
+                    color: PColors.darkGray,
+                    child: Icon(
+                      Icons.person,
+                      size: 50,
+                      color: PColors.lightGray,
+                    ),
+                  ),
           ),
         ),
         SizeBoxH(8),
-        // Name
-        Text('Anne Adams', style: PTextStyles.displayMedium),
-        // Handle
+        // Display Name
         Text(
-          'Turn  Your SAVAGE up and lose your FEELINGS',
-          style: PTextStyles.displaySmall,
+          viewModel.userProfile?.username ?? (viewModel.isLoading ? 'Loading...' : 'No Name'),
+          style: PTextStyles.displayMedium.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
         ),
+      
+    
+
+        // Bio
+        if (viewModel.userProfile?.bio != null && viewModel.userProfile!.bio.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+            child: Text(
+              viewModel.userProfile!.bio,
+              style: PTextStyles.displaySmall,
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         SizeBoxH(8),
         // Stats
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildStatItem('24K', 'Followers'),
-            _buildStatItem('655', 'Following'),
-            _buildStatItem('2129', 'Posts'),
+            _buildStatItem('0', 'Followers'),
+            _buildStatItem('0', 'Following'),
+            _buildStatItem(viewModel.allPosts.length.toString(), 'Posts'),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildStatusCard(
-    String name,
-    String profileImage,
-    String statusImage,
-  ) {
-    return Container(
-      width: 70,
-      margin: const EdgeInsets.only(right: 10),
-      child: Column(
+  Widget _buildStatusSection(BuildContext context, ProfileViewModel viewModel) {
+    return SizedBox(
+      height: 90,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
         children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(40)),
-            child: Stack(
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(40),
-                    image: DecorationImage(
-                      image: NetworkImage(statusImage),
-                      fit: BoxFit.cover,
+          // Add Status Card
+          GestureDetector(
+            onTap: () => _showAddStatusDialog(context, viewModel),
+            child: Container(
+              width: 80,
+              margin: const EdgeInsets.only(right: 10),
+              child: Column(
+                children: [
+                  Stack(
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: PColors.darkGray,
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        child: viewModel.userProfile?.profilePhotoUrl != null &&
+                                viewModel.userProfile!.profilePhotoUrl.isNotEmpty
+                            ? ClipOval(
+                                child: Image.network(
+                                  viewModel.userProfile!.profilePhotoUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Icon(Icons.person,
+                                        color: PColors.lightGray, size: 30);
+                                  },
+                                ),
+                              )
+                            : Icon(Icons.person,
+                                color: PColors.lightGray, size: 30),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: PColors.primaryColor,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.add,
+                            color: PColors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizeBoxH(8),
+                  const Text(
+                    'Add status',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
+          // User's Status Cards
+          ...viewModel.statuses.map((status) => _buildStatusCard(
+                status.caption,
+                status.userProfilePhoto,
+                status.mediaUrl,
+                onTap: () => _showStatusDetails(context, status, viewModel),
+              )),
         ],
+      ),
+    );
+  }
+
+  void _showAddStatusDialog(BuildContext context, ProfileViewModel viewModel) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AddStatusDialog(
+        userName: viewModel.userProfile?.username ?? 'User',
+        userProfilePhoto: viewModel.userProfile?.profilePhotoUrl ?? '',
+      ),
+    );
+
+    // Refresh profile if status was created
+    if (result == true) {
+      viewModel.refreshProfile();
+    }
+  }
+
+  void _showStatusDetails(
+      BuildContext context, status, ProfileViewModel viewModel) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        child: Container(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Status Image/Video
+              Container(
+                height: 400,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: status.mediaType == 'image'
+                      ? Image.network(
+                          status.mediaUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        )
+                      : Container(
+                          color: PColors.darkGray,
+                          child: Center(
+                            child: Icon(Icons.play_circle_outline,
+                                size: 64, color: PColors.white),
+                          ),
+                        ),
+                ),
+              ),
+              SizeBoxH(16),
+              // Caption
+              Text(
+                status.caption,
+                style: TextStyle(color: PColors.white, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+              SizeBoxH(16),
+              // Delete button (only for user's own status)
+              ElevatedButton.icon(
+                onPressed: () {
+                  viewModel.deleteStatus(status.id);
+                  Navigator.pop(context);
+                },
+                icon: Icon(Icons.delete, color: Colors.white),
+                label: Text('Delete Status'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusCard(
+   String caption,
+    String profileImage,
+    String statusImage, {
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 70,
+        margin: const EdgeInsets.only(right: 10),
+        child: Column(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(40)),
+              child: Stack(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(40),
+                      image: DecorationImage(
+                        image: NetworkImage(statusImage),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              caption,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }

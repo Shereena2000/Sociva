@@ -38,9 +38,9 @@ class CustomElavatedTextButton extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: gradientColors ??
-              [PColors.primaryColor, PColors.secondaryColor],
+              [PColors.blueColor, PColors.purpleColor],
         ),
-        borderRadius: BorderRadius.circular(borderRadius ?? 16),
+        borderRadius: BorderRadius.circular(borderRadius ?? 12),
         boxShadow: [
           BoxShadow(
             color: PColors.primaryColor.withOpacity(0.3),
@@ -51,9 +51,9 @@ class CustomElavatedTextButton extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(borderRadius ?? 16),
+        borderRadius: BorderRadius.circular(borderRadius ?? 12),
         child: InkWell(
-          borderRadius: BorderRadius.circular(borderRadius ?? 16),
+          borderRadius: BorderRadius.circular(borderRadius ?? 12),
           onTap: onPressed,
           child: Center(
             child: Row(
@@ -66,7 +66,7 @@ class CustomElavatedTextButton extends StatelessWidget {
                 Text(
                   text,
                   style: getTextStyle(
-                    fontSize: fontSize ?? 18,
+                    fontSize: fontSize ?? 14,
                     fontWeight: FontWeight.w600,
                     color: textColor ?? Colors.white,
                     letterSpacing: 0.5,

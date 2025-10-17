@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/home/view/ui.dart';
 import 'package:social_media_app/Features/post/view/post_screen/ui.dart';
-import 'package:social_media_app/Features/profile/view/ui.dart';
+import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
 import 'package:social_media_app/Features/reels/view/ui.dart';
 import 'package:social_media_app/Features/feed/view/ui.dart';
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
-import 'package:social_media_app/Features/profile/view_model/profile_view_model.dart';
+import 'package:social_media_app/Features/profile/profile_screen/view_model/profile_view_model.dart';
 
 class PhotoTabs extends StatelessWidget {
   const PhotoTabs({super.key});

@@ -171,9 +171,9 @@ class _CustomTextFeildState extends State<CustomTextFeild> {
             obscureText: widget.obscureText,
 
             style: getTextStyle(
-              color: widget.textColor ?? PColors.color000000,
+              color: widget.textColor ?? PColors.white,
               fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               letterSpacing: 0.30,
             ),
             inputFormatters: widget.inputFormatters ?? [],
@@ -190,7 +190,7 @@ class _CustomTextFeildState extends State<CustomTextFeild> {
       widget.textHead!,
       style: getTextStyle(
         fontSize: 14,
-        color: PColors.color000000,
+        color: PColors.white,
         fontWeight: FontWeight.w500,
       ),
     );

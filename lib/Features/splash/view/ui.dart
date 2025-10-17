@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../Settings/utils/p_colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:social_media_app/Settings/utils/p_colors.dart';
 import '../../../Settings/utils/p_pages.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -89,11 +90,24 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 3500));
     
     if (mounted) {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        PPages.wrapperPageUi,
-        (route) => false,
-      );
+      // Check if user is signed in
+      final User? user = FirebaseAuth.instance.currentUser;
+      
+      if (user != null) {
+        // User is signed in, navigate to home
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          PPages.wrapperPageUi,
+          (route) => false,
+        );
+      } else {
+        // User is not signed in, navigate to login
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          PPages.login,
+          (route) => false,
+        );
+      }
     }
   }
 
@@ -140,16 +154,16 @@ class _SplashScreenState extends State<SplashScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Logo with animations
-                  FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: ScaleTransition(
-                      scale: _scaleAnimation,
-                      child: ScaleTransition(
-                        scale: _pulseAnimation,
-                        child: _buildLogo(),
-                      ),
-                    ),
-                  ),
+                  // FadeTransition(
+                  //   opacity: _fadeAnimation,
+                  //   child: ScaleTransition(
+                  //     scale: _scaleAnimation,
+                  //     child: ScaleTransition(
+                  //       scale: _pulseAnimation,
+                  //       child: _buildLogo(),
+                  //     ),
+                  //   ),
+                  // ),
 
                   const SizedBox(height: 40),
 
@@ -339,8 +353,8 @@ class _SplashScreenState extends State<SplashScreen>
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [
-                      Color(0xFF64B5F6),
-                      Color(0xFF9C27B0),
+                   PColors.blueColor,
+                 PColors.purpleColor,
                     ],
                   ),
                   boxShadow: [
@@ -359,54 +373,54 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  Widget _buildLogo() {
-    return Container(
-      width: 160,
-      height: 160,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [
-            Color(0xFF9C27B0),
-            Color(0xFF673AB7),
-            Color(0xFF3F51B5),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFF9C27B0).withOpacity(0.6),
-            blurRadius: 50,
-            offset: Offset(0, 20),
-            spreadRadius: 5,
-          ),
-          BoxShadow(
-            color: Color(0xFF3F51B5).withOpacity(0.4),
-            blurRadius: 80,
-            offset: Offset(0, 30),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Container(
-          width: 140,
-          height: 140,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white.withOpacity(0.1),
-          ),
-          child: Center(
-            child: Icon(
-              Icons.people_alt_rounded,
-              size: 70,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  // Widget _buildLogo() {
+  //   return Container(
+  //     width: 160,
+  //     height: 160,
+  //     decoration: BoxDecoration(
+  //       shape: BoxShape.circle,
+  //       gradient: LinearGradient(
+  //         colors: [
+  //           Color(0xFF9C27B0),
+  //           Color(0xFF673AB7),
+  //           Color(0xFF3F51B5),
+  //         ],
+  //         begin: Alignment.topLeft,
+  //         end: Alignment.bottomRight,
+  //       ),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Color(0xFF9C27B0).withOpacity(0.6),
+  //           blurRadius: 50,
+  //           offset: Offset(0, 20),
+  //           spreadRadius: 5,
+  //         ),
+  //         BoxShadow(
+  //           color: Color(0xFF3F51B5).withOpacity(0.4),
+  //           blurRadius: 80,
+  //           offset: Offset(0, 30),
+  //         ),
+  //       ],
+  //     ),
+  //     child: Center(
+  //       child: Container(
+  //         width: 140,
+  //         height: 140,
+  //         decoration: BoxDecoration(
+  //           shape: BoxShape.circle,
+  //           color: Colors.white.withOpacity(0.1),
+  //         ),
+  //         child: Center(
+  //           child: Icon(
+  //             Icons.people_alt_rounded,
+  //             size: 70,
+  //             color: Colors.white,
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildLoadingIndicator() {
     return RotationTransition(

@@ -42,6 +42,70 @@ class PostRepository {
     }
   }
 
+  // Create post with multiple media files
+  Future<List<String>> createPostWithMultipleMedia({
+    required List<File> mediaFiles,
+    required String caption,
+    required String userId,
+    String postType = 'post',
+  }) async {
+    try {
+      if (mediaFiles.isEmpty) {
+        throw Exception('No media files provided');
+      }
+
+      print('📤 Uploading ${mediaFiles.length} media files...');
+      
+      // Upload all media files to Cloudinary
+      List<String> mediaUrls = [];
+      bool hasVideo = false;
+      
+      for (int i = 0; i < mediaFiles.length; i++) {
+        print('   Uploading file ${i + 1}/${mediaFiles.length}...');
+        final file = mediaFiles[i];
+        final isVideo = _isVideoFile(file.path);
+        
+        if (isVideo) hasVideo = true;
+        
+        final mediaUrl = await _cloudinaryService.uploadMedia(
+          file,
+          isVideo: isVideo,
+        );
+        
+        mediaUrls.add(mediaUrl);
+        print('   ✅ Uploaded ${i + 1}/${mediaFiles.length}');
+      }
+
+      print('✅ All media uploaded successfully');
+      
+      // Determine mediaType: 'mixed' if both, 'video' if any video, 'image' otherwise
+      final mediaType = hasVideo ? 'video' : 'image';
+
+      // Save post data to Firebase with multiple URLs
+      await _firebaseService.createPostWithMultipleMedia(
+        mediaUrls: mediaUrls,
+        mediaType: mediaType,
+        caption: caption,
+        userId: userId,
+        postType: postType,
+      );
+
+      return mediaUrls;
+    } catch (e) {
+      print('❌ Error in createPostWithMultipleMedia: $e');
+      throw Exception('Failed to create post: $e');
+    }
+  }
+
+  // Helper to check if file is a video
+  bool _isVideoFile(String path) {
+    return path.toLowerCase().endsWith('.mp4') ||
+        path.toLowerCase().endsWith('.mov') ||
+        path.toLowerCase().endsWith('.avi') ||
+        path.toLowerCase().endsWith('.mkv') ||
+        path.toLowerCase().endsWith('.flv');
+  }
+
   Stream<List<PostModel>> getPosts() {
     return _firebaseService.getPosts();
   }

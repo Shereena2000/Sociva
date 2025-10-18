@@ -2,7 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PostModel {
   final String postId;
-  final String mediaUrl;
+  final String mediaUrl; // First media URL (for backward compatibility)
+  final List<String> mediaUrls; // Multiple media URLs
   final String mediaType;
   final String caption;
   final DateTime timestamp;
@@ -14,6 +15,7 @@ class PostModel {
   PostModel({
     required this.postId,
     required this.mediaUrl,
+    List<String>? mediaUrls,
     required this.mediaType,
     required this.caption,
     required this.timestamp,
@@ -21,7 +23,13 @@ class PostModel {
     this.likes = const [],
     this.commentCount = 0,
     this.postType = 'post', // Default to post
-  });
+  }) : mediaUrls = mediaUrls ?? [mediaUrl]; // If no mediaUrls, use single mediaUrl
+
+  // Check if post has multiple media
+  bool get hasMultipleMedia => mediaUrls.length > 1;
+  
+  // Get media count
+  int get mediaCount => mediaUrls.length;
 
   // Check if a specific user has liked this post
   bool isLikedBy(String userId) {
@@ -34,7 +42,8 @@ class PostModel {
   Map<String, dynamic> toMap() {
     return {
       'postId': postId,
-      'mediaUrl': mediaUrl,
+      'mediaUrl': mediaUrl, // Keep for backward compatibility
+      'mediaUrls': mediaUrls, // Array of all media
       'mediaType': mediaType,
       'caption': caption,
       'timestamp': timestamp.toIso8601String(),
@@ -46,14 +55,20 @@ class PostModel {
   }
 
   factory PostModel.fromMap(Map<String, dynamic> map) {
+    final mediaUrl = map['mediaUrl'] ?? '';
+    final List<String> mediaUrlsList = map['mediaUrls'] != null 
+        ? (map['mediaUrls'] as List).map((e) => e.toString()).toList()
+        : (mediaUrl.isNotEmpty ? [mediaUrl] : []);
+    
     return PostModel(
       postId: map['postId'] ?? '',
-      mediaUrl: map['mediaUrl'] ?? '',
+      mediaUrl: mediaUrl,
+      mediaUrls: mediaUrlsList,
       mediaType: map['mediaType'] ?? '',
       caption: map['caption'] ?? '',
       timestamp: DateTime.parse(map['timestamp']),
       userId: map['userId'] ?? '',
-      likes: List<String>.from(map['likes'] ?? []),
+      likes: (map['likes'] as List? ?? []).map((e) => e.toString()).toList(),
       commentCount: map['commentCount'] ?? 0,
       postType: map['postType'] ?? 'post', // Default to post for backward compatibility
     );
@@ -63,6 +78,7 @@ class PostModel {
   PostModel copyWith({
     String? postId,
     String? mediaUrl,
+    List<String>? mediaUrls,
     String? mediaType,
     String? caption,
     DateTime? timestamp,
@@ -74,6 +90,7 @@ class PostModel {
     return PostModel(
       postId: postId ?? this.postId,
       mediaUrl: mediaUrl ?? this.mediaUrl,
+      mediaUrls: mediaUrls ?? this.mediaUrls,
       mediaType: mediaType ?? this.mediaType,
       caption: caption ?? this.caption,
       timestamp: timestamp ?? this.timestamp,

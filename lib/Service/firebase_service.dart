@@ -50,6 +50,50 @@ class FirebaseService {
     }
   }
 
+  // Create post with multiple media URLs
+  Future<void> createPostWithMultipleMedia({
+    required List<String> mediaUrls,
+    required String mediaType,
+    required String caption,
+    required String userId,
+    String postType = 'post',
+  }) async {
+    try {
+      // Generate a new UUID for each post
+      final postId = const Uuid().v4();
+      final timestamp = DateTime.now();
+
+      final post = PostModel(
+        postId: postId,
+        mediaUrl: mediaUrls.first, // First URL for backward compatibility
+        mediaUrls: mediaUrls,
+        mediaType: mediaType,
+        caption: caption,
+        timestamp: timestamp,
+        userId: userId,
+        postType: postType,
+      );
+
+      print('💾 Saving post with ${mediaUrls.length} media to Firebase:');
+      print('   PostId: $postId');
+      print('   UserId: $userId');
+      print('   MediaType: $mediaType');
+      print('   Media count: ${mediaUrls.length}');
+      print('   Caption: $caption');
+      print('   PostType: $postType');
+
+      await _firestore
+          .collection('posts')
+          .doc(postId)
+          .set(post.toMap());
+      
+      print('✅ Post with multiple media saved successfully to Firebase');
+    } catch (e) {
+      print('❌ Failed to save post: $e');
+      throw Exception('Failed to create post: $e');
+    }
+  }
+
   Stream<List<PostModel>> getPosts() {
     return _firestore
         .collection('posts')

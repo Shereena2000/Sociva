@@ -1,6 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:social_media_app/Settings/utils/p_pages.dart';
 import '../../view_model/post_view_model.dart';
 
@@ -246,15 +246,21 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
       
         elevation: 0,
      
-        title:  Text(
-              'New Post',
+        title: Consumer<PostViewModel>(
+          builder: (context, viewModel, child) {
+            return Text(
+              viewModel.selectedMediaList.length > 1
+                  ? 'New Post (${viewModel.selectedMediaList.length} items)'
+                  : 'New Post',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 18, 
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.5,
               ),
-            ),
+            );
+          },
+        ),
         centerTitle: true,
         actions: [
           Consumer<PostViewModel>(
@@ -396,7 +402,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                               ],
                             ),
                           )
-                        : viewModel.deviceMedia.isEmpty
+                        : viewModel.photoAssets.isEmpty
                             ? _buildEmptyState(viewModel)
                             : GridView.builder(
                                 padding: const EdgeInsets.all(3),
@@ -406,7 +412,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                   crossAxisSpacing: 4,
                                   mainAxisSpacing: 4,
                                 ),
-                                itemCount: viewModel.deviceMedia.length + 1,
+                                itemCount: viewModel.photoAssets.length + 1,
                                 itemBuilder: (context, index) {
                                   // Camera button as first item
                                   if (index == 0) {
@@ -443,19 +449,17 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                     );
                                   }
             
-                                  // Media items
+                                  // Media items from photoAssets
                                   final mediaIndex = index - 1;
-                                  final media = viewModel.deviceMedia[mediaIndex];
-                                  final isVideo = media.path.toLowerCase().endsWith('.mp4') ||
-                                      media.path.toLowerCase().endsWith('.mov') ||
-                                      media.path.toLowerCase().endsWith('.avi');
+                                  final asset = viewModel.photoAssets[mediaIndex];
+                                  final isVideo = asset.type == AssetType.video;
             
-                                  final isSelected = viewModel.selectedMedia != null &&
-                                      viewModel.selectedMedia!.path == media.path;
+                                  final isSelected = viewModel.isAssetSelected(asset);
+                                  final selectionIndex = viewModel.getSelectionIndex(asset);
             
                                   return GestureDetector(
-                                    onTap: () {
-                                      viewModel.selectMedia(media);
+                                    onTap: () async {
+                                      await viewModel.toggleMediaSelection(asset);
                                     },
                                     child: Container(
                                       decoration: BoxDecoration(
@@ -469,17 +473,20 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                       child: Stack(
                                         fit: StackFit.expand,
                                         children: [
-                                          // Image thumbnail
-                                          Image.file(
-                                            File(media.path),
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) {
+                                          // Asset thumbnail
+                                          FutureBuilder<Widget>(
+                                            future: _buildAssetThumbnail(asset),
+                                            builder: (context, snapshot) {
+                                              if (snapshot.hasData) {
+                                                return snapshot.data!;
+                                              }
                                               return Container(
                                                 color: Color(0xFF1A1A2E),
-                                                child: Icon(
-                                                  Icons.broken_image_rounded,
-                                                  color: Colors.white.withOpacity(0.3),
-                                                  size: 24,
+                                                child: Center(
+                                                  child: CircularProgressIndicator(
+                                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                    strokeWidth: 2,
+                                                  ),
                                                 ),
                                               );
                                             },
@@ -523,8 +530,8 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                                 ),
                                               ),
                                             ),
-                                          // Selection indicator
-                                          if (isSelected)
+                                          // Selection indicator with number
+                                          if (isSelected && selectionIndex != null)
                                             Positioned(
                                               bottom: 6,
                                               right: 6,
@@ -544,10 +551,15 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                                     ),
                                                   ],
                                                 ),
-                                                child: const Icon(
-                                                  Icons.check_rounded,
-                                                  color: Colors.white,
-                                                  size: 16,
+                                                child: Center(
+                                                  child: Text(
+                                                    '$selectionIndex',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -714,6 +726,28 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Future<Widget> _buildAssetThumbnail(AssetEntity asset) async {
+    final thumbnail = await asset.thumbnailDataWithSize(
+      const ThumbnailSize(200, 200),
+    );
+    
+    if (thumbnail != null) {
+      return Image.memory(
+        thumbnail,
+        fit: BoxFit.cover,
+      );
+    }
+    
+    return Container(
+      color: Color(0xFF1A1A2E),
+      child: Icon(
+        asset.type == AssetType.video ? Icons.videocam : Icons.image,
+        color: Colors.white.withOpacity(0.3),
+        size: 24,
       ),
     );
   }

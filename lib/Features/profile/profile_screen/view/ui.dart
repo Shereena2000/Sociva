@@ -11,6 +11,7 @@ import '../view_model/profile_view_model.dart';
 import '../../status/view/add_status_dialog.dart';
 import 'widgets/photos_tab.dart';
 import 'widgets/videos_tab.dart';
+import 'widgets/feed_tab.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId; // Optional userId - if null, show current user's profile
@@ -51,7 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
 
         return DefaultTabController(
-          length: 2,
+          length: 3,
           child: Scaffold(
             appBar: AppBar(
               leading: IconButton(
@@ -145,6 +146,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           tabs: [
                             Tab(text: 'Photos'),
                             Tab(text: 'Videos'),
+                            Tab(text: 'Feed'),
                           ],
                         ),
                       ),
@@ -152,7 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ];
               },
-              body: TabBarView(children: [PhotoTabs(), VideoTabs()]),
+              body: TabBarView(children: [PhotoTabs(), VideoTabs(), FeedTab()]),
             ),
           ),
         );

@@ -20,6 +20,7 @@ class ProfileViewModel extends ChangeNotifier {
   List<PostModel> _allPosts = [];
   List<PostModel> _photoPosts = [];
   List<PostModel> _videoPosts = [];
+  List<PostModel> _feedPosts = [];
   List<StatusModel> _statuses = [];
   bool _isLoading = false;
   bool _isLoggingOut = false;
@@ -32,6 +33,7 @@ class ProfileViewModel extends ChangeNotifier {
   List<PostModel> get allPosts => _allPosts;
   List<PostModel> get photoPosts => _photoPosts;
   List<PostModel> get videoPosts => _videoPosts;
+  List<PostModel> get feedPosts => _feedPosts;
   List<StatusModel> get statuses => _statuses;
   bool get isLoading => _isLoading;
   bool get isLoggingOut => _isLoggingOut;
@@ -65,6 +67,7 @@ class ProfileViewModel extends ChangeNotifier {
     _allPosts = [];
     _photoPosts = [];
     _videoPosts = [];
+    _feedPosts = [];
     _statuses = [];
     _isFollowing = false;
     _isFollowActionLoading = false;
@@ -126,14 +129,19 @@ class ProfileViewModel extends ChangeNotifier {
     _postRepository.getUserPosts(targetUserId).listen((posts) {
       _allPosts = posts;
       
-      // Filter photos (mediaType == 'image')
-      _photoPosts = posts.where((post) => post.mediaType == 'image').toList();
+      // Filter photos (mediaType == 'image' AND postType == 'post')
+      _photoPosts = posts.where((post) => 
+        post.mediaType == 'image' && post.postType == 'post').toList();
       
-      // Filter videos (mediaType == 'video')
-      _videoPosts = posts.where((post) => post.mediaType == 'video').toList();
+      // Filter videos (mediaType == 'video' AND postType == 'post')
+      _videoPosts = posts.where((post) => 
+        post.mediaType == 'video' && post.postType == 'post').toList();
+      
+      // Filter feed posts (postType == 'feed')
+      _feedPosts = posts.where((post) => post.postType == 'feed').toList();
       
       print('✅ Fetched ${posts.length} posts for user $targetUserId');
-      print('📸 Photos: ${_photoPosts.length}, 🎥 Videos: ${_videoPosts.length}');
+      print('📸 Photos: ${_photoPosts.length}, 🎥 Videos: ${_videoPosts.length}, 📰 Feed: ${_feedPosts.length}');
       
       // Debug: print first post details if available
       if (posts.isNotEmpty) {
@@ -147,11 +155,12 @@ class ProfileViewModel extends ChangeNotifier {
       _allPosts = [];
       _photoPosts = [];
       _videoPosts = [];
+      _feedPosts = [];
       notifyListeners();
     });
   }
 
-  // Get photos stream for viewed user
+  // Get photos stream for viewed user (only 'post' type)
   Stream<List<PostModel>> getPhotosStream() {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return Stream.value([]);
@@ -159,7 +168,8 @@ class ProfileViewModel extends ChangeNotifier {
     final targetUserId = _viewingUserId ?? currentUser.uid;
     
     return _postRepository.getUserPosts(targetUserId).map((posts) {
-      return posts.where((post) => post.mediaType == 'image').toList();
+      return posts.where((post) => 
+        post.mediaType == 'image' && post.postType == 'post').toList();
     });
   }
 
@@ -171,7 +181,20 @@ class ProfileViewModel extends ChangeNotifier {
     final targetUserId = _viewingUserId ?? currentUser.uid;
     
     return _postRepository.getUserPosts(targetUserId).map((posts) {
-      return posts.where((post) => post.mediaType == 'video').toList();
+      return posts.where((post) => 
+        post.mediaType == 'video' && post.postType == 'post').toList();
+    });
+  }
+
+  // Get feed posts stream for viewed user
+  Stream<List<PostModel>> getFeedPostsStream() {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return Stream.value([]);
+    
+    final targetUserId = _viewingUserId ?? currentUser.uid;
+    
+    return _postRepository.getUserPosts(targetUserId).map((posts) {
+      return posts.where((post) => post.postType == 'feed').toList();
     });
   }
 
@@ -229,6 +252,7 @@ class ProfileViewModel extends ChangeNotifier {
     _allPosts = [];
     _photoPosts = [];
     _videoPosts = [];
+    _feedPosts = [];
     _statuses = [];
     _isFollowing = false;
     _isFollowActionLoading = false;

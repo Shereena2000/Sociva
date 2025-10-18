@@ -3,6 +3,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:social_media_app/Features/home/view_model/home_view_model.dart';
+import 'package:social_media_app/Features/post/model/post_model.dart';
 import 'package:social_media_app/Features/feed/view/status_viewer_dialog.dart';
 import 'package:social_media_app/Features/profile/status/view/add_status_dialog.dart';
 import 'package:social_media_app/Features/home/view/debug_status_screen.dart';
@@ -11,8 +12,16 @@ import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
 import 'package:social_media_app/Settings/utils/p_pages.dart';
 import 'package:social_media_app/Settings/utils/svgs.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  // Track current page for each post's carousel
+  final Map<String, int> _currentPageMap = {};
 
   @override
   Widget build(BuildContext context) {
@@ -543,69 +552,71 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
 
-          // Post image/video
-          Container(
-            height: 360,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.grey[300],
-            ),
-            child: postWithUser.mediaType == 'video'
-                ? Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Image.network(
-                        postWithUser.mediaUrl,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[300],
-                            child: const Center(
-                              child: Icon(
-                                Icons.videocam,
-                                size: 64,
-                                color: Colors.grey,
+          // Post image/video - Carousel if multiple, single if one
+          postWithUser.post.hasMultipleMedia
+              ? _buildMediaCarousel(postWithUser.post)
+              : Container(
+                  height: 360,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.grey[300],
+                  ),
+                  child: postWithUser.mediaType == 'video'
+                      ? Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Image.network(
+                              postWithUser.mediaUrl,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey[300],
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.videocam,
+                                      size: 64,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.play_arrow,
+                                color: Colors.white,
+                                size: 32,
                               ),
                             ),
-                          );
-                        },
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: const BoxDecoration(
-                          color: Colors.black54,
-                          shape: BoxShape.circle,
+                          ],
+                        )
+                      : Image.network(
+                          postWithUser.mediaUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[300],
+                              child: const Center(
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  size: 64,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                        child: const Icon(
-                          Icons.play_arrow,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                      ),
-                    ],
-                  )
-                : Image.network(
-                    postWithUser.mediaUrl,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[300],
-                        child: const Center(
-                          child: Icon(
-                            Icons.image_not_supported,
-                            size: 64,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
+                ),
 
           // Actions row (like, comment, share, save)
           Padding(
@@ -827,4 +838,85 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+
+  // Build media carousel with dot indicators (Instagram-style)
+  Widget _buildMediaCarousel(PostModel post) {
+    final PageController pageController = PageController();
+    final currentPage = _currentPageMap[post.postId] ?? 0;
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return Container(
+          height: 360,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.grey[300],
+          ),
+          child: Stack(
+            children: [
+              // PageView for scrollable images
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: PageView.builder(
+                  controller: pageController,
+                  itemCount: post.mediaUrls.length,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentPageMap[post.postId] = index;
+                    });
+                  },
+                  itemBuilder: (context, index) {
+                    final mediaUrl = post.mediaUrls[index];
+                    return Image.network(
+                      mediaUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[300],
+                          child: const Center(
+                            child: Icon(
+                              Icons.image_not_supported,
+                              size: 64,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              
+              // Dot indicators (Instagram-style)
+              if (post.mediaUrls.length > 1)
+                Positioned(
+                  bottom: 12,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      post.mediaUrls.length,
+                      (index) => Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: currentPage == index
+                              ? Colors.white
+                              : Colors.white.withOpacity(0.4),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
+

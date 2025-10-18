@@ -1,0 +1,104 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is the owner
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // ========================================
+    // USERS COLLECTION
+    // ========================================
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || 
+        // Allow system to update follower/following counts
+        (isAuthenticated() && 
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['followersCount', 'followingCount']));
+      allow delete: if isOwner(userId);
+    }
+    
+    // ========================================
+    // POSTS COLLECTION
+    // ========================================
+    match /posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId;
+      allow update: if isAuthenticated() && (
+        // Post owner can update their post
+        request.auth.uid == resource.data.userId ||
+        // Anyone can update likes (for like/unlike functionality)
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['likes', 'likeCount']) ||
+        // System can update comment count
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['commentCount'])
+      );
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // ========================================
+    // COMMENTS COLLECTION
+    // ========================================
+    match /comments/{commentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId;
+      allow update: if isAuthenticated() && (
+        // Comment owner can update their comment
+        request.auth.uid == resource.data.userId ||
+        // System can update reply count
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['replyCount'])
+      );
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // ========================================
+    // STATUSES COLLECTION (24-hour stories)
+    // ========================================
+    match /statuses/{statusId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId;
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // ========================================
+    // FOLLOWS COLLECTION (Follow relationships)
+    // ========================================
+    match /follows/{followId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.followerId &&
+        request.resource.data.followerId != request.resource.data.followingId;
+      allow update: if false; // No updates allowed
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.followerId;
+    }
+    
+    // ========================================
+    // STATUS VIEWS COLLECTION (Track who viewed statuses)
+    // ========================================
+    match /statusViews/{viewerId}/viewedStatuses/{statusViewId} {
+      allow read: if isAuthenticated() && request.auth.uid == viewerId;
+      allow create: if isAuthenticated() && request.auth.uid == viewerId;
+      allow update: if isAuthenticated() && request.auth.uid == viewerId;
+      allow delete: if isAuthenticated() && request.auth.uid == viewerId;
+    }
+  }
+}

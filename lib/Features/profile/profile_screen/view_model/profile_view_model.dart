@@ -7,6 +7,7 @@ import 'package:social_media_app/Features/profile/create_profile/repository/prof
 import 'package:social_media_app/Features/profile/create_profile/model/user_profile_model.dart';
 import 'package:social_media_app/Features/profile/status/repository/status_repository.dart';
 import 'package:social_media_app/Features/profile/status/model/status_model.dart';
+import 'package:social_media_app/Features/profile/follow/repository/follow_repository.dart';
 import 'package:social_media_app/Settings/utils/p_pages.dart';
 
 class ProfileViewModel extends ChangeNotifier {
@@ -14,6 +15,7 @@ class ProfileViewModel extends ChangeNotifier {
   final AuthRepository _authRepository = AuthRepository();
   final ProfileRepository _profileRepository = ProfileRepository();
   final StatusRepository _statusRepository = StatusRepository();
+  final FollowRepository _followRepository = FollowRepository();
   
   List<PostModel> _allPosts = [];
   List<PostModel> _photoPosts = [];
@@ -21,6 +23,8 @@ class ProfileViewModel extends ChangeNotifier {
   List<StatusModel> _statuses = [];
   bool _isLoading = false;
   bool _isLoggingOut = false;
+  bool _isFollowing = false;
+  bool _isFollowActionLoading = false;
   UserProfileModel? _userProfile;
   String? _viewingUserId; // Track which user profile we're viewing
 
@@ -31,6 +35,8 @@ class ProfileViewModel extends ChangeNotifier {
   List<StatusModel> get statuses => _statuses;
   bool get isLoading => _isLoading;
   bool get isLoggingOut => _isLoggingOut;
+  bool get isFollowing => _isFollowing;
+  bool get isFollowActionLoading => _isFollowActionLoading;
   UserProfileModel? get userProfile => _userProfile;
   
   // Check if viewing current user's profile
@@ -42,29 +48,32 @@ class ProfileViewModel extends ChangeNotifier {
   // Initialize profile - fetch user profile, posts, and statuses
   void initializeProfile([String? userId]) {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) return;
-    
-    final targetUserId = userId ?? currentUser.uid;
-    
-    // Only reinitialize if viewing a different user
-    if (_viewingUserId == targetUserId && _userProfile != null) {
-      print('⏭️ Already viewing this user profile, skipping reinitialization');
+    if (currentUser == null) {
+      print('❌ Cannot initialize profile: User not authenticated');
       return;
     }
     
-    print('🔄 Initializing profile for user: $targetUserId');
+    final targetUserId = userId ?? currentUser.uid;
     
-    // Reset state when viewing a different user
+    print('🔄 Initializing profile for user: $targetUserId');
+    print('🔍 Current _viewingUserId: $_viewingUserId');
+    print('🔍 Current user ID: ${currentUser.uid}');
+    
+    // Reset state for new user
     _viewingUserId = targetUserId;
     _userProfile = null;
     _allPosts = [];
     _photoPosts = [];
     _videoPosts = [];
     _statuses = [];
+    _isFollowing = false;
+    _isFollowActionLoading = false;
     
+    // Fetch all data
     fetchUserProfile();
     fetchPosts();
     fetchStatuses();
+    checkFollowStatus();
   }
 
   // Fetch user profile from Firebase
@@ -221,7 +230,84 @@ class ProfileViewModel extends ChangeNotifier {
     _photoPosts = [];
     _videoPosts = [];
     _statuses = [];
+    _isFollowing = false;
+    _isFollowActionLoading = false;
     print('🔄 Profile state reset');
+  }
+
+  // Check if current user is following the viewed profile
+  Future<void> checkFollowStatus() async {
+    print('🔍 CHECK FOLLOW STATUS: Starting');
+    print('🔍 Is current user: $isCurrentUser');
+    print('🔍 Viewing user ID: $_viewingUserId');
+    
+    if (isCurrentUser || _viewingUserId == null) {
+      print('⏭️ Skipping follow check (viewing own profile or no user ID)');
+      _isFollowing = false;
+      notifyListeners();
+      return;
+    }
+
+    try {
+      print('🔍 Checking if following user: $_viewingUserId');
+      _isFollowing = await _followRepository.isFollowing(_viewingUserId!);
+      print('✅ Follow status checked: $_isFollowing');
+      notifyListeners();
+    } catch (e) {
+      print('❌ Error checking follow status: $e');
+      _isFollowing = false;
+      notifyListeners();
+    }
+  }
+
+  // Follow or unfollow the viewed user
+  Future<void> toggleFollow() async {
+    print('🔍 DEBUG: Starting toggleFollow');
+    print('🔍 Current user: ${FirebaseAuth.instance.currentUser?.uid}');
+    print('🔍 Target user: $_viewingUserId');
+    print('🔍 Is current user: $isCurrentUser');
+    print('🔍 Is following: $_isFollowing');
+    
+    if (_viewingUserId == null || isCurrentUser) {
+      print('❌ DEBUG: Cannot follow - viewingUserId: $_viewingUserId, isCurrentUser: $isCurrentUser');
+      return;
+    }
+
+    _isFollowActionLoading = true;
+    notifyListeners();
+
+    try {
+      if (_isFollowing) {
+        print('🔍 DEBUG: Unfollowing user');
+        await _followRepository.unfollowUser(_viewingUserId!);
+        _isFollowing = false;
+        print('✅ Unfollowed user successfully');
+      } else {
+        print('🔍 DEBUG: Following user');
+        await _followRepository.followUser(_viewingUserId!);
+        _isFollowing = true;
+        print('✅ Followed user successfully');
+      }
+
+      // Refresh the profile to get updated follower counts
+      print('🔄 Refreshing profile to update counts');
+      await fetchUserProfile();
+      
+      print('✅ Follow toggle completed successfully');
+      _isFollowActionLoading = false;
+      notifyListeners();
+    } catch (e) {
+      print('❌ Error toggling follow: $e');
+      print('❌ Error type: ${e.runtimeType}');
+      print('❌ Error details: ${e.toString()}');
+      
+      // Make sure to reset loading state even on error
+      _isFollowActionLoading = false;
+      notifyListeners();
+      
+      // Re-throw so UI can show error if needed
+      rethrow;
+    }
   }
 
   // Logout functionality

@@ -30,6 +30,8 @@ class ProfileRepository {
         profilePhotoUrl: profilePhotoUrl,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        followersCount: 0,
+        followingCount: 0,
       );
 
       await _firestore

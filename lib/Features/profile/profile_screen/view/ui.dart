@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:social_media_app/Settings/utils/p_pages.dart';
 import '../../../../Settings/common/widgets/custom_elevated_button.dart';
 import '../../../../Settings/constants/sized_box.dart';
@@ -22,6 +23,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _initialized = false;
+  String? _lastInitializedUserId;
 
   @override
   void dispose() {
@@ -35,11 +37,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Consumer<ProfileViewModel>(
       builder: (context, viewModel, child) {
-        // Initialize profile data only once when screen loads
-        if (!_initialized) {
+        // Check if we need to initialize or reinitialize for a different user
+        final currentUserId = widget.userId ?? FirebaseAuth.instance.currentUser?.uid;
+        final needsInitialization = !_initialized || _lastInitializedUserId != currentUserId;
+        
+        if (needsInitialization) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
+            print('🔄 Initializing profile for user: $currentUserId');
             viewModel.initializeProfile(widget.userId);
             _initialized = true;
+            _lastInitializedUserId = currentUserId;
           });
         }
 
@@ -157,19 +164,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Row(
       children: [
         Expanded(
-          child: CustomElavatedTextButton(
-            text: "Follow",
-            onPressed: () {
-              // TODO: Implement follow functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Follow feature coming soon!'),
-                  backgroundColor: Colors.blue,
+          child: viewModel.isFollowActionLoading
+              ? Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: PColors.primaryColor.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                  ),
+                )
+              : CustomElavatedTextButton(
+                  text: viewModel.isFollowing ? "Following" : "Follow",
+                  onPressed: () async {
+                    try {
+                      await viewModel.toggleFollow();
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to ${viewModel.isFollowing ? "unfollow" : "follow"} user. Please try again.'),
+                            backgroundColor: Colors.red,
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  height: 40,
                 ),
-              );
-            },
-            height: 40,
-          ),
         ),
         SizedBox(width: 10),
         Expanded(
@@ -311,8 +342,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildStatItem('0', 'Followers'),
-            _buildStatItem('0', 'Following'),
+            _buildStatItem(
+              viewModel.userProfile?.followersCount.toString() ?? '0',
+              'Followers',
+            ),
+            _buildStatItem(
+              viewModel.userProfile?.followingCount.toString() ?? '0',
+              'Following',
+            ),
             _buildStatItem(viewModel.allPosts.length.toString(), 'Posts'),
           ],
         ),

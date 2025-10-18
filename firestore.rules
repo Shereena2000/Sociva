@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is the owner
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // ========================================
+    // USERS COLLECTION
+    // ========================================
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      // Allow updates for follower counts and own profile edits
+      allow update: if isAuthenticated();
+      allow delete: if isOwner(userId);
+      
+      // ========================================
+      // USER'S FOLLOWING SUBCOLLECTION
+      // ========================================
+      match /following/{followingId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated();
+      }
+      
+      // ========================================
+      // USER'S FOLLOWERS SUBCOLLECTION
+      // ========================================
+      match /followers/{followerId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated();
+      }
+    }
+    
+    // ========================================
+    // POSTS COLLECTION
+    // ========================================
+    match /posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId;
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // ========================================
+    // COMMENTS COLLECTION
+    // ========================================
+    match /comments/{commentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId;
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // ========================================
+    // STATUSES COLLECTION (24-hour stories)
+    // ========================================
+    match /statuses/{statusId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId;
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // ========================================
+    // STATUS VIEWS COLLECTION
+    // ========================================
+    match /statusViews/{viewerId}/viewedStatuses/{statusViewId} {
+      allow read: if isAuthenticated() && request.auth.uid == viewerId;
+      allow create: if isAuthenticated() && request.auth.uid == viewerId;
+      allow update: if isAuthenticated() && request.auth.uid == viewerId;
+      allow delete: if isAuthenticated() && request.auth.uid == viewerId;
+    }
+  }
+}

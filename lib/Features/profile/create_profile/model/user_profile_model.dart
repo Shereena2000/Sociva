@@ -6,6 +6,8 @@ class UserProfileModel {
   final String profilePhotoUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final int followersCount;
+  final int followingCount;
 
   UserProfileModel({
     required this.uid,
@@ -15,6 +17,8 @@ class UserProfileModel {
     required this.profilePhotoUrl,
     required this.createdAt,
     required this.updatedAt,
+    this.followersCount = 0,
+    this.followingCount = 0,
   });
 
   // Convert to Map for Firebase
@@ -27,6 +31,8 @@ class UserProfileModel {
       'profilePhotoUrl': profilePhotoUrl,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      'followersCount': followersCount,
+      'followingCount': followingCount,
     };
   }
 
@@ -40,6 +46,8 @@ class UserProfileModel {
       profilePhotoUrl: map['profilePhotoUrl'] ?? '',
       createdAt: map['createdAt']?.toDate() ?? DateTime.now(),
       updatedAt: map['updatedAt']?.toDate() ?? DateTime.now(),
+      followersCount: map['followersCount'] ?? 0,
+      followingCount: map['followingCount'] ?? 0,
     );
   }
 
@@ -52,6 +60,8 @@ class UserProfileModel {
     String? profilePhotoUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? followersCount,
+    int? followingCount,
   }) {
     return UserProfileModel(
       uid: uid ?? this.uid,
@@ -61,6 +71,8 @@ class UserProfileModel {
       profilePhotoUrl: profilePhotoUrl ?? this.profilePhotoUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      followersCount: followersCount ?? this.followersCount,
+      followingCount: followingCount ?? this.followingCount,
     );
   }
 }

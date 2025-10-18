@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view_model/profile_view_model.dart';
+import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 
 class FeedTab extends StatelessWidget {
   const FeedTab({super.key});
@@ -124,34 +125,42 @@ class FeedTab extends StatelessWidget {
     if (post.mediaUrl.isNotEmpty) {
       return Stack(
         children: [
-          // Image
-          Image.network(
-            post.mediaUrl,
-            fit: BoxFit.cover,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Container(
-                height: 200,
-                color: Colors.grey[800],
-                child: Center(
-                  child: CircularProgressIndicator(
-                    value: loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
-                        : null,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                ),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                height: 200,
-                color: Colors.grey[800],
-                child: const Icon(Icons.error, color: Colors.red),
-              );
-            },
-          ),
+                 // Media (Image or Video)
+                 post.mediaType == 'video'
+                     ? VideoPlayerWidget(
+                         videoUrl: post.mediaUrl,
+                         height: 200,
+                         width: double.infinity,
+                         autoPlay: false,
+                         showControls: true,
+                       )
+                     : Image.network(
+                         post.mediaUrl,
+                         fit: BoxFit.cover,
+                         loadingBuilder: (context, child, loadingProgress) {
+                           if (loadingProgress == null) return child;
+                           return Container(
+                             height: 200,
+                             color: Colors.grey[800],
+                             child: Center(
+                               child: CircularProgressIndicator(
+                                 value: loadingProgress.expectedTotalBytes != null
+                                     ? loadingProgress.cumulativeBytesLoaded /
+                                         loadingProgress.expectedTotalBytes!
+                                     : null,
+                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                               ),
+                             ),
+                           );
+                         },
+                         errorBuilder: (context, error, stackTrace) {
+                           return Container(
+                             height: 200,
+                             color: Colors.grey[800],
+                             child: const Icon(Icons.error, color: Colors.red),
+                           );
+                         },
+                       ),
           
           // Video play button overlay if video
           if (post.mediaType == 'video')

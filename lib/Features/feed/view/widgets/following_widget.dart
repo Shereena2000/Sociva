@@ -5,6 +5,7 @@ import 'package:social_media_app/Features/feed/view_model/feed_view_model.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
 import 'package:social_media_app/Features/feed/view/comments_screen.dart';
 import 'package:social_media_app/Settings/constants/sized_box.dart';
+import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 
 class FollowingWidget extends StatelessWidget {
   const FollowingWidget({super.key});
@@ -229,43 +230,15 @@ class FollowingWidget extends StatelessWidget {
                       color: Colors.grey[800],
                     ),
                     child: postWithUser.mediaType == 'video'
-                        ? Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.network(
-                                  postWithUser.mediaUrl,
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: Colors.grey[800],
-                                      child: const Center(
-                                        child: Icon(
-                                          Icons.videocam,
-                                          size: 64,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: const BoxDecoration(
-                                  color: Colors.black54,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.play_arrow,
-                                  color: Colors.white,
-                                  size: 32,
-                                ),
-                              ),
-                            ],
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: VideoPlayerWidget(
+                              videoUrl: postWithUser.mediaUrl,
+                              height: 300,
+                              width: double.infinity,
+                              autoPlay: false,
+                              showControls: true,
+                            ),
                           )
                         : ClipRRect(
                             borderRadius: BorderRadius.circular(12),
@@ -398,22 +371,30 @@ class FollowingWidget extends StatelessWidget {
             flex: 1,
             child: Container(
               margin: const EdgeInsets.only(right: 2),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  mediaUrls[0],
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey[800],
-                      child: const Icon(
-                        Icons.image_not_supported,
-                        color: Colors.grey,
-                      ),
-                    );
-                  },
-                ),
-              ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: post.mediaType == 'video'
+                          ? VideoPlayerWidget(
+                              videoUrl: mediaUrls[0],
+                              height: 300,
+                              width: double.infinity,
+                              autoPlay: false,
+                              showControls: true,
+                            )
+                          : Image.network(
+                              mediaUrls[0],
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey[800],
+                                  child: const Icon(
+                                    Icons.image_not_supported,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
             ),
           ),
           
@@ -456,20 +437,28 @@ class FollowingWidget extends StatelessWidget {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            mediaUrls[2],
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey[800],
-                                child: const Icon(
-                                  Icons.image_not_supported,
-                                  color: Colors.grey,
+                          child: post.mediaType == 'video'
+                              ? VideoPlayerWidget(
+                                  videoUrl: mediaUrls[2],
+                                  height: 300,
+                                  width: double.infinity,
+                                  autoPlay: false,
+                                  showControls: true,
+                                )
+                              : Image.network(
+                                  mediaUrls[2],
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.grey[800],
+                                      child: const Icon(
+                                        Icons.image_not_supported,
+                                        color: Colors.grey,
+                                      ),
+                                    );
+                                  },
                                 ),
-                              );
-                            },
-                          ),
                         ),
                         
                         // +X overlay if more than 3 images

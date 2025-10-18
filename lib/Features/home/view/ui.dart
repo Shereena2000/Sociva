@@ -11,6 +11,7 @@ import 'package:social_media_app/Features/feed/view/comments_screen.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
 import 'package:social_media_app/Settings/utils/p_pages.dart';
 import 'package:social_media_app/Settings/utils/svgs.dart';
+import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -562,60 +563,32 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(12),
                     color: Colors.grey[300],
                   ),
-                  child: postWithUser.mediaType == 'video'
-                      ? Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Image.network(
-                              postWithUser.mediaUrl,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey[300],
-                                  child: const Center(
-                                    child: Icon(
-                                      Icons.videocam,
-                                      size: 64,
-                                      color: Colors.grey,
-                                    ),
+                    child: postWithUser.mediaType == 'video'
+                        ? VideoPlayerWidget(
+                            videoUrl: postWithUser.mediaUrl,
+                            height: 360,
+                            width: double.infinity,
+                            autoPlay: false,
+                            showControls: true,
+                          )
+                        : Image.network(
+                            postWithUser.mediaUrl,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[300],
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    size: 64,
+                                    color: Colors.grey,
                                   ),
-                                );
-                              },
-                            ),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: const BoxDecoration(
-                                color: Colors.black54,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.play_arrow,
-                                color: Colors.white,
-                                size: 32,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Image.network(
-                          postWithUser.mediaUrl,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey[300],
-                              child: const Center(
-                                child: Icon(
-                                  Icons.image_not_supported,
-                                  size: 64,
-                                  color: Colors.grey,
                                 ),
-                              ),
-                            );
-                          },
-                        ),
+                              );
+                            },
+                          ),
                 ),
 
           // Actions row (like, comment, share, save)
@@ -868,22 +841,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                   itemBuilder: (context, index) {
                     final mediaUrl = post.mediaUrls[index];
-                    return Image.network(
-                      mediaUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[300],
-                          child: const Center(
-                            child: Icon(
-                              Icons.image_not_supported,
-                              size: 64,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        );
-                      },
-                    );
+                    final isVideo = post.mediaType == 'video';
+                    
+                    return isVideo
+                        ? VideoPlayerWidget(
+                            videoUrl: mediaUrl,
+                            height: 360,
+                            width: double.infinity,
+                            autoPlay: false,
+                            showControls: true,
+                          )
+                        : Image.network(
+                            mediaUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[300],
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    size: 64,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
                   },
                 ),
               ),

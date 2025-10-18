@@ -126,16 +126,59 @@ class HomeViewModel extends ChangeNotifier {
     fetchPosts();
   }
 
-  /// Like/unlike a post (placeholder for future implementation)
-  Future<void> toggleLike(String postId) async {
-    // TODO: Implement like functionality
-    print('❤️ Toggle like for post: $postId');
+  /// Like/unlike a post
+  Future<void> toggleLike(String postId, bool isCurrentlyLiked) async {
+    try {
+      print('❤️ Toggle like for post: $postId (currently liked: $isCurrentlyLiked)');
+      await _postRepository.toggleLike(postId, isCurrentlyLiked);
+      // The UI will update automatically through the stream
+    } catch (e) {
+      print('❌ Error toggling like: $e');
+      _errorMessage = 'Failed to like post';
+      notifyListeners();
+    }
   }
 
   /// Save/unsave a post (placeholder for future implementation)
   Future<void> toggleSave(String postId) async {
     // TODO: Implement save functionality
     print('🔖 Toggle save for post: $postId');
+  }
+
+  /// Add a comment to a post (or reply to a comment)
+  Future<void> addComment({
+    required String postId,
+    required String text,
+    String? parentCommentId,
+    String? replyToUserName,
+  }) async {
+    try {
+      if (_currentUserProfile == null) {
+        throw Exception('User profile not loaded');
+      }
+
+      if (parentCommentId != null) {
+        print('💬 Adding reply to comment: $parentCommentId');
+      } else {
+        print('💬 Adding comment to post: $postId');
+      }
+      
+      await _postRepository.addComment(
+        postId: postId,
+        text: text,
+        userName: _currentUserProfile!.username,
+        userProfilePhoto: _currentUserProfile!.profilePhotoUrl,
+        parentCommentId: parentCommentId,
+        replyToUserName: replyToUserName,
+      );
+      
+      print('✅ Comment added successfully');
+    } catch (e) {
+      print('❌ Error adding comment: $e');
+      _errorMessage = 'Failed to add comment';
+      notifyListeners();
+      rethrow;
+    }
   }
 
   /// Delete a post

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:social_media_app/Features/home/view_model/home_view_model.dart';
 import 'package:social_media_app/Features/feed/view/status_viewer_dialog.dart';
 import 'package:social_media_app/Features/profile/status/view/add_status_dialog.dart';
 import 'package:social_media_app/Features/home/view/debug_status_screen.dart';
+import 'package:social_media_app/Features/feed/view/comments_screen.dart';
 import 'package:social_media_app/Settings/utils/p_pages.dart';
 import 'package:social_media_app/Settings/utils/svgs.dart';
 
@@ -40,7 +42,7 @@ class HomeScreen extends StatelessWidget {
 
                       // Posts section
                       const SizedBox(height: 20),
-                      _buildPostsSection(homeViewModel),
+                      _buildPostsSection(context, homeViewModel),
                     ],
                   ),
                 ),
@@ -380,7 +382,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPostsSection(HomeViewModel homeViewModel) {
+  Widget _buildPostsSection(BuildContext context, HomeViewModel homeViewModel) {
     if (homeViewModel.isLoading) {
       return const Center(
         child: Padding(
@@ -442,13 +444,13 @@ class HomeScreen extends StatelessWidget {
       children: homeViewModel.posts
           .map((postWithUser) => Padding(
                 padding: const EdgeInsets.only(bottom: 20),
-                child: _buildPostCard(postWithUser, homeViewModel),
+                child: _buildPostCard(context, postWithUser, homeViewModel),
               ))
           .toList(),
     );
   }
 
-  Widget _buildPostCard(dynamic postWithUser, HomeViewModel homeViewModel) {
+  Widget _buildPostCard(BuildContext context, dynamic postWithUser, HomeViewModel homeViewModel) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -587,34 +589,70 @@ class HomeScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               children: [
+                // Like button
                 IconButton(
-                  icon: const Icon(Icons.favorite_border, color: Colors.black),
+                  icon: Icon(
+                    postWithUser.post.isLikedBy(FirebaseAuth.instance.currentUser?.uid ?? '')
+                        ? Icons.favorite
+                        : Icons.favorite_border,
+                    color: postWithUser.post.isLikedBy(FirebaseAuth.instance.currentUser?.uid ?? '')
+                        ? Colors.red
+                        : Colors.black,
+                  ),
                   onPressed: () {
-                    homeViewModel.toggleLike(postWithUser.postId);
+                    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+                    final isLiked = postWithUser.post.isLikedBy(currentUserId);
+                    homeViewModel.toggleLike(postWithUser.postId, isLiked);
                   },
                 ),
                 const SizedBox(width: 4),
-                const Text('0', style: TextStyle(color: Colors.black)),
+                Text(
+                  '${postWithUser.post.likeCount}',
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(width: 12),
+                
+                // Comment button
                 IconButton(
                   icon: const Icon(
                     Icons.chat_bubble_outline,
                     color: Colors.black,
                   ),
                   onPressed: () {
-                    // Navigate to comments
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CommentsScreen(
+                          postId: postWithUser.postId,
+                          postOwnerName: postWithUser.username,
+                        ),
+                      ),
+                    );
                   },
                 ),
                 const SizedBox(width: 4),
-                const Text('0', style: TextStyle(color: Colors.black)),
+                Text(
+                  '${postWithUser.post.commentCount}',
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(width: 12),
+                
+                // Share button
                 IconButton(
                   icon: const Icon(Icons.send_outlined, color: Colors.black),
                   onPressed: () {
-                    // Share post
+                    // TODO: Share post
                   },
                 ),
                 const Spacer(),
+                
+                // Save button
                 IconButton(
                   icon: const Icon(Icons.bookmark_border, color: Colors.black),
                   onPressed: () {

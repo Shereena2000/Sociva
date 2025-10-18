@@ -39,7 +39,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   Future<void> _initializeVideo() async {
     try {
       _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
-      await _controller!.initialize();
+      
+      // Add timeout to prevent hanging
+      await _controller!.initialize().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          print('⏰ Video initialization timeout');
+          throw Exception('Video initialization timeout');
+        },
+      );
       
       if (mounted) {
         setState(() {
@@ -107,12 +115,16 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           children: [
             // Video player
             if (_isInitialized && _controller != null)
-              FittedBox(
-                fit: widget.fit,
-                child: SizedBox(
-                  width: _controller!.value.size.width,
-                  height: _controller!.value.size.height,
-                  child: VideoPlayer(_controller!),
+              SizedBox(
+                width: widget.width ?? double.infinity,
+                height: widget.height ?? 200,
+                child: FittedBox(
+                  fit: widget.fit,
+                  child: SizedBox(
+                    width: _controller!.value.size.width,
+                    height: _controller!.value.size.height,
+                    child: VideoPlayer(_controller!),
+                  ),
                 ),
               )
             else if (_isLoading)

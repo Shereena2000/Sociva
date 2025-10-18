@@ -388,7 +388,7 @@ class ForYouWidget extends StatelessWidget {
               margin: const EdgeInsets.only(right: 2),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: post.mediaType == 'video'
+                      child: _isVideoUrl(mediaUrls[0])
                           ? VideoPlayerWidget(
                               videoUrl: mediaUrls[0],
                               height: 300,
@@ -452,7 +452,7 @@ class ForYouWidget extends StatelessWidget {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: post.mediaType == 'video'
+                          child: _isVideoUrl(mediaUrls[2])
                               ? VideoPlayerWidget(
                                   videoUrl: mediaUrls[2],
                                   height: 300,
@@ -504,5 +504,11 @@ class ForYouWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // Helper method to check if URL is a video
+  bool _isVideoUrl(String url) {
+    final videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.webm', '.3gp', '.m4v'];
+    return videoExtensions.any((ext) => url.toLowerCase().contains(ext));
   }
 }

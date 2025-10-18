@@ -63,19 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       // Debug FAB - Remove this after testing!
-      floatingActionButton: FloatingActionButton.small(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const DebugStatusScreen(),
-            ),
-          );
-        },
-        backgroundColor: Colors.orange,
-        child: const Icon(Icons.bug_report, size: 20),
-        tooltip: 'Debug Statuses',
-      ),
+    
     );
   }
 
@@ -454,7 +442,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       children: homeViewModel.posts
           .map((postWithUser) => Padding(
-                padding: const EdgeInsets.only(bottom: 20),
+                padding: const EdgeInsets.only(bottom: 24),
                 child: _buildPostCard(context, postWithUser, homeViewModel),
               ))
           .toList(),
@@ -563,6 +551,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(12),
                     color: Colors.grey[300],
                   ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
                     child: postWithUser.mediaType == 'video'
                         ? VideoPlayerWidget(
                             videoUrl: postWithUser.mediaUrl,
@@ -570,6 +560,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             width: double.infinity,
                             autoPlay: false,
                             showControls: true,
+                            fit: BoxFit.cover,
                           )
                         : Image.network(
                             postWithUser.mediaUrl,
@@ -589,6 +580,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               );
                             },
                           ),
+                  ),
                 ),
 
           // Actions row (like, comment, share, save)
@@ -841,7 +833,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                   itemBuilder: (context, index) {
                     final mediaUrl = post.mediaUrls[index];
-                    final isVideo = post.mediaType == 'video';
+                    final isVideo = _isVideoUrl(mediaUrl);
                     
                     return isVideo
                         ? VideoPlayerWidget(
@@ -850,6 +842,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             width: double.infinity,
                             autoPlay: false,
                             showControls: true,
+                            fit: BoxFit.cover,
                           )
                         : Image.network(
                             mediaUrl,
@@ -900,6 +893,12 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+  }
+
+  // Helper method to check if URL is a video
+  bool _isVideoUrl(String url) {
+    final videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.webm', '.3gp', '.m4v'];
+    return videoExtensions.any((ext) => url.toLowerCase().contains(ext));
   }
 }
 

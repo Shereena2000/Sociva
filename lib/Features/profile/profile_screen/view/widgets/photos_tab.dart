@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view_model/profile_view_model.dart';
+import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 
 class PhotoTabs extends StatelessWidget {
   const PhotoTabs({super.key});
@@ -105,33 +106,7 @@ class PhotoTabs extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    post.mediaUrl,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        height: 200,
-                        color: Colors.grey[800],
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                                : null,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 200,
-                        color: Colors.grey[800],
-                        child: const Icon(Icons.error, color: Colors.red),
-                      );
-                    },
-                  ),
+                  child: _buildMediaItem(post),
                 ),
               ),
             );
@@ -139,5 +114,55 @@ class PhotoTabs extends StatelessWidget {
         );
       },
     );
+  }
+
+  // Helper method to build media item (image or video)
+  Widget _buildMediaItem(dynamic post) {
+    // Check if the first media URL is a video
+    final isVideo = _isVideoUrl(post.mediaUrl);
+    
+    if (isVideo) {
+      return VideoPlayerWidget(
+        videoUrl: post.mediaUrl,
+        height: 200,
+        width: double.infinity,
+        autoPlay: false,
+        showControls: true,
+      );
+    } else {
+      return Image.network(
+        post.mediaUrl,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            height: 200,
+            color: Colors.grey[800],
+            child: Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            height: 200,
+            color: Colors.grey[800],
+            child: const Icon(Icons.error, color: Colors.red),
+          );
+        },
+      );
+    }
+  }
+
+  // Helper method to check if URL is a video
+  bool _isVideoUrl(String url) {
+    final videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.webm', '.3gp', '.m4v'];
+    return videoExtensions.any((ext) => url.toLowerCase().contains(ext));
   }
 }

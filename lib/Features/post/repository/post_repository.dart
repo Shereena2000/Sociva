@@ -103,7 +103,11 @@ class PostRepository {
         path.toLowerCase().endsWith('.mov') ||
         path.toLowerCase().endsWith('.avi') ||
         path.toLowerCase().endsWith('.mkv') ||
-        path.toLowerCase().endsWith('.flv');
+        path.toLowerCase().endsWith('.flv') ||
+        path.toLowerCase().endsWith('.wmv') ||
+        path.toLowerCase().endsWith('.webm') ||
+        path.toLowerCase().endsWith('.3gp') ||
+        path.toLowerCase().endsWith('.m4v');
   }
 
   Stream<List<PostModel>> getPosts() {

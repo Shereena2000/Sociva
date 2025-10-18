@@ -129,13 +129,13 @@ class ProfileViewModel extends ChangeNotifier {
     _postRepository.getUserPosts(targetUserId).listen((posts) {
       _allPosts = posts;
       
-      // Filter photos (mediaType == 'image' AND postType == 'post')
+      // Filter photos (contains images AND postType == 'post')
       _photoPosts = posts.where((post) => 
-        post.mediaType == 'image' && post.postType == 'post').toList();
+        post.postType == 'post' && _hasImageMedia(post)).toList();
       
-      // Filter videos (mediaType == 'video' AND postType == 'post')
+      // Filter videos (contains videos AND postType == 'post')
       _videoPosts = posts.where((post) => 
-        post.mediaType == 'video' && post.postType == 'post').toList();
+        post.postType == 'post' && _hasVideoMedia(post)).toList();
       
       // Filter feed posts (postType == 'feed')
       _feedPosts = posts.where((post) => post.postType == 'feed').toList();
@@ -363,5 +363,23 @@ class ProfileViewModel extends ChangeNotifier {
         );
       }
     }
+  }
+
+  // Helper method to check if post has image media
+  bool _hasImageMedia(PostModel post) {
+    if (post.mediaUrls.isEmpty) return false;
+    
+    final imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+    return post.mediaUrls.any((url) => 
+      imageExtensions.any((ext) => url.toLowerCase().contains(ext)));
+  }
+
+  // Helper method to check if post has video media
+  bool _hasVideoMedia(PostModel post) {
+    if (post.mediaUrls.isEmpty) return false;
+    
+    final videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.webm', '.3gp', '.m4v'];
+    return post.mediaUrls.any((url) => 
+      videoExtensions.any((ext) => url.toLowerCase().contains(ext)));
   }
 }

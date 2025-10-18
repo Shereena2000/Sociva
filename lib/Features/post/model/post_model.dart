@@ -9,6 +9,7 @@ class PostModel {
   final String userId;
   final List<String> likes; // List of user IDs who liked
   final int commentCount; // Total number of comments
+  final String postType; // 'post' for Instagram-style, 'feed' for Twitter-style
 
   PostModel({
     required this.postId,
@@ -19,6 +20,7 @@ class PostModel {
     required this.userId,
     this.likes = const [],
     this.commentCount = 0,
+    this.postType = 'post', // Default to post
   });
 
   // Check if a specific user has liked this post
@@ -39,6 +41,7 @@ class PostModel {
       'userId': userId,
       'likes': likes,
       'commentCount': commentCount,
+      'postType': postType,
     };
   }
 
@@ -52,6 +55,7 @@ class PostModel {
       userId: map['userId'] ?? '',
       likes: List<String>.from(map['likes'] ?? []),
       commentCount: map['commentCount'] ?? 0,
+      postType: map['postType'] ?? 'post', // Default to post for backward compatibility
     );
   }
 
@@ -65,6 +69,7 @@ class PostModel {
     String? userId,
     List<String>? likes,
     int? commentCount,
+    String? postType,
   }) {
     return PostModel(
       postId: postId ?? this.postId,
@@ -75,6 +80,7 @@ class PostModel {
       userId: userId ?? this.userId,
       likes: likes ?? this.likes,
       commentCount: commentCount ?? this.commentCount,
+      postType: postType ?? this.postType,
     );
   }
 }

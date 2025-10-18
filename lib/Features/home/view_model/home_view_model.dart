@@ -66,15 +66,15 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
-  /// Fetch all posts with user profile data
+  /// Fetch all posts with user profile data (only 'post' type for Home screen)
   void fetchPosts() {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
-    print('📡 Fetching posts stream...');
+    print('📡 Fetching posts stream for Home screen (post type)...');
     
-    _postRepository.getPosts().listen(
+    _postRepository.getPostsByType('post').listen(
       (posts) async {
         print('📦 Received ${posts.length} posts from Firebase');
         

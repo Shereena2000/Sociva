@@ -1,73 +1,117 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:social_media_app/Features/feed/view_model/feed_view_model.dart';
+import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
+import 'package:social_media_app/Features/feed/view/comments_screen.dart';
+import 'package:social_media_app/Settings/constants/sized_box.dart';
 
 class ForYouWidget extends StatelessWidget {
   const ForYouWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 20),
-      children: [
-        _buildPostCard(
-          profileImage: 'https://i.pinimg.com/736x/4c/71/e7/4c71e77e359865054f6890ffeb5a12a7.jpg',
-          name: 'Maina Kageni',
-          handle: '@ItsMaina...',
-          time: '1h',
-          content: 'We have lost an icon.\nRaila Odinga has passed on.\nI have no words.....',
-          postImage: 'https://i.pinimg.com/736x/1c/30/69/1c306930cff2cf1f800d2bc52cbad9b0.jpg',
-          comments: '166',
-          retweets: '314',
-          likes: '2.9K',
-          views: '161K',
+    return Consumer<FeedViewModel>(
+      builder: (context, feedViewModel, child) {
+        return RefreshIndicator(
+          onRefresh: () => feedViewModel.refreshForYou(),
+          child: _buildContent(context, feedViewModel),
+        );
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context, FeedViewModel feedViewModel) {
+    // Loading state
+    if (feedViewModel.isLoadingForYou && !feedViewModel.hasForYouPosts) {
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
+    }
+
+    // Error state
+    if (feedViewModel.forYouError != null && !feedViewModel.hasForYouPosts) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text(
+                'Error loading posts',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                feedViewModel.forYouError!,
+                style: const TextStyle(color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 20),
-        _buildPostCard(
-          profileImage: 'https://i.pinimg.com/736x/b0/41/ab/b041abab5f12ce21f693f0bf2e1f895b.jpg',
-          name: 'Mike Sonko',
-          handle: '@MikeSonko',
-          time: '1h',
-          content: 'Black Wednesday. Double tragedy. Wawili.',
-          postImage: 'https://i.pinimg.com/1200x/e6/92/15/e692151bfc86c7d523697aa0dbd1a5d0.jpg',
-          comments: '89',
-          retweets: '156',
-          likes: '1.2K',
-          views: '45K',
-          isImageGrid: true,
+      );
+    }
+
+    // Empty state
+    if (!feedViewModel.hasForYouPosts) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.post_add, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text(
+                'No posts yet',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Be the first to create a feed post!',
+                style: TextStyle(color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 20),
-        _buildPostCard(
-          profileImage: 'https://i.pinimg.com/736x/4c/71/e7/4c71e77e359865054f6890ffeb5a12a7.jpg',
-          name: 'John Doe',
-          handle: '@johndoe',
-          time: '2h',
-          content: 'Amazing day with friends! Check out these photos from our trip.',
-          postImage: 'https://i.pinimg.com/736x/35/47/48/354748471cbad482eccf036d1db1a86c.jpg',
-          comments: '45',
-          retweets: '23',
-          likes: '156',
-          views: '2.1K',
-          isImageLayout: true,
-          additionalImages: 78,
-        ),
-      ],
+      );
+    }
+
+    // Posts list
+    return ListView.separated(
+      padding: const EdgeInsets.only(bottom: 20, top: 8),
+      itemCount: feedViewModel.forYouPosts.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final postWithUser = feedViewModel.forYouPosts[index];
+        return _buildPostCard(
+          context: context,
+          feedViewModel: feedViewModel,
+          postWithUser: postWithUser,
+        );
+      },
     );
   }
 
   Widget _buildPostCard({
-    required String profileImage,
-    required String name,
-    required String handle,
-    required String time,
-    required String content,
-    required String postImage,
-    required String comments,
-    required String retweets,
-    required String likes,
-    required String views,
-    bool isImageGrid = false,
-    bool isImageLayout = false,
-    int additionalImages = 0,
+    required BuildContext context,
+    required FeedViewModel feedViewModel,
+    required dynamic postWithUser,
   }) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -81,256 +125,272 @@ class ForYouWidget extends StatelessWidget {
           // Header with profile info
           Row(
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundImage: NetworkImage(profileImage),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ProfileScreen(userId: postWithUser.userId),
+                    ),
+                  );
+                },
+                child: CircleAvatar(
+                  radius: 20,
+                  backgroundImage: postWithUser.userProfilePhoto.isNotEmpty
+                      ? NetworkImage(postWithUser.userProfilePhoto)
+                      : const NetworkImage(
+                          'https://i.pinimg.com/736x/bd/68/11/bd681155d2bd24325d2746b9c9ba690d.jpg',
+                        ),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(
-                          Icons.verified,
-                          color: Colors.blue,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          handle,
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      time,
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ProfileScreen(userId: postWithUser.userId),
                       ),
-                    ),
-                  ],
+                    );
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              postWithUser.userName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.verified,
+                            color: Colors.blue,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              '@${postWithUser.username}',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 14,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        postWithUser.timeAgo,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               IconButton(
                 icon: const Icon(Icons.more_vert, color: Colors.white),
-                onPressed: () {},
+                onPressed: () {
+                  // Show options menu
+                },
               ),
             ],
           ),
           const SizedBox(height: 12),
+
           // Content text
-          Text(
-            content,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Post image
-          if (isImageGrid)
-            _buildImageGrid()
-          else if (isImageLayout)
-            _buildImageLayout(additionalImages)
-          else
-            Container(
-              width: double.infinity,
-              height: 200,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                image: DecorationImage(
-                  image: NetworkImage(postImage),
-                  fit: BoxFit.cover,
-                ),
+          if (postWithUser.caption.isNotEmpty)
+            Text(
+              postWithUser.caption,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                height: 1.4,
               ),
             ),
-          const SizedBox(height: 12),
+
+          if (postWithUser.caption.isNotEmpty) const SizedBox(height: 12),
+
+          // Post image/video
+          if (postWithUser.mediaUrl.isNotEmpty)
+            Container(
+              width: double.infinity,
+              height: 300,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.grey[800],
+              ),
+              child: postWithUser.mediaType == 'video'
+                  ? Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            postWithUser.mediaUrl,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[800],
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.videocam,
+                                    size: 64,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: const BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.play_arrow,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        ),
+                      ],
+                    )
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        postWithUser.mediaUrl,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[800],
+                            child: const Center(
+                              child: Icon(
+                                Icons.image_not_supported,
+                                size: 64,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+            ),
+
+          if (postWithUser.mediaUrl.isNotEmpty) const SizedBox(height: 12),
+
           // Engagement stats
           Row(
             children: [
-              _buildEngagementItem(Icons.chat_bubble_outline, comments),
-              const SizedBox(width: 15),
-              _buildEngagementItem(Icons.repeat, retweets),
-              const SizedBox(width: 15),
-              _buildEngagementItem(Icons.favorite_border, likes),
-              const SizedBox(width: 15),
-              _buildEngagementItem(Icons.bar_chart, views),
-              const Spacer(),
+              // Comment button
               IconButton(
-                icon: const Icon(Icons.bookmark_border, color: Colors.white),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: const Icon(Icons.share, color: Colors.white),
-                onPressed: () {},
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEngagementItem(IconData icon, String count) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: Colors.white, size: 18),
-        const SizedBox(width: 4),
-        Text(
-          count,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildImageGrid() {
-    return Container(
-      height: 200,
-      child: GridView.count(
-        crossAxisCount: 2,
-        crossAxisSpacing: 4,
-        mainAxisSpacing: 4,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              image: const DecorationImage(
-                image: NetworkImage('https://i.pinimg.com/736x/35/47/48/354748471cbad482eccf036d1db1a86c.jpg'),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              image: const DecorationImage(
-                image: NetworkImage('https://i.pinimg.com/736x/1c/30/69/1c306930cff2cf1f800d2bc52cbad9b0.jpg'),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              image: const DecorationImage(
-                image: NetworkImage('https://i.pinimg.com/736x/b0/41/ab/b041abab5f12ce21f693f0bf2e1f895b.jpg'),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.blue,
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImageLayout(int additionalImages) {
-    return Container(
-      height: 300,
-      child: Row(
-        children: [
-          // Left side - large image
-          Expanded(
-            flex: 2,
-            child: Container(
-              margin: const EdgeInsets.only(right: 4),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                image: const DecorationImage(
-                  image: NetworkImage('https://i.pinimg.com/736x/35/47/48/354748471cbad482eccf036d1db1a86c.jpg'),
-                  fit: BoxFit.cover,
+                icon: const Icon(
+                  Icons.chat_bubble_outline,
+                  color: Colors.white,
+                  size: 20,
                 ),
-              ),
-            ),
-          ),
-          // Right side - two smaller images
-          Expanded(
-            flex: 1,
-            child: Column(
-              children: [
-                // Top right image
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 4),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      image: const DecorationImage(
-                        image: NetworkImage('https://i.pinimg.com/736x/1c/30/69/1c306930cff2cf1f800d2bc52cbad9b0.jpg'),
-                        fit: BoxFit.cover,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CommentsScreen(
+                        postId: postWithUser.postId,
+                        postOwnerName: postWithUser.username,
                       ),
                     ),
-                  ),
+                  );
+                },
+              ),
+              Text(
+                '${postWithUser.post.commentCount}',
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+              ),
+              const SizeBoxV(5),
+
+              // Retweet button (placeholder)
+              IconButton(
+                icon: const Icon(Icons.repeat, color: Colors.white, size: 20),
+                onPressed: () {
+                  // TODO: Implement retweet
+                },
+              ),
+              const Text(
+                '0',
+                style: TextStyle(color: Colors.white, fontSize: 14),
+              ),
+              const SizeBoxV(5),
+
+              // Like button
+              IconButton(
+                icon: Icon(
+                  postWithUser.post.isLikedBy(currentUserId)
+                      ? Icons.favorite
+                      : Icons.favorite_border,
+                  color: postWithUser.post.isLikedBy(currentUserId)
+                      ? Colors.red
+                      : Colors.white,
+                  size: 20,
                 ),
-                // Bottom right image with overlay
-                Expanded(
-                  child: Stack(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          image: const DecorationImage(
-                            image: NetworkImage('https://i.pinimg.com/736x/b0/41/ab/b041abab5f12ce21f693f0bf2e1f895b.jpg'),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      if (additionalImages > 0)
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            color: Colors.black.withOpacity(0.6),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '+$additionalImages',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                onPressed: () {
+                  final isLiked = postWithUser.post.isLikedBy(currentUserId);
+                  feedViewModel.toggleLike(postWithUser.postId, isLiked);
+                },
+              ),
+              Text(
+                '${postWithUser.post.likeCount}',
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+              ),
+              const SizeBoxV(5),
+
+              // Views (placeholder)
+              const Icon(Icons.bar_chart, color: Colors.white, size: 20),
+              const SizedBox(width: 4),
+              const Text(
+                '0',
+                style: TextStyle(color: Colors.white, fontSize: 14),
+              ),
+
+              const Spacer(),
+
+              // Save button
+              IconButton(
+                icon: const Icon(
+                  Icons.bookmark_border,
+                  color: Colors.white,
+                  size: 20,
                 ),
-              ],
-            ),
+                onPressed: () {
+                  feedViewModel.toggleSave(postWithUser.postId);
+                },
+              ),
+
+              // Share button
+              IconButton(
+                icon: const Icon(Icons.share, color: Colors.white, size: 20),
+                onPressed: () {
+                  // TODO: Share post
+                },
+              ),
+            ],
           ),
         ],
       ),

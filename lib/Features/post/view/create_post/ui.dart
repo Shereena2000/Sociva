@@ -1,7 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:social_media_app/Features/post/view_model/post_view_model.dart';
 
 class CreatePostScreen extends StatefulWidget {
@@ -25,82 +23,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   void dispose() {
     _captionController.dispose();
     super.dispose();
-  }
-
-  void _showDeviceMedia(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.grey[900],
-      builder: (BuildContext context) {
-        return Consumer<PostViewModel>(
-          builder: (context, viewModel, child) {
-            if (viewModel.deviceMedia.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No media found',
-                  style: TextStyle(color: Colors.white),
-                ),
-              );
-            }
-
-            return GridView.builder(
-              padding: const EdgeInsets.all(8),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 4,
-                mainAxisSpacing: 4,
-              ),
-              itemCount: viewModel.deviceMedia.length,
-              itemBuilder: (context, index) {
-                final media = viewModel.deviceMedia[index];
-                final isVideo =
-                    media.path.toLowerCase().endsWith('.mp4') ||
-                    media.path.toLowerCase().endsWith('.mov') ||
-                    media.path.toLowerCase().endsWith('.avi');
-
-                return GestureDetector(
-                  onTap: () {
-                    viewModel.selectMedia(media);
-                    Navigator.pop(context);
-                  },
-                  child: Stack(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          image: DecorationImage(
-                            image: FileImage(
-                              isVideo
-                                  ? _getThumbnailFile(media)
-                                  : File(media.path),
-                            ),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      if (isVideo)
-                        const Center(
-                          child: Icon(
-                            Icons.play_circle_filled,
-                            color: Colors.white,
-                            size: 40,
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  File _getThumbnailFile(XFile media) {
-    // In production, you would generate actual video thumbnails
-    // For now, return the file itself
-    return File(media.path);
   }
 
   void _uploadPost() async {
@@ -213,6 +135,115 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             borderSide: BorderSide.none,
                           ),
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Post Type Selector
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Post to:',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => viewModel.setPostType('post'),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: viewModel.postType == 'post'
+                                      ? Colors.blue
+                                      : Colors.grey[800],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: viewModel.postType == 'post'
+                                        ? Colors.blue
+                                        : Colors.grey[700]!,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.grid_on,
+                                      color: viewModel.postType == 'post'
+                                          ? Colors.white
+                                          : Colors.grey,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Post',
+                                      style: TextStyle(
+                                        color: viewModel.postType == 'post'
+                                            ? Colors.white
+                                            : Colors.grey,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => viewModel.setPostType('feed'),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: viewModel.postType == 'feed'
+                                      ? Colors.blue
+                                      : Colors.grey[800],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: viewModel.postType == 'feed'
+                                        ? Colors.blue
+                                        : Colors.grey[700]!,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.feed,
+                                      color: viewModel.postType == 'feed'
+                                          ? Colors.white
+                                          : Colors.grey,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Feed',
+                                      style: TextStyle(
+                                        color: viewModel.postType == 'feed'
+                                            ? Colors.white
+                                            : Colors.grey,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        viewModel.postType == 'post'
+                            ? 'Share to Posts (Instagram-style visual feed)'
+                            : 'Share to Feed (Twitter-style updates)',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
                       ),
                     ],
                   ),

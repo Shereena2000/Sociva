@@ -201,6 +201,11 @@ class _CommentsScreenState extends State<CommentsScreen> {
     return StreamBuilder<List<CommentModel>>(
       stream: postRepository.getComments(widget.postId),
       builder: (context, snapshot) {
+        print('🔍 CommentsScreen StreamBuilder state: ${snapshot.connectionState}');
+        print('🔍 Has data: ${snapshot.hasData}');
+        print('🔍 Has error: ${snapshot.hasError}');
+        print('🔍 Data length: ${snapshot.data?.length ?? 0}');
+        
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: CircularProgressIndicator(color: Colors.white),
@@ -209,6 +214,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
         if (snapshot.hasError) {
           print('❌ Error loading comments: ${snapshot.error}');
+          print('❌ Error type: ${snapshot.error.runtimeType}');
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(32.0),
@@ -221,13 +227,41 @@ class _CommentsScreenState extends State<CommentsScreen> {
                     'Error loading comments',
                     style: TextStyle(color: Colors.grey[400], fontSize: 14),
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${snapshot.error}',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
                 ],
               ),
             ),
           );
         }
 
-        final comments = snapshot.data ?? [];
+        if (!snapshot.hasData) {
+          print('⚠️ Snapshot has no data');
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey[700]),
+                const SizedBox(height: 16),
+                Text(
+                  'No comments yet',
+                  style: TextStyle(fontSize: 16, color: Colors.grey[400]),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Be the first to comment!',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final comments = snapshot.data!;
 
         if (comments.isEmpty) {
           return Center(
@@ -250,6 +284,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
           );
         }
 
+        print('✅ Displaying ${comments.length} main comments');
         return ListView.separated(
           padding: const EdgeInsets.symmetric(vertical: 16),
           itemCount: comments.length,
@@ -554,6 +589,11 @@ class _CommentsScreenState extends State<CommentsScreen> {
                 final text = _commentController.text.trim();
                 if (text.isEmpty) return;
 
+                print('💬 Attempting to add comment...');
+                print('   Post ID: ${widget.postId}');
+                print('   Text: $text');
+                print('   Reply to: $_replyToCommentId');
+                
                 try {
                   await homeViewModel.addComment(
                     postId: widget.postId,
@@ -561,6 +601,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
                     parentCommentId: _replyToCommentId,
                     replyToUserName: _replyToUserName,
                   );
+                  
+                  print('✅ Comment added successfully');
                   
                   _commentController.clear();
                   _cancelReplyMode();
@@ -572,13 +614,28 @@ class _CommentsScreenState extends State<CommentsScreen> {
                       _expandedReplies[_replyToCommentId!] = true;
                     });
                   }
-                } catch (e) {
+                  
+                  // Show success message
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Failed to add comment'),
+                        content: Text('Comment added!'),
+                        backgroundColor: Colors.green,
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  print('❌ Error adding comment: $e');
+                  print('❌ Error type: ${e.runtimeType}');
+                  print('❌ Error details: ${e.toString()}');
+                  
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to add comment: ${e.toString()}'),
                         backgroundColor: Colors.red,
-                        duration: Duration(seconds: 2),
+                        duration: const Duration(seconds: 3),
                       ),
                     );
                   }

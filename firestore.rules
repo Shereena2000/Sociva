@@ -49,6 +49,14 @@ service cloud.firestore {
       allow update: if isAuthenticated();
       allow delete: if isAuthenticated() && 
         request.auth.uid == resource.data.userId;
+      
+      // COMMENTS SUBCOLLECTION (CRITICAL for comments to work!)
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update: if isAuthenticated();
+        allow delete: if isAuthenticated();
+      }
     }
     
     // ========================================

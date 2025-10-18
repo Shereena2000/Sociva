@@ -18,6 +18,7 @@ class PostRepository {
     required bool isVideo,
     required String caption,
     required String userId,
+    String postType = 'post', // Default to 'post' for Instagram-style
   }) async {
     try {
       // Upload media to Cloudinary
@@ -32,6 +33,7 @@ class PostRepository {
         mediaType: isVideo ? 'video' : 'image',
         caption: caption,
         userId: userId,
+        postType: postType,
       );
 
       return mediaUrl;
@@ -42,6 +44,58 @@ class PostRepository {
 
   Stream<List<PostModel>> getPosts() {
     return _firebaseService.getPosts();
+  }
+
+  // Get posts by post type ('home' or 'feed')
+  Stream<List<PostModel>> getPostsByType(String postType) {
+    return _firestore
+        .collection('posts')
+        .where('postType', isEqualTo: postType)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['postId'] = doc.id;
+        return PostModel.fromMap(data);
+      }).toList();
+    });
+  }
+
+  // Get posts from users that current user is following (for Following tab)
+  Stream<List<PostModel>> getFollowingPosts(List<String> followingUserIds) {
+    if (followingUserIds.isEmpty) {
+      print('⚠️ No following users provided');
+      return Stream.value([]);
+    }
+
+    // Firebase whereIn has a limit of 10 items, so we need to batch if more
+    // For now, take first 10 users
+    final userIdsToQuery = followingUserIds.take(10).toList();
+    
+    print('🔍 Querying posts from ${userIdsToQuery.length} users');
+
+    return _firestore
+        .collection('posts')
+        .where('postType', isEqualTo: 'feed')
+        .where('userId', whereIn: userIdsToQuery)
+        .snapshots()
+        .map((snapshot) {
+      print('📦 Found ${snapshot.docs.length} posts from following');
+      final posts = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['postId'] = doc.id;
+        return PostModel.fromMap(data);
+      }).toList();
+      
+      // Sort by timestamp in descending order
+      posts.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      
+      return posts;
+    }).handleError((error) {
+      print('❌ Error in getFollowingPosts stream: $error');
+      return <PostModel>[];
+    });
   }
 
   Future<PostModel?> getPost(String postId) {
@@ -145,6 +199,11 @@ class PostRepository {
         replyToUserName: replyToUserName,
       );
 
+      print('💾 Saving comment to Firestore...');
+      print('   Comment ID: $commentId');
+      print('   User: $userName');
+      print('   Is reply: ${parentCommentId != null}');
+      
       // Save comment to Firestore (as subcollection under post)
       await _firestore
           .collection('posts')
@@ -153,10 +212,14 @@ class PostRepository {
           .doc(commentId)
           .set(comment.toMap());
 
-      // Increment comment count on post
-      await _firestore.collection('posts').doc(postId).update({
+      print('✅ Comment document created');
+
+      // Increment comment count on post (use set with merge to handle missing field)
+      await _firestore.collection('posts').doc(postId).set({
         'commentCount': FieldValue.increment(1),
-      });
+      }, SetOptions(merge: true));
+
+      print('✅ Comment count updated on post');
 
       // If this is a reply, increment reply count on parent comment
       if (parentCommentId != null) {
@@ -165,9 +228,9 @@ class PostRepository {
             .doc(postId)
             .collection('comments')
             .doc(parentCommentId)
-            .update({
+            .set({
           'replyCount': FieldValue.increment(1),
-        });
+        }, SetOptions(merge: true));
         print('✅ Reply added to comment: $parentCommentId');
       } else {
         print('✅ Comment added to post: $postId');
@@ -180,6 +243,8 @@ class PostRepository {
 
   /// Get comments for a post (main comments only, not replies)
   Stream<List<CommentModel>> getComments(String postId) {
+    print('🔍 Fetching comments for post: $postId');
+    
     return _firestore
         .collection('posts')
         .doc(postId)
@@ -187,11 +252,27 @@ class PostRepository {
         .orderBy('timestamp', descending: false) // Oldest first (like Instagram)
         .snapshots()
         .map((snapshot) {
+      print('📦 Received ${snapshot.docs.length} comment documents');
+      
       // Filter main comments (where parentCommentId is null) in code
-      return snapshot.docs
-          .map((doc) => CommentModel.fromFirestore(doc))
-          .where((comment) => comment.parentCommentId == null) // Only main comments
+      final mainComments = snapshot.docs
+          .map((doc) {
+            try {
+              return CommentModel.fromFirestore(doc);
+            } catch (e) {
+              print('⚠️ Error parsing comment ${doc.id}: $e');
+              return null;
+            }
+          })
+          .where((comment) => comment != null && comment.parentCommentId == null) // Only main comments
+          .cast<CommentModel>()
           .toList();
+      
+      print('✅ Filtered to ${mainComments.length} main comments');
+      return mainComments;
+    }).handleError((error) {
+      print('❌ Error in getComments stream: $error');
+      return <CommentModel>[];
     });
   }
 
@@ -215,13 +296,25 @@ class PostRepository {
       
       // Get replies and sort in code (no Firebase index needed)
       final replies = snapshot.docs
-          .map((doc) => CommentModel.fromFirestore(doc))
+          .map((doc) {
+            try {
+              return CommentModel.fromFirestore(doc);
+            } catch (e) {
+              print('⚠️ Error parsing reply ${doc.id}: $e');
+              return null;
+            }
+          })
+          .where((reply) => reply != null)
+          .cast<CommentModel>()
           .toList();
       
       // Sort by timestamp (oldest first)
       replies.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       
       return replies;
+    }).handleError((error) {
+      print('❌ Error in getReplies stream: $error');
+      return <CommentModel>[];
     });
   }
 

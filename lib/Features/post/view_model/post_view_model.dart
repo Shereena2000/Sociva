@@ -17,6 +17,7 @@ class PostViewModel extends ChangeNotifier {
   bool _isVideo = false;
   String _caption = '';
   bool _isUploading = false;
+  String _postType = 'post'; // Default to 'post' (Instagram-style)
 
   // Getters for post creation
   List<XFile> get deviceMedia => _deviceMedia;
@@ -25,6 +26,7 @@ class PostViewModel extends ChangeNotifier {
   bool get isVideo => _isVideo;
   String get caption => _caption;
   bool get isUploading => _isUploading;
+  String get postType => _postType;
 
   // Load device media from gallery picker (opens gallery)
   Future<void> loadDeviceMediaFromGallery() async {
@@ -147,6 +149,13 @@ class PostViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Set post type ('home' or 'feed')
+  void setPostType(String postType) {
+    _postType = postType;
+    print('📝 Post type set to: $postType');
+    notifyListeners();
+  }
+
   // Create post and upload to Firebase & Cloudinary
   Future<void> createPost() async {
     if (_selectedMedia == null) {
@@ -164,19 +173,22 @@ class PostViewModel extends ChangeNotifier {
 
     try {
       print('📤 Creating post for user: ${user.uid}');
+      print('📝 Post type: $_postType');
       await _postRepository.createPost(
         mediaFile: _selectedMedia!,
         isVideo: _isVideo,
         caption: _caption,
         userId: user.uid, // Use actual logged-in user ID
+        postType: _postType, // Include post type
       );
-      print('✅ Post created successfully');
+      print('✅ Post created successfully with type: $_postType');
 
       // Reset state after successful upload
       _selectedMedia = null;
       _caption = '';
       _isVideo = false;
       _deviceMedia = [];
+      _postType = 'post'; // Reset to default
     } catch (e) {
       print('❌ Error creating post: $e');
       rethrow;
@@ -197,6 +209,7 @@ class PostViewModel extends ChangeNotifier {
     _caption = '';
     _isVideo = false;
     _deviceMedia = [];
+    _postType = 'post'; // Reset to default
     notifyListeners();
   }
 }

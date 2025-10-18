@@ -14,6 +14,7 @@ class FirebaseService {
     required String mediaType,
     required String caption,
     required String userId,
+    String postType = 'post',
   }) async {
     try {
       // Generate a new UUID for each post
@@ -27,6 +28,7 @@ class FirebaseService {
         caption: caption,
         timestamp: timestamp,
         userId: userId,
+        postType: postType,
       );
 
       print('💾 Saving post to Firebase:');
@@ -34,6 +36,7 @@ class FirebaseService {
       print('   UserId: $userId');
       print('   MediaType: $mediaType');
       print('   Caption: $caption');
+      print('   PostType: $postType');
 
       await _firestore
           .collection('posts')

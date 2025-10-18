@@ -7,6 +7,7 @@ import 'package:social_media_app/Features/feed/view/status_viewer_dialog.dart';
 import 'package:social_media_app/Features/profile/status/view/add_status_dialog.dart';
 import 'package:social_media_app/Features/home/view/debug_status_screen.dart';
 import 'package:social_media_app/Features/feed/view/comments_screen.dart';
+import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
 import 'package:social_media_app/Settings/utils/p_pages.dart';
 import 'package:social_media_app/Settings/utils/svgs.dart';
 
@@ -472,42 +473,64 @@ class HomeScreen extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Profile picture
-                CircleAvatar(
-                  radius: 20,
-                  backgroundImage: postWithUser.userProfilePhoto.isNotEmpty
-                      ? NetworkImage(postWithUser.userProfilePhoto)
-                      : const NetworkImage(
-                          'https://i.pinimg.com/736x/bd/68/11/bd681155d2bd24325d2746b9c9ba690d.jpg',
-                        ),
+                // Profile picture - tappable to view profile
+                GestureDetector(
+                  onTap: () {
+                    // Navigate to profile screen with userId
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProfileScreen(userId: postWithUser.userId),
+                      ),
+                    );
+                  },
+                  child: CircleAvatar(
+                    radius: 20,
+                    backgroundImage: postWithUser.userProfilePhoto.isNotEmpty
+                        ? NetworkImage(postWithUser.userProfilePhoto)
+                        : const NetworkImage(
+                            'https://i.pinimg.com/736x/bd/68/11/bd681155d2bd24325d2746b9c9ba690d.jpg',
+                          ),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            postWithUser.username,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: Colors.black,
+                  child: GestureDetector(
+                    onTap: () {
+                      // Navigate to profile screen with userId
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProfileScreen(userId: postWithUser.userId),
+                        ),
+                      );
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              postWithUser.username,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Colors.black,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Icon(Icons.verified,
-                              size: 16, color: Colors.blue),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        postWithUser.timeAgo,
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
+                            const SizedBox(width: 6),
+                            const Icon(Icons.verified,
+                                size: 16, color: Colors.blue),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          postWithUser.timeAgo,
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 IconButton(

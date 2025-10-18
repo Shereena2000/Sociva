@@ -11,19 +11,37 @@ import '../../status/view/add_status_dialog.dart';
 import 'widgets/photos_tab.dart';
 import 'widgets/videos_tab.dart';
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+class ProfileScreen extends StatefulWidget {
+  final String? userId; // Optional userId - if null, show current user's profile
+  
+  const ProfileScreen({super.key, this.userId});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _initialized = false;
+
+  @override
+  void dispose() {
+    // Reset the profile state when leaving the screen
+    final viewModel = Provider.of<ProfileViewModel>(context, listen: false);
+    viewModel.resetProfileState();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ProfileViewModel>(
       builder: (context, viewModel, child) {
-        // Initialize profile data when screen loads
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (viewModel.userProfile == null && !viewModel.isLoading) {
-            viewModel.initializeProfile();
-          }
-        });
+        // Initialize profile data only once when screen loads
+        if (!_initialized) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            viewModel.initializeProfile(widget.userId);
+            _initialized = true;
+          });
+        }
 
         return DefaultTabController(
           length: 2,
@@ -35,23 +53,25 @@ class ProfileScreen extends StatelessWidget {
               ),
               toolbarHeight: 30,
               actions: [
-                IconButton(
-                  onPressed: viewModel.isLoggingOut
-                      ? null
-                      : () => _showLogoutDialog(context, viewModel),
-                  icon: viewModel.isLoggingOut
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+                // Only show logout for current user's profile
+                if (viewModel.isCurrentUser)
+                  IconButton(
+                    onPressed: viewModel.isLoggingOut
+                        ? null
+                        : () => _showLogoutDialog(context, viewModel),
+                    icon: viewModel.isLoggingOut
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
-                          ),
-                        )
-                      : Icon(Icons.logout_outlined),
-                ),
+                          )
+                        : Icon(Icons.logout_outlined),
+                  ),
               ],
             ),
             body: NestedScrollView(
@@ -69,18 +89,22 @@ class ProfileScreen extends StatelessWidget {
                         children: [
                           _buildProfileHeader(viewModel),
                           SizeBoxH(15),
-                          CustomElavatedTextButton(
-                            text: "Edit Profile",
-                            onPressed: () async {
-                              // Navigate to edit profile and wait for result
-                              await Navigator.pushNamed(context, PPages.createProfile);
-                              // Refresh profile after returning from edit screen
-                              if (context.mounted) {
-                                viewModel.fetchUserProfile();
-                              }
-                            },
-                            height: 40,
-                          ),
+                          // Show Edit Profile for current user, Follow & Message for others
+                          if (viewModel.isCurrentUser)
+                            CustomElavatedTextButton(
+                              text: "Edit Profile",
+                              onPressed: () async {
+                                // Navigate to edit profile and wait for result
+                                await Navigator.pushNamed(context, PPages.createProfile);
+                                // Refresh profile after returning from edit screen
+                                if (context.mounted) {
+                                  viewModel.fetchUserProfile();
+                                }
+                              },
+                              height: 40,
+                            )
+                          else
+                            _buildOtherUserActions(context, viewModel),
                           SizeBoxH(20), // Status List
                           _buildStatusSection(context, viewModel),
                         ],
@@ -126,6 +150,44 @@ class ProfileScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildOtherUserActions(BuildContext context, ProfileViewModel viewModel) {
+    return Row(
+      children: [
+        Expanded(
+          child: CustomElavatedTextButton(
+            text: "Follow",
+            onPressed: () {
+              // TODO: Implement follow functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Follow feature coming soon!'),
+                  backgroundColor: Colors.blue,
+                ),
+              );
+            },
+            height: 40,
+          ),
+        ),
+        SizedBox(width: 10),
+        Expanded(
+          child: CustomElavatedTextButton(
+            text: "Message",
+            onPressed: () {
+              // TODO: Implement message functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Message feature coming soon!'),
+                  backgroundColor: Colors.blue,
+                ),
+              );
+            },
+            height: 40,
+          ),
+        ),
+      ],
     );
   }
 
@@ -264,75 +326,78 @@ class ProfileScreen extends StatelessWidget {
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
-          // Add Status Card
-          GestureDetector(
-            onTap: () => _showAddStatusDialog(context, viewModel),
-            child: Container(
-              width: 80,
-              margin: const EdgeInsets.only(right: 10),
-              child: Column(
-                children: [
-                  Stack(
-                    children: [
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: PColors.darkGray,
-                          borderRadius: BorderRadius.circular(40),
-                        ),
-                        child: viewModel.userProfile?.profilePhotoUrl != null &&
-                                viewModel.userProfile!.profilePhotoUrl.isNotEmpty
-                            ? ClipOval(
-                                child: Image.network(
-                                  viewModel.userProfile!.profilePhotoUrl,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Icon(Icons.person,
-                                        color: PColors.lightGray, size: 30);
-                                  },
-                                ),
-                              )
-                            : Icon(Icons.person,
-                                color: PColors.lightGray, size: 30),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          width: 24,
-                          height: 24,
+          // Add Status Card - Only show for current user
+          if (viewModel.isCurrentUser)
+            GestureDetector(
+              onTap: () => _showAddStatusDialog(context, viewModel),
+              child: Container(
+                width: 80,
+                margin: const EdgeInsets.only(right: 10),
+                child: Column(
+                  children: [
+                    Stack(
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
                           decoration: BoxDecoration(
-                            color: PColors.primaryColor,
-                            shape: BoxShape.circle,
+                            color: PColors.darkGray,
+                            borderRadius: BorderRadius.circular(40),
                           ),
-                          child: Icon(
-                            Icons.add,
-                            color: PColors.white,
-                            size: 16,
+                          child: viewModel.userProfile?.profilePhotoUrl != null &&
+                                  viewModel.userProfile!.profilePhotoUrl.isNotEmpty
+                              ? ClipOval(
+                                  child: Image.network(
+                                    viewModel.userProfile!.profilePhotoUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Icon(Icons.person,
+                                          color: PColors.lightGray, size: 30);
+                                    },
+                                  ),
+                                )
+                              : Icon(Icons.person,
+                                  color: PColors.lightGray, size: 30),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: PColors.primaryColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.add,
+                              color: PColors.white,
+                              size: 16,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizeBoxH(8),
-                  const Text(
-                    'Add status',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
+                      ],
                     ),
-                  ),
-                ],
+                    const SizeBoxH(8),
+                    const Text(
+                      'Add status',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
           // User's Status Cards
           ...viewModel.statuses.map((status) => _buildStatusCard(
                 status.caption,
                 status.userProfilePhoto,
                 status.mediaUrl,
-                onTap: () => _showStatusDetails(context, status, viewModel),
+                onTap: viewModel.isCurrentUser 
+                    ? () => _showStatusDetails(context, status, viewModel)
+                    : () => _showOtherUserStatusDetails(context, status),
               )),
         ],
       ),
@@ -406,6 +471,62 @@ class ProfileScreen extends StatelessWidget {
                 label: Text('Delete Status'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showOtherUserStatusDetails(BuildContext context, status) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        child: Container(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Status Image/Video
+              Container(
+                height: 400,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: status.mediaType == 'image'
+                      ? Image.network(
+                          status.mediaUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        )
+                      : Container(
+                          color: PColors.darkGray,
+                          child: Center(
+                            child: Icon(Icons.play_circle_outline,
+                                size: 64, color: PColors.white),
+                          ),
+                        ),
+                ),
+              ),
+              SizeBoxH(16),
+              // Caption
+              Text(
+                status.caption,
+                style: TextStyle(color: PColors.white, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+              SizeBoxH(16),
+              // Close button for other users
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Close'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[800],
                 ),
               ),
             ],

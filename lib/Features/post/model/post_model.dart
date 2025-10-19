@@ -10,6 +10,7 @@ class PostModel {
   final String userId;
   final List<String> likes; // List of user IDs who liked
   final int commentCount; // Total number of comments
+  final List<String> retweets; // List of user IDs who retweeted
   final String postType; // 'post' for Instagram-style, 'feed' for Twitter-style
 
   PostModel({
@@ -22,6 +23,7 @@ class PostModel {
     required this.userId,
     this.likes = const [],
     this.commentCount = 0,
+    this.retweets = const [],
     this.postType = 'post', // Default to post
   }) : mediaUrls = mediaUrls ?? [mediaUrl]; // If no mediaUrls, use single mediaUrl
 
@@ -39,6 +41,14 @@ class PostModel {
   // Get like count
   int get likeCount => likes.length;
 
+  // Check if a specific user has retweeted this post
+  bool isRetweetedBy(String userId) {
+    return retweets.contains(userId);
+  }
+
+  // Get retweet count
+  int get retweetCount => retweets.length;
+
   Map<String, dynamic> toMap() {
     return {
       'postId': postId,
@@ -50,6 +60,7 @@ class PostModel {
       'userId': userId,
       'likes': likes,
       'commentCount': commentCount,
+      'retweets': retweets,
       'postType': postType,
     };
   }
@@ -70,6 +81,7 @@ class PostModel {
       userId: map['userId'] ?? '',
       likes: (map['likes'] as List? ?? []).map((e) => e.toString()).toList(),
       commentCount: map['commentCount'] ?? 0,
+      retweets: (map['retweets'] as List? ?? []).map((e) => e.toString()).toList(),
       postType: map['postType'] ?? 'post', // Default to post for backward compatibility
     );
   }
@@ -85,6 +97,7 @@ class PostModel {
     String? userId,
     List<String>? likes,
     int? commentCount,
+    List<String>? retweets,
     String? postType,
   }) {
     return PostModel(
@@ -97,6 +110,7 @@ class PostModel {
       userId: userId ?? this.userId,
       likes: likes ?? this.likes,
       commentCount: commentCount ?? this.commentCount,
+      retweets: retweets ?? this.retweets,
       postType: postType ?? this.postType,
     );
   }

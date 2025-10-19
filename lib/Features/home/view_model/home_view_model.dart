@@ -139,6 +139,19 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
+  /// Retweet/unretweet a post
+  Future<void> toggleRetweet(String postId, bool isCurrentlyRetweeted) async {
+    try {
+      print('🔄 Toggle retweet for post: $postId (currently retweeted: $isCurrentlyRetweeted)');
+      await _postRepository.toggleRetweet(postId, isCurrentlyRetweeted);
+      // The UI will update automatically through the stream
+    } catch (e) {
+      print('❌ Error toggling retweet: $e');
+      _errorMessage = 'Failed to retweet post';
+      notifyListeners();
+    }
+  }
+
   /// Save/unsave a post (placeholder for future implementation)
   Future<void> toggleSave(String postId) async {
     // TODO: Implement save functionality

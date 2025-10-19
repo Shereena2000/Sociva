@@ -230,6 +230,76 @@ class PostRepository {
     }
   }
 
+  // ==================== RETWEET FUNCTIONALITY ====================
+
+  /// Retweet a post
+  Future<void> retweetPost(String postId) async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Add user ID to retweets array
+      await _firestore.collection('posts').doc(postId).update({
+        'retweets': FieldValue.arrayUnion([userId]),
+      });
+
+      print('✅ Post retweeted: $postId by $userId');
+    } catch (e) {
+      print('❌ Error retweeting post: $e');
+      throw Exception('Failed to retweet post: $e');
+    }
+  }
+
+  /// Unretweet a post
+  Future<void> unretweetPost(String postId) async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Remove user ID from retweets array
+      await _firestore.collection('posts').doc(postId).update({
+        'retweets': FieldValue.arrayRemove([userId]),
+      });
+
+      print('✅ Post unretweeted: $postId by $userId');
+    } catch (e) {
+      print('❌ Error unretweeting post: $e');
+      throw Exception('Failed to unretweet post: $e');
+    }
+  }
+
+  /// Toggle retweet (retweet if not retweeted, unretweet if already retweeted)
+  Future<void> toggleRetweet(String postId, bool isCurrentlyRetweeted) async {
+    if (isCurrentlyRetweeted) {
+      await unretweetPost(postId);
+    } else {
+      await retweetPost(postId);
+    }
+  }
+
+  /// Get posts retweeted by a specific user
+  Stream<List<PostModel>> getUserRetweetedPosts(String userId) {
+    return _firestore
+        .collection('posts')
+        .where('retweets', arrayContains: userId)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['postId'] = doc.id;
+        return PostModel.fromMap(data);
+      }).toList();
+    }).handleError((error) {
+      print('❌ Error in getUserRetweetedPosts stream: $error');
+      return <PostModel>[];
+    });
+  }
+
   // ==================== COMMENT FUNCTIONALITY ====================
 
   /// Add a comment to a post

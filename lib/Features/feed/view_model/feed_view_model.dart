@@ -243,6 +243,17 @@ class FeedViewModel extends ChangeNotifier {
     }
   }
 
+  /// Toggle retweet on a post
+  Future<void> toggleRetweet(String postId, bool isCurrentlyRetweeted) async {
+    try {
+      print('🔄 Toggle retweet for post: $postId (currently retweeted: $isCurrentlyRetweeted)');
+      await _postRepository.toggleRetweet(postId, isCurrentlyRetweeted);
+      // The UI will update automatically through the stream
+    } catch (e) {
+      print('❌ Error toggling retweet: $e');
+    }
+  }
+
   /// Toggle save on a post (placeholder)
   Future<void> toggleSave(String postId) async {
     // TODO: Implement save functionality

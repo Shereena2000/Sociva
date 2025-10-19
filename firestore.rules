@@ -13,7 +13,7 @@ service cloud.firestore {
     }
     
     // ========================================
-    // USERS COLLECTION
+    // USERS COLLECTION (includes search functionality)
     // ========================================
     match /users/{userId} {
       allow read: if isAuthenticated();
@@ -37,6 +37,16 @@ service cloud.firestore {
         allow read: if isAuthenticated();
         allow write: if isAuthenticated();
       }
+    }
+    
+    // ========================================
+    // USER PROFILES COLLECTION (for search functionality)
+    // ========================================
+    match /user_profiles/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if isOwner(userId);
     }
     
     // ========================================

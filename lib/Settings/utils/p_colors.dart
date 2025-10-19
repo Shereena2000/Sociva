@@ -20,6 +20,7 @@ class PColors {
   static Color get secondaryColor => Color.fromARGB(255, 19, 20, 22);
   static Color get lightBlue => Color(0xFF86C7EF);
   static Color get lightGray => Color(0xFFB5BEC6);
+  
   static Color get darkGray => Color(0xFF1C1E21);
   static Color get successGreen => Color(0xFF42B72A);
   static Color get errorRed => Color(0xFFFA383E);

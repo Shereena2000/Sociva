@@ -100,7 +100,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             onPressed: () {
-              // Handle search tap
+              Navigator.pushNamed(context, PPages.searchScreen);
+            
             },
           ),
         ),
@@ -114,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           onPressed: () {
-            // Handle notification tap
+         
           },
         ),
         // Chat icon
@@ -127,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           onPressed: () {
-            // Handle chat tap
+               Navigator.pushNamed(context, PPages.chatListScreen);
           },
         ),
       ],

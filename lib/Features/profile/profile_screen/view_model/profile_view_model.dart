@@ -198,6 +198,16 @@ class ProfileViewModel extends ChangeNotifier {
     });
   }
 
+  // Get retweeted posts stream for viewed user
+  Stream<List<PostModel>> getRetweetedPostsStream() {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return Stream.value([]);
+    
+    final targetUserId = _viewingUserId ?? currentUser.uid;
+    
+    return _postRepository.getUserRetweetedPosts(targetUserId);
+  }
+
   // Fetch user's statuses
   void fetchStatuses() {
     final currentUser = FirebaseAuth.instance.currentUser;

@@ -8,6 +8,7 @@ import 'package:social_media_app/Features/auth/sign_up/view_model/sign_up_view_m
 import 'package:social_media_app/Features/profile/create_profile/view_model/create_profile_view_model.dart';
 import 'package:social_media_app/Features/home/view_model/home_view_model.dart';
 import 'package:social_media_app/Features/feed/view_model/feed_view_model.dart';
+import 'package:social_media_app/Features/search/view_model/search_view_model.dart';
 
 List<SingleChildWidget> providers = [
   ChangeNotifierProvider(create: (_) => WrapperViewModel()),
@@ -18,4 +19,5 @@ List<SingleChildWidget> providers = [
   ChangeNotifierProvider(create: (_) => CreateProfileViewModel()),
   ChangeNotifierProvider(create: (_) => HomeViewModel()),
   ChangeNotifierProvider(create: (_) => FeedViewModel()),
+  ChangeNotifierProvider(create: (_) => SearchViewModel()),
 ];

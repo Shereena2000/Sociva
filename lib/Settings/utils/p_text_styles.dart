@@ -30,7 +30,11 @@ class PTextStyles {
   //   fontSize: 16,
   //   fontWeight: FontWeight.w700,
   // );
-  
+    static TextStyle get headlineLarge => getTextStyle(
+    color: PColors.white,
+    fontSize: 18,
+    fontWeight: FontWeight.w500,
+  );
     static TextStyle get headlineMedium => getTextStyle(
     fontWeight: FontWeight.w500,
     fontSize: 16,

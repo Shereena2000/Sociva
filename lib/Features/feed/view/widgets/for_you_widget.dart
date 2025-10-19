@@ -276,6 +276,27 @@ class ForYouWidget extends StatelessWidget {
           // Engagement stats
           Row(
             children: [
+              //  // Like button
+              IconButton(
+                icon: Icon(
+                  postWithUser.post.isLikedBy(currentUserId)
+                      ? Icons.favorite
+                      : Icons.favorite_border,
+                  color: postWithUser.post.isLikedBy(currentUserId)
+                      ? Colors.red
+                      : Colors.white,
+                  size: 20,
+                ),
+                onPressed: () {
+                  final isLiked = postWithUser.post.isLikedBy(currentUserId);
+                  feedViewModel.toggleLike(postWithUser.postId, isLiked);
+                },
+              ),
+              Text(
+                '${postWithUser.post.likeCount}',
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+              ),
+              const SizeBoxV(5),
               // Comment button
               IconButton(
                 icon: const Icon(
@@ -301,40 +322,27 @@ class ForYouWidget extends StatelessWidget {
               ),
               const SizeBoxV(5),
 
-              // Retweet button (placeholder)
-              IconButton(
-                icon: const Icon(Icons.repeat, color: Colors.white, size: 20),
-                onPressed: () {
-                  // TODO: Implement retweet
-                },
-              ),
-              const Text(
-                '0',
-                style: TextStyle(color: Colors.white, fontSize: 14),
-              ),
-              const SizeBoxV(5),
-
-              // Like button
+              // Retweet button
               IconButton(
                 icon: Icon(
-                  postWithUser.post.isLikedBy(currentUserId)
-                      ? Icons.favorite
-                      : Icons.favorite_border,
-                  color: postWithUser.post.isLikedBy(currentUserId)
-                      ? Colors.red
+                  Icons.repeat,
+                  color: postWithUser.post.isRetweetedBy(currentUserId)
+                      ? Colors.green
                       : Colors.white,
                   size: 20,
                 ),
                 onPressed: () {
-                  final isLiked = postWithUser.post.isLikedBy(currentUserId);
-                  feedViewModel.toggleLike(postWithUser.postId, isLiked);
+                  final isRetweeted = postWithUser.post.isRetweetedBy(currentUserId);
+                  feedViewModel.toggleRetweet(postWithUser.postId, isRetweeted);
                 },
               ),
               Text(
-                '${postWithUser.post.likeCount}',
+                '${postWithUser.post.retweetCount}',
                 style: const TextStyle(color: Colors.white, fontSize: 14),
               ),
               const SizeBoxV(5),
+
+            
 
               // Views (placeholder)
               const Icon(Icons.bar_chart, color: Colors.white, size: 20),
@@ -372,138 +380,212 @@ class ForYouWidget extends StatelessWidget {
     );
   }
 
-  // Build media grid with 2+1 layout (left: 1 large, right: 2 stacked)
+  // Build media grid with dynamic layout based on number of images
   Widget _buildMediaGrid(dynamic post) {
     final mediaUrls = post.mediaUrls as List<String>;
-    final extraCount = mediaUrls.length > 3 ? mediaUrls.length - 3 : 0;
-
-    return Container(
-      height: 300,
-      child: Row(
-        children: [
-          // Left half - One large image
-          Expanded(
-            flex: 1,
-            child: Container(
-              margin: const EdgeInsets.only(right: 2),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: _isVideoUrl(mediaUrls[0])
-                          ? VideoPlayerWidget(
-                              videoUrl: mediaUrls[0],
-                              height: 300,
-                              width: double.infinity,
-                              autoPlay: false,
-                              showControls: true,
-                            )
-                          : Image.network(
-                              mediaUrls[0],
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey[800],
-                                  child: const Icon(
-                                    Icons.image_not_supported,
-                                    color: Colors.grey,
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
+    
+    // Handle different cases based on number of images
+    if (mediaUrls.length == 2) {
+      // Two images: side by side
+      return Container(
+        height: 300,
+        child: Row(
+          children: [
+            // Left image
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.only(right: 2),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: _isVideoUrl(mediaUrls[0])
+                      ? VideoPlayerWidget(
+                          videoUrl: mediaUrls[0],
+                          height: 300,
+                          width: double.infinity,
+                          autoPlay: false,
+                          showControls: true,
+                        )
+                      : Image.network(
+                          mediaUrls[0],
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[800],
+                              child: const Icon(
+                                Icons.image_not_supported,
+                                color: Colors.grey,
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ),
             ),
-          ),
-          
-          // Right half - Two stacked images with equal height and width
-          Expanded(
-            flex: 1,
-            child: Column(
-              children: [
-                // Top right image - Equal height (50%) and full width
-                Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 2),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        mediaUrls[1],
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[800],
-                            child: const Icon(
-                              Icons.image_not_supported,
-                              color: Colors.grey,
-                            ),
-                          );
-                        },
+            // Right image
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.only(left: 2),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: _isVideoUrl(mediaUrls[1])
+                      ? VideoPlayerWidget(
+                          videoUrl: mediaUrls[1],
+                          height: 300,
+                          width: double.infinity,
+                          autoPlay: false,
+                          showControls: true,
+                        )
+                      : Image.network(
+                          mediaUrls[1],
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[800],
+                              child: const Icon(
+                                Icons.image_not_supported,
+                                color: Colors.grey,
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Three or more images: 2+1 layout (left: 1 large, right: 2 stacked)
+      final extraCount = mediaUrls.length > 3 ? mediaUrls.length - 3 : 0;
+
+      return Container(
+        height: 300,
+        child: Row(
+          children: [
+            // Left half - One large image
+            Expanded(
+              flex: 1,
+              child: Container(
+                margin: const EdgeInsets.only(right: 2),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: _isVideoUrl(mediaUrls[0])
+                      ? VideoPlayerWidget(
+                          videoUrl: mediaUrls[0],
+                          height: 300,
+                          width: double.infinity,
+                          autoPlay: false,
+                          showControls: true,
+                        )
+                      : Image.network(
+                          mediaUrls[0],
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[800],
+                              child: const Icon(
+                                Icons.image_not_supported,
+                                color: Colors.grey,
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ),
+            ),
+            
+            // Right half - Two stacked images with equal height and width
+            Expanded(
+              flex: 1,
+              child: Column(
+                children: [
+                  // Top right image - Equal height (50%) and full width
+                  Expanded(
+                    child: Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 2),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          mediaUrls[1],
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[800],
+                              child: const Icon(
+                                Icons.image_not_supported,
+                                color: Colors.grey,
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),
-                ),
-                
-                // Bottom right image with +X overlay if needed - Equal height (50%) and full width
-                Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: _isVideoUrl(mediaUrls[2])
-                              ? VideoPlayerWidget(
-                                  videoUrl: mediaUrls[2],
-                                  height: 300,
-                                  width: double.infinity,
-                                  autoPlay: false,
-                                  showControls: true,
-                                )
-                              : Image.network(
-                                  mediaUrls[2],
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: Colors.grey[800],
-                                      child: const Icon(
-                                        Icons.image_not_supported,
-                                        color: Colors.grey,
-                                      ),
-                                    );
-                                  },
-                                ),
-                        ),
-                        
-                        // +X overlay if more than 3 images
-                        if (extraCount > 0)
+                  
+                  // Bottom right image with +X overlay if needed - Equal height (50%) and full width
+                  Expanded(
+                    child: Container(
+                      width: double.infinity,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              color: Colors.black.withOpacity(0.7),
-                              child: Center(
-                                child: Text(
-                                  '+$extraCount',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
+                            child: _isVideoUrl(mediaUrls[2])
+                                ? VideoPlayerWidget(
+                                    videoUrl: mediaUrls[2],
+                                    height: 300,
+                                    width: double.infinity,
+                                    autoPlay: false,
+                                    showControls: true,
+                                  )
+                                : Image.network(
+                                    mediaUrls[2],
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.grey[800],
+                                        child: const Icon(
+                                          Icons.image_not_supported,
+                                          color: Colors.grey,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                          
+                          // +X overlay if more than 3 images
+                          if (extraCount > 0)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                color: Colors.black.withOpacity(0.7),
+                                child: Center(
+                                  child: Text(
+                                    '+$extraCount',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    }
   }
 
   // Helper method to check if URL is a video

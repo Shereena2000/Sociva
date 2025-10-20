@@ -4,15 +4,27 @@ import '../../../../Settings/utils/p_colors.dart';
 import '../view_model/notification_view_model.dart';
 import '../model/notification_model.dart';
 
-class NotificationScreen extends StatelessWidget {
+class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
 
+  @override
+  State<NotificationScreen> createState() => _NotificationScreenState();
+}
+
+class _NotificationScreenState extends State<NotificationScreen> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => NotificationViewModel()..initializeNotifications(),
       child: Consumer<NotificationViewModel>(
         builder: (context, viewModel, child) {
+          // Auto-mark all as read when screen is opened (like Instagram)
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (viewModel.unreadCount > 0 && !viewModel.isLoading) {
+              viewModel.markAllAsRead();
+            }
+          });
+
           return Scaffold(
             backgroundColor: PColors.black,
             appBar: AppBar(
@@ -27,19 +39,6 @@ class NotificationScreen extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              actions: [
-                if (viewModel.unreadCount > 0)
-                  TextButton(
-                    onPressed: () => viewModel.markAllAsRead(),
-                    child: Text(
-                      'Mark all read',
-                      style: TextStyle(
-                        color: PColors.primaryColor,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-              ],
             ),
             body: _buildBody(context, viewModel),
           );
@@ -126,33 +125,57 @@ class NotificationScreen extends StatelessWidget {
     NotificationViewModel viewModel,
     NotificationModel notification,
   ) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: notification.status == NotificationStatus.unread
-            ? Colors.grey[900]
-            : Colors.grey[850],
-        borderRadius: BorderRadius.circular(12),
-        border: notification.status == NotificationStatus.unread
-            ? Border.all(color: PColors.lightGray)
-            : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
+    return Dismissible(
+      key: Key(notification.id),
+      direction: DismissDirection.endToStart,
+      onDismissed: (direction) {
+        viewModel.deleteNotification(notification.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Notification deleted'),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.grey[800],
+          ),
+        );
+      },
+      background: Container(
+        margin: EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.red,
           borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            if (notification.status == NotificationStatus.unread) {
-              viewModel.markAsRead(notification.id);
-            }
-            _handleNotificationTap(context, notification);
-          },
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Profile image
+        ),
+        alignment: Alignment.centerRight,
+        padding: EdgeInsets.only(right: 20),
+        child: Icon(
+          Icons.delete,
+          color: Colors.white,
+          size: 28,
+        ),
+      ),
+      child: Container(
+        margin: EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: notification.status == NotificationStatus.unread
+              ? Colors.grey[900]
+              : Colors.grey[850],
+          borderRadius: BorderRadius.circular(12),
+          border: notification.status == NotificationStatus.unread
+              ? Border.all(color: PColors.lightGray)
+              : null,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              _handleNotificationTap(context, notification);
+            },
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Profile image
                 CircleAvatar(
                   radius: 24,
                   backgroundImage: NetworkImage(notification.fromUserImage),
@@ -252,7 +275,8 @@ class NotificationScreen extends StatelessWidget {
                     ),
                   ),
                 ],
-              ],
+                ],
+              ),
             ),
           ),
         ),

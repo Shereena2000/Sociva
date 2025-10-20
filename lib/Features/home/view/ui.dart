@@ -12,7 +12,6 @@ import 'package:social_media_app/Features/feed/view/comments_screen.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
 import 'package:social_media_app/Features/notifications/view/notification_screen.dart';
 import 'package:social_media_app/Features/notifications/view_model/notification_view_model.dart';
-import 'package:social_media_app/Features/notifications/debug/notification_debug.dart';
 import 'package:social_media_app/Features/notifications/service/notification_service.dart';
 import 'package:social_media_app/Features/notifications/service/push_notification_service.dart';
 import 'package:social_media_app/Settings/utils/p_pages.dart';
@@ -78,16 +77,32 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    
     return Row(
       children: [
-        // Circle Avatar with network image
+        // Circle Avatar with current user's profile image
         GestureDetector(
           onTap: () => Navigator.pushNamed(context, PPages.profilePageUi),
-          child: const CircleAvatar(
-            radius: 20,
-            backgroundImage: NetworkImage(
-              'https://i.pinimg.com/736x/bd/68/11/bd681155d2bd24325d2746b9c9ba690d.jpg',
-            ),
+          child: FutureBuilder<DocumentSnapshot>(
+            future: FirebaseFirestore.instance
+                .collection('users')
+                .doc(currentUser?.uid)
+                .get(),
+            builder: (context, snapshot) {
+              String profileImageUrl = 'https://i.pinimg.com/736x/8d/4e/22/8d4e220866ec920f1a57c3730ca8aa11.jpg';
+              
+              if (snapshot.hasData && snapshot.data?.data() != null) {
+                final userData = snapshot.data!.data() as Map<String, dynamic>;
+                profileImageUrl = userData['profilePhotoUrl'] ?? profileImageUrl;
+              }
+              
+              return CircleAvatar(
+                radius: 20,
+                backgroundImage: NetworkImage(profileImageUrl),
+                backgroundColor: Colors.grey[800],
+              );
+            },
           ),
         ),
         const Spacer(),
@@ -152,12 +167,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         minWidth: 16,
                         minHeight: 16,
                       ),
-                      child: Text(
-                        notificationViewModel.unreadCount > 99 
-                            ? '99+' :'10',
-                            // : notificationViewModel.unreadCount.toString(),
-                        style: TextStyle(
-                          color: Colors.white,
+                        child: Text(
+                          notificationViewModel.unreadCount > 99 
+                              ? '99+' 
+                              : notificationViewModel.unreadCount.toString(),
+                          style: TextStyle(
+                            color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
@@ -348,7 +363,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               )
                             : const DecorationImage(
                                 image: NetworkImage(
-                                  'https://i.pinimg.com/736x/bd/68/11/bd681155d2bd24325d2746b9c9ba690d.jpg',
+                                  'https://i.pinimg.com/736x/8d/4e/22/8d4e220866ec920f1a57c3730ca8aa11.jpg',
                                 ),
                                 fit: BoxFit.cover,
                               ),
@@ -1020,55 +1035,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       print('❌ Error sending like notification: $e');
-    }
-  }
-
-  Future<void> _sendCommentNotification({
-    required String fromUserId,
-    required String toUserId,
-    required String postId,
-    required String fromUserName,
-    required String postImage,
-  }) async {
-    try {
-      // Don't send notification to self
-      if (fromUserId == toUserId) return;
-
-      // Get current user details
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) return;
-
-      // Get user details from Firestore
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
-      
-      if (userDoc.exists) {
-        final userData = userDoc.data()!;
-        final actualUserName = userData['username'] ?? 'Someone';
-
-        // Send in-app notification
-        await NotificationService().notifyComment(
-          fromUserId: fromUserId,
-          toUserId: toUserId,
-          postId: postId,
-          commentId: DateTime.now().millisecondsSinceEpoch.toString(),
-          postImage: postImage,
-        );
-
-        // Send push notification
-        await PushNotificationService().sendCommentNotification(
-          fromUserId: fromUserId,
-          toUserId: toUserId,
-          postId: postId,
-          fromUserName: actualUserName,
-        );
-
-        print('✅ Comment notification sent to $toUserId');
-      }
-    } catch (e) {
-      print('❌ Error sending comment notification: $e');
     }
   }
 

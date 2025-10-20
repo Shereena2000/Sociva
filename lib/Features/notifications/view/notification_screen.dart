@@ -134,7 +134,7 @@ class NotificationScreen extends StatelessWidget {
             : Colors.grey[850],
         borderRadius: BorderRadius.circular(12),
         border: notification.status == NotificationStatus.unread
-            ? Border.all(color: PColors.primaryColor.withOpacity(0.3))
+            ? Border.all(color: PColors.lightGray)
             : null,
       ),
       child: Material(

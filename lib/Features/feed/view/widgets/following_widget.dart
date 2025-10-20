@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:social_media_app/Features/feed/view_model/feed_view_model.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
 import 'package:social_media_app/Features/feed/view/comments_screen.dart';
+import 'package:social_media_app/Features/notifications/service/notification_service.dart';
+import 'package:social_media_app/Features/notifications/service/push_notification_service.dart';
 import 'package:social_media_app/Settings/constants/sized_box.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 
@@ -279,6 +282,7 @@ class FollowingWidget extends StatelessWidget {
                       builder: (context) => CommentsScreen(
                         postId: postWithUser.postId,
                         postOwnerName: postWithUser.username,
+                        postOwnerId: postWithUser.userId,
                       ),
                     ),
                   );
@@ -299,9 +303,19 @@ class FollowingWidget extends StatelessWidget {
                       : Colors.white,
                   size: 20,
                 ),
-                onPressed: () {
+                onPressed: () async {
                   final isRetweeted = postWithUser.post.isRetweetedBy(currentUserId);
                   feedViewModel.toggleRetweet(postWithUser.postId, isRetweeted);
+                  
+                  // Send notification if retweeting (not unretweeting)
+                  if (!isRetweeted) {
+                    await _sendRetweetNotification(
+                      fromUserId: currentUserId,
+                      toUserId: postWithUser.userId,
+                      postId: postWithUser.postId,
+                      postImage: postWithUser.mediaUrl,
+                    );
+                  }
                 },
               ),
               Text(
@@ -321,9 +335,19 @@ class FollowingWidget extends StatelessWidget {
                       : Colors.white,
                   size: 20,
                 ),
-                onPressed: () {
+                onPressed: () async {
                   final isLiked = postWithUser.post.isLikedBy(currentUserId);
                   feedViewModel.toggleLike(postWithUser.postId, isLiked);
+                  
+                  // Send notification if liking (not unliking)
+                  if (!isLiked) {
+                    await _sendLikeNotification(
+                      fromUserId: currentUserId,
+                      toUserId: postWithUser.userId,
+                      postId: postWithUser.postId,
+                      postImage: postWithUser.mediaUrl,
+                    );
+                  }
                 },
               ),
               Text(
@@ -353,8 +377,13 @@ class FollowingWidget extends StatelessWidget {
               // Share button
               IconButton(
                 icon: const Icon(Icons.share, color: Colors.white, size: 20),
-                onPressed: () {
-                  // TODO: Share post
+                onPressed: () async {
+                  await _sendRetweetNotification(
+                    fromUserId: currentUserId,
+                    toUserId: postWithUser.userId,
+                    postId: postWithUser.postId,
+                    postImage: postWithUser.mediaUrl,
+                  );
                 },
               ),
             ],
@@ -576,5 +605,100 @@ class FollowingWidget extends StatelessWidget {
   bool _isVideoUrl(String url) {
     final videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.webm', '.3gp', '.m4v'];
     return videoExtensions.any((ext) => url.toLowerCase().contains(ext));
+  }
+
+  // Notification helper methods
+  Future<void> _sendLikeNotification({
+    required String fromUserId,
+    required String toUserId,
+    required String postId,
+    required String postImage,
+  }) async {
+    try {
+      // Don't send notification to self
+      if (fromUserId == toUserId) return;
+
+      // Get current user details
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      // Get user details from Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+      
+      if (userDoc.exists) {
+        final userData = userDoc.data()!;
+        final actualUserName = userData['username'] ?? 'Someone';
+
+        // Send in-app notification
+        await NotificationService().notifyLike(
+          fromUserId: fromUserId,
+          toUserId: toUserId,
+          postId: postId,
+          postImage: postImage,
+        );
+
+        // Send push notification
+        await PushNotificationService().sendLikeNotification(
+          fromUserId: fromUserId,
+          toUserId: toUserId,
+          postId: postId,
+          fromUserName: actualUserName,
+        );
+
+        print('✅ Like notification sent to $toUserId');
+      }
+    } catch (e) {
+      print('❌ Error sending like notification: $e');
+    }
+  }
+
+  Future<void> _sendRetweetNotification({
+    required String fromUserId,
+    required String toUserId,
+    required String postId,
+    required String postImage,
+  }) async {
+    try {
+      // Don't send notification to self
+      if (fromUserId == toUserId) return;
+
+      // Get current user details
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      // Get user details from Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+      
+      if (userDoc.exists) {
+        final userData = userDoc.data()!;
+        final actualUserName = userData['username'] ?? 'Someone';
+
+        // Send in-app notification
+        await NotificationService().notifyRetweet(
+          fromUserId: fromUserId,
+          toUserId: toUserId,
+          postId: postId,
+          postImage: postImage,
+        );
+
+        // Send push notification
+        await PushNotificationService().sendRetweetNotification(
+          fromUserId: fromUserId,
+          toUserId: toUserId,
+          postId: postId,
+          fromUserName: actualUserName,
+        );
+
+        print('✅ Retweet notification sent to $toUserId');
+      }
+    } catch (e) {
+      print('❌ Error sending retweet notification: $e');
+    }
   }
 }

@@ -74,6 +74,7 @@ class FeedViewModel extends ChangeNotifier {
       _postRepository.getPostsByType('feed').listen(
         (posts) async {
           print('📦 Received ${posts.length} feed posts from Firebase');
+          print('🔄 Stream update detected - rebuilding posts...');
           
           if (posts.isEmpty) {
             print('⚠️ No feed posts found in database');
@@ -103,11 +104,12 @@ class FeedViewModel extends ChangeNotifier {
             }
           }
 
-          _forYouPosts = postsWithUsers;
+          _forYouPosts = List.from(postsWithUsers);
           _isLoadingForYou = false;
           _forYouError = null;
           
           print('✅ Loaded ${_forYouPosts.length} For You posts with user data');
+          print('🔔 Calling notifyListeners() to update UI');
           notifyListeners();
         },
         onError: (error) {
@@ -195,7 +197,7 @@ class FeedViewModel extends ChangeNotifier {
             }
           }
 
-          _followingPosts = postsWithUsers;
+          _followingPosts = List.from(postsWithUsers);
           _isLoadingFollowing = false;
           _followingError = null;
           

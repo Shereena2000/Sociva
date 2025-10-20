@@ -74,9 +74,10 @@ class HomeViewModel extends ChangeNotifier {
 
     print('📡 Fetching posts stream for Home screen (post type)...');
     
-    _postRepository.getPostsByType('post').listen(
+      _postRepository.getPostsByType('post').listen(
       (posts) async {
         print('📦 Received ${posts.length} posts from Firebase');
+        print('🔄 Stream update detected - rebuilding home posts...');
         
         // Fetch user profiles for each post
         List<PostWithUserModel> postsWithUsers = [];
@@ -103,11 +104,12 @@ class HomeViewModel extends ChangeNotifier {
           }
         }
 
-        _posts = postsWithUsers;
+        _posts = List.from(postsWithUsers);
         _isLoading = false;
         _errorMessage = null;
         
         print('✅ Successfully loaded ${_posts.length} posts with user data');
+        print('🔔 Calling notifyListeners() to update UI');
         notifyListeners();
       },
       onError: (error) {

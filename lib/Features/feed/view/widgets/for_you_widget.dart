@@ -7,6 +7,7 @@ import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
 import 'package:social_media_app/Features/feed/view/comments_screen.dart';
 import 'package:social_media_app/Features/notifications/service/notification_service.dart';
 import 'package:social_media_app/Features/notifications/service/push_notification_service.dart';
+import 'package:social_media_app/Features/post/view/widgets/share_bottom_sheet.dart';
 import 'package:social_media_app/Settings/constants/sized_box.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 
@@ -393,12 +394,17 @@ class ForYouWidget extends StatelessWidget {
               // Share button
               IconButton(
                 icon: const Icon(Icons.share, color: Colors.white, size: 20),
-                onPressed: () async {
-                  await _sendRetweetNotification(
-                    fromUserId: currentUserId,
-                    toUserId: postWithUser.userId,
-                    postId: postWithUser.postId,
-                    postImage: postWithUser.mediaUrl,
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: Colors.transparent,
+                    isScrollControlled: true,
+                    builder: (context) => ShareBottomSheet(
+                      postId: postWithUser.postId,
+                      postCaption: postWithUser.post.caption,
+                      postImage: postWithUser.mediaUrl.isNotEmpty ? postWithUser.mediaUrl : null,
+                      postOwnerName: postWithUser.username,
+                    ),
                   );
                 },
               ),

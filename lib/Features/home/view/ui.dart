@@ -14,6 +14,8 @@ import 'package:social_media_app/Features/notifications/view/notification_screen
 import 'package:social_media_app/Features/notifications/view_model/notification_view_model.dart';
 import 'package:social_media_app/Features/notifications/service/notification_service.dart';
 import 'package:social_media_app/Features/notifications/service/push_notification_service.dart';
+import 'package:social_media_app/Features/post/view/widgets/share_bottom_sheet.dart';
+import 'package:social_media_app/Features/post/view/test_share_debug.dart';
 import 'package:social_media_app/Settings/utils/p_pages.dart';
 import 'package:social_media_app/Settings/utils/svgs.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
@@ -113,6 +115,14 @@ class _HomeScreenState extends State<HomeScreen> {
               context,
               MaterialPageRoute(
                 builder: (context) => const DebugStatusScreen(),
+              ),
+            );
+          },
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const TestShareDebug(),
               ),
             );
           },
@@ -723,17 +733,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(width: 12),
                 
-                // Share button (Retweet)
+                // Share button
                 IconButton(
                   icon: const Icon(Icons.send_outlined, color: Colors.black),
-                  onPressed: () async {
-                    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
-                    await _sendRetweetNotification(
-                      fromUserId: currentUserId,
-                      toUserId: postWithUser.userId,
-                      postId: postWithUser.postId,
-                      fromUserName: 'You',
-                      postImage: postWithUser.mediaUrl,
+                  onPressed: () {
+                    print('🔍 HomeScreen - Sharing post with ID: ${postWithUser.postId}');
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      isScrollControlled: true,
+                      builder: (context) => ShareBottomSheet(
+                        postId: postWithUser.postId,
+                        postCaption: postWithUser.post.caption,
+                        postImage: postWithUser.mediaUrl.isNotEmpty ? postWithUser.mediaUrl : null,
+                        postOwnerName: postWithUser.username,
+                      ),
                     );
                   },
                 ),
@@ -1038,52 +1052,5 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _sendRetweetNotification({
-    required String fromUserId,
-    required String toUserId,
-    required String postId,
-    required String fromUserName,
-    required String postImage,
-  }) async {
-    try {
-      // Don't send notification to self
-      if (fromUserId == toUserId) return;
-
-      // Get current user details
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) return;
-
-      // Get user details from Firestore
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
-      
-      if (userDoc.exists) {
-        final userData = userDoc.data()!;
-        final actualUserName = userData['username'] ?? 'Someone';
-
-        // Send in-app notification
-        await NotificationService().notifyRetweet(
-          fromUserId: fromUserId,
-          toUserId: toUserId,
-          postId: postId,
-          postImage: postImage,
-        );
-
-        // Send push notification
-        await PushNotificationService().sendRetweetNotification(
-          fromUserId: fromUserId,
-          toUserId: toUserId,
-          postId: postId,
-          fromUserName: actualUserName,
-        );
-
-        print('✅ Retweet notification sent to $toUserId');
-      }
-    } catch (e) {
-      print('❌ Error sending retweet notification: $e');
-    }
-  }
 }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -621,44 +622,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // Post image/video - Carousel if multiple, single if one
           postWithUser.post.hasMultipleMedia
               ? _buildMediaCarousel(postWithUser.post)
-              : Container(
-                  height: 360,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.grey[300],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: postWithUser.mediaType == 'video'
-                        ? VideoPlayerWidget(
-                            videoUrl: postWithUser.mediaUrl,
-                            height: 360,
-                            width: double.infinity,
-                            autoPlay: false,
-                            showControls: true,
-                            fit: BoxFit.cover,
-                          )
-                        : Image.network(
-                            postWithUser.mediaUrl,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey[300],
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.image_not_supported,
-                                    size: 64,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ),
+              : _buildSingleMediaContainer(postWithUser),
 
           // Actions row (like, comment, share, save)
           Padding(
@@ -907,14 +871,71 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Build media carousel with dot indicators (Instagram-style)
+  Widget _buildSingleMediaContainer(dynamic postWithUser) {
+    // Use a fixed height for now to avoid loading issues
+    const double height = 400.0;
+    
+    return Container(
+      height: height,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.grey[300],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: postWithUser.mediaType == 'video'
+            ? VideoPlayerWidget(
+                videoUrl: postWithUser.mediaUrl,
+                height: height,
+                width: double.infinity,
+                autoPlay: false,
+                showControls: true,
+                fit: BoxFit.cover,
+              )
+            : Image.network(
+                postWithUser.mediaUrl,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: height,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: height,
+                    color: Colors.grey[300],
+                    child: const Center(
+                      child: Icon(
+                        Icons.image_not_supported,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    height: height,
+                    color: Colors.grey[300],
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                },
+              ),
+      ),
+    );
+  }
+
+
   Widget _buildMediaCarousel(PostModel post) {
     final PageController pageController = PageController();
     final currentPage = _currentPageMap[post.postId] ?? 0;
+    const double height = 400.0;
 
     return StatefulBuilder(
       builder: (context, setState) {
         return Container(
-          height: 360,
+          height: height,
           width: double.infinity,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
@@ -940,7 +961,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     return isVideo
                         ? VideoPlayerWidget(
                             videoUrl: mediaUrl,
-                            height: 360,
+                            height: height,
                             width: double.infinity,
                             autoPlay: false,
                             showControls: true,
@@ -958,6 +979,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                     size: 64,
                                     color: Colors.grey,
                                   ),
+                                ),
+                              );
+                            },
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                height: height,
+                                color: Colors.grey[300],
+                                child: const Center(
+                                  child: CircularProgressIndicator(),
                                 ),
                               );
                             },

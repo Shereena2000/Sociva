@@ -13,6 +13,7 @@ import 'widgets/photos_tab.dart';
 import 'widgets/videos_tab.dart';
 import 'widgets/feed_tab.dart';
 import 'widgets/retweets_tab.dart';
+import '../../../chat/chat_detail/view/ui.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId; // Optional userId - if null, show current user's profile
@@ -165,6 +166,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildOtherUserActions(BuildContext context, ProfileViewModel viewModel) {
+    // Get the userId being viewed
+    final viewingUserId = widget.userId;
+    
+    print('🔍 Profile - viewingUserId: $viewingUserId');
+    
     return Row(
       children: [
         Expanded(
@@ -211,11 +217,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: CustomElavatedTextButton(
             text: "Message",
             onPressed: () {
-              // TODO: Implement message functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Message feature coming soon!'),
-                  backgroundColor: Colors.blue,
+              if (viewingUserId == null || viewingUserId.isEmpty) {
+                print('❌ Cannot navigate to chat - viewingUserId is null or empty');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Cannot start chat - invalid user'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              
+              print('🔍 Navigating to chat with userId: $viewingUserId');
+              
+              // Navigate to chat detail screen using MaterialPageRoute
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatDetailScreen(otherUserId: viewingUserId),
                 ),
               );
             },
@@ -225,6 +244,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ],
     );
   }
+
 
   void _showLogoutDialog(BuildContext context, ProfileViewModel viewModel) {
     showDialog(

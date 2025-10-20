@@ -9,6 +9,7 @@ import 'Settings/utils/p_colors.dart';
 import 'Settings/utils/p_pages.dart';
 import 'Settings/utils/p_routes.dart';
 import 'Service/cloudinary_service.dart';
+import 'Features/notifications/service/push_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,9 @@ await Firebase.initializeApp(
   
   // Initialize Cloudinary
   await CloudinaryService().initialize();
+
+  // Initialize push notifications
+  await PushNotificationService().initialize();
 
   runApp(MultiProvider(providers: providers, child: MyApp()));
 }

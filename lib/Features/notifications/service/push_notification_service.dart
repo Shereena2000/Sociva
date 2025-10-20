@@ -1,0 +1,202 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class PushNotificationService {
+  static final PushNotificationService _instance = PushNotificationService._internal();
+  factory PushNotificationService() => _instance;
+  PushNotificationService._internal();
+
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Initialize push notifications
+  Future<void> initialize() async {
+    // Request permission for notifications
+    NotificationSettings settings = await _messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+
+    print('🔔 Notification permission status: ${settings.authorizationStatus}');
+
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      print('✅ User granted notification permission');
+      
+      // Get FCM token
+      String? token = await _messaging.getToken();
+      print('📱 FCM Token: $token');
+      
+      // Save token to user document
+      await _saveTokenToDatabase(token);
+      
+      // Listen for token refresh
+      _messaging.onTokenRefresh.listen(_saveTokenToDatabase);
+      
+      // Handle foreground messages
+      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+      
+      // Handle background messages
+      FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessage);
+    } else {
+      print('❌ User denied notification permission');
+    }
+  }
+
+  // Save FCM token to user document
+  Future<void> _saveTokenToDatabase(String? token) async {
+    if (token == null || _auth.currentUser == null) return;
+
+    try {
+      await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
+        'fcmToken': token,
+        'lastSeen': FieldValue.serverTimestamp(),
+      });
+      print('💾 FCM token saved to database');
+    } catch (e) {
+      print('❌ Error saving FCM token: $e');
+    }
+  }
+
+  // Handle foreground messages
+  void _handleForegroundMessage(RemoteMessage message) {
+    print('📨 Received foreground message: ${message.notification?.title}');
+    // You can show a local notification or update UI here
+  }
+
+  // Handle background messages (when app is opened from notification)
+  void _handleBackgroundMessage(RemoteMessage message) {
+    print('📨 App opened from notification: ${message.notification?.title}');
+    // Handle navigation based on notification data
+  }
+
+  // Send push notification to a specific user
+  Future<void> sendPushNotification({
+    required String toUserId,
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      // Get user's FCM token
+      final userDoc = await _firestore.collection('users').doc(toUserId).get();
+      if (!userDoc.exists) {
+        print('❌ User not found: $toUserId');
+        return;
+      }
+
+      final userData = userDoc.data()!;
+      final fcmToken = userData['fcmToken'] as String?;
+      
+      if (fcmToken == null) {
+        print('❌ No FCM token found for user: $toUserId');
+        return;
+      }
+
+      // Send notification via HTTP request to FCM
+      await _sendNotificationToFCM(
+        token: fcmToken,
+        title: title,
+        body: body,
+        data: data,
+      );
+
+      print('✅ Push notification sent to $toUserId');
+    } catch (e) {
+      print('❌ Error sending push notification: $e');
+    }
+  }
+
+  // Send notification via FCM HTTP API
+  Future<void> _sendNotificationToFCM({
+    required String token,
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    // Note: In production, you should use Firebase Admin SDK on your backend
+    // For now, we'll just log the notification
+    print('📤 Would send push notification:');
+    print('  Title: $title');
+    print('  Body: $body');
+    print('  Token: $token');
+    print('  Data: $data');
+  }
+
+  // Send notification for different types
+  Future<void> sendLikeNotification({
+    required String fromUserId,
+    required String toUserId,
+    required String postId,
+    required String fromUserName,
+  }) async {
+    await sendPushNotification(
+      toUserId: toUserId,
+      title: 'New Like!',
+      body: '$fromUserName liked your post',
+      data: {
+        'type': 'like',
+        'postId': postId,
+        'fromUserId': fromUserId,
+      },
+    );
+  }
+
+  Future<void> sendCommentNotification({
+    required String fromUserId,
+    required String toUserId,
+    required String postId,
+    required String fromUserName,
+  }) async {
+    await sendPushNotification(
+      toUserId: toUserId,
+      title: 'New Comment!',
+      body: '$fromUserName commented on your post',
+      data: {
+        'type': 'comment',
+        'postId': postId,
+        'fromUserId': fromUserId,
+      },
+    );
+  }
+
+  Future<void> sendFollowNotification({
+    required String fromUserId,
+    required String toUserId,
+    required String fromUserName,
+  }) async {
+    await sendPushNotification(
+      toUserId: toUserId,
+      title: 'New Follower!',
+      body: '$fromUserName started following you',
+      data: {
+        'type': 'follow',
+        'fromUserId': fromUserId,
+      },
+    );
+  }
+
+  Future<void> sendRetweetNotification({
+    required String fromUserId,
+    required String toUserId,
+    required String postId,
+    required String fromUserName,
+  }) async {
+    await sendPushNotification(
+      toUserId: toUserId,
+      title: 'New Retweet!',
+      body: '$fromUserName retweeted your post',
+      data: {
+        'type': 'retweet',
+        'postId': postId,
+        'fromUserId': fromUserId,
+      },
+    );
+  }
+}

@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import '../../../../../Settings/constants/sized_box.dart';
 import '../../../../../Settings/constants/text_styles.dart';
 import '../../../../../Settings/utils/p_colors.dart';
-import '../../../../../Settings/utils/p_pages.dart';
+import '../../../chat_detail/view/ui.dart';
 
 class ChatTile extends StatelessWidget {
+  final String chatRoomId;
+  final String otherUserId;
   final String name;
   final String message;
   final String time;
@@ -14,6 +16,8 @@ class ChatTile extends StatelessWidget {
 
   const ChatTile({
     super.key,
+    required this.chatRoomId,
+    required this.otherUserId,
     required this.name,
     required this.message,
     required this.time,
@@ -25,7 +29,16 @@ class ChatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, PPages.chatdetailScreen);
+        print('🔍 ChatTile - Navigating to chat with userId: $otherUserId, chatRoomId: $chatRoomId');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatDetailScreen(
+              otherUserId: otherUserId,
+              chatRoomId: chatRoomId,
+            ),
+          ),
+        );
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),

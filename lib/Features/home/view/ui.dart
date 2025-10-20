@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:social_media_app/Features/home/view_model/home_view_model.dart';
 import 'package:social_media_app/Features/post/model/post_model.dart';
 import 'package:social_media_app/Features/feed/view/status_viewer_dialog.dart';
@@ -9,6 +10,11 @@ import 'package:social_media_app/Features/profile/status/view/add_status_dialog.
 import 'package:social_media_app/Features/home/view/debug_status_screen.dart';
 import 'package:social_media_app/Features/feed/view/comments_screen.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
+import 'package:social_media_app/Features/notifications/view/notification_screen.dart';
+import 'package:social_media_app/Features/notifications/view_model/notification_view_model.dart';
+import 'package:social_media_app/Features/notifications/debug/notification_debug.dart';
+import 'package:social_media_app/Features/notifications/service/notification_service.dart';
+import 'package:social_media_app/Features/notifications/service/push_notification_service.dart';
 import 'package:social_media_app/Settings/utils/p_pages.dart';
 import 'package:social_media_app/Settings/utils/svgs.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
@@ -32,38 +38,42 @@ class _HomeScreenState extends State<HomeScreen> {
       homeViewModel.initializeFeed();
     });
 
-    return Scaffold(
-      body: SafeArea(
-        child: Consumer<HomeViewModel>(
-          builder: (context, homeViewModel, child) {
-            return RefreshIndicator(
-              onRefresh: () => homeViewModel.refreshPosts(),
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      // Header Row with profile, search, notifications, and chat icons
-                      _buildHeader(context),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => NotificationViewModel()..initializeNotifications()),
+      ],
+      child: Scaffold(
+        body: SafeArea(
+          child: Consumer<HomeViewModel>(
+            builder: (context, homeViewModel, child) {
+              return RefreshIndicator(
+                onRefresh: () => homeViewModel.refreshPosts(),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        // Header Row with profile, search, notifications, and chat icons
+                        _buildHeader(context),
 
-                      // Status Section
-                      const SizedBox(height: 20),
-                      _buildStatusSection(context, homeViewModel),
+                        // Status Section
+                        const SizedBox(height: 20),
+                        _buildStatusSection(context, homeViewModel),
 
-                      // Posts section
-                      const SizedBox(height: 20),
-                      _buildPostsSection(context, homeViewModel),
-                    ],
+                        // Posts section
+                        const SizedBox(height: 20),
+                        _buildPostsSection(context, homeViewModel),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
+       
       ),
-      // Debug FAB - Remove this after testing!
-    
     );
   }
 
@@ -106,16 +116,57 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         // Notification icon (heart/love icon)
-        IconButton(
-          icon: SvgPicture.asset(
-            Svgs.likeIcon,
-            colorFilter: const ColorFilter.mode(
-              Colors.white,
-              BlendMode.srcIn,
-            ),
-          ),
-          onPressed: () {
-         
+        Consumer<NotificationViewModel>(
+          builder: (context, notificationViewModel, child) {
+            return Stack(
+              children: [
+                IconButton(
+                  icon: SvgPicture.asset(
+                    Svgs.likeIcon,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationScreen(),
+                      ),
+                    );
+                  },
+                ),
+                if (notificationViewModel.unreadCount > 0)
+                  Positioned(
+                    right: 2,
+                    top: 4,
+                    child: Container(
+                      padding: EdgeInsets.all(1.5),  
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                       
+                        borderRadius: BorderRadius.circular(200),
+                      ),
+                      constraints: BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        notificationViewModel.unreadCount > 99 
+                            ? '99+' :'10',
+                            // : notificationViewModel.unreadCount.toString(),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            );
           },
         ),
         // Chat icon
@@ -599,10 +650,23 @@ class _HomeScreenState extends State<HomeScreen> {
                         ? Colors.red
                         : Colors.black,
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
                     final isLiked = postWithUser.post.isLikedBy(currentUserId);
+                    
+                    // Toggle like in the UI
                     homeViewModel.toggleLike(postWithUser.postId, isLiked);
+                    
+                    // Send notification if liking (not unliking)
+                    if (!isLiked) {
+                      await _sendLikeNotification(
+                        fromUserId: currentUserId,
+                        toUserId: postWithUser.userId,
+                        postId: postWithUser.postId,
+                        fromUserName: 'You', // This should be the actual current user's name
+                        postImage: postWithUser.mediaUrl,
+                      );
+                    }
                   },
                 ),
                 const SizedBox(width: 4),
@@ -628,6 +692,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         builder: (context) => CommentsScreen(
                           postId: postWithUser.postId,
                           postOwnerName: postWithUser.username,
+                          postOwnerId: postWithUser.userId,
                         ),
                       ),
                     );
@@ -643,11 +708,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(width: 12),
                 
-                // Share button
+                // Share button (Retweet)
                 IconButton(
                   icon: const Icon(Icons.send_outlined, color: Colors.black),
-                  onPressed: () {
-                    // TODO: Share post
+                  onPressed: () async {
+                    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+                    await _sendRetweetNotification(
+                      fromUserId: currentUserId,
+                      toUserId: postWithUser.userId,
+                      postId: postWithUser.postId,
+                      fromUserName: 'You',
+                      postImage: postWithUser.mediaUrl,
+                    );
                   },
                 ),
                 const Spacer(),
@@ -900,6 +972,152 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isVideoUrl(String url) {
     final videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.webm', '.3gp', '.m4v'];
     return videoExtensions.any((ext) => url.toLowerCase().contains(ext));
+  }
+
+  // Notification helper methods
+  Future<void> _sendLikeNotification({
+    required String fromUserId,
+    required String toUserId,
+    required String postId,
+    required String fromUserName,
+    required String postImage,
+  }) async {
+    try {
+      // Don't send notification to self
+      if (fromUserId == toUserId) return;
+
+      // Get current user details
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      // Get user details from Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+      
+      if (userDoc.exists) {
+        final userData = userDoc.data()!;
+        final actualUserName = userData['username'] ?? 'Someone';
+
+        // Send in-app notification
+        await NotificationService().notifyLike(
+          fromUserId: fromUserId,
+          toUserId: toUserId,
+          postId: postId,
+          postImage: postImage,
+        );
+
+        // Send push notification
+        await PushNotificationService().sendLikeNotification(
+          fromUserId: fromUserId,
+          toUserId: toUserId,
+          postId: postId,
+          fromUserName: actualUserName,
+        );
+
+        print('✅ Like notification sent to $toUserId');
+      }
+    } catch (e) {
+      print('❌ Error sending like notification: $e');
+    }
+  }
+
+  Future<void> _sendCommentNotification({
+    required String fromUserId,
+    required String toUserId,
+    required String postId,
+    required String fromUserName,
+    required String postImage,
+  }) async {
+    try {
+      // Don't send notification to self
+      if (fromUserId == toUserId) return;
+
+      // Get current user details
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      // Get user details from Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+      
+      if (userDoc.exists) {
+        final userData = userDoc.data()!;
+        final actualUserName = userData['username'] ?? 'Someone';
+
+        // Send in-app notification
+        await NotificationService().notifyComment(
+          fromUserId: fromUserId,
+          toUserId: toUserId,
+          postId: postId,
+          commentId: DateTime.now().millisecondsSinceEpoch.toString(),
+          postImage: postImage,
+        );
+
+        // Send push notification
+        await PushNotificationService().sendCommentNotification(
+          fromUserId: fromUserId,
+          toUserId: toUserId,
+          postId: postId,
+          fromUserName: actualUserName,
+        );
+
+        print('✅ Comment notification sent to $toUserId');
+      }
+    } catch (e) {
+      print('❌ Error sending comment notification: $e');
+    }
+  }
+
+  Future<void> _sendRetweetNotification({
+    required String fromUserId,
+    required String toUserId,
+    required String postId,
+    required String fromUserName,
+    required String postImage,
+  }) async {
+    try {
+      // Don't send notification to self
+      if (fromUserId == toUserId) return;
+
+      // Get current user details
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      // Get user details from Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+      
+      if (userDoc.exists) {
+        final userData = userDoc.data()!;
+        final actualUserName = userData['username'] ?? 'Someone';
+
+        // Send in-app notification
+        await NotificationService().notifyRetweet(
+          fromUserId: fromUserId,
+          toUserId: toUserId,
+          postId: postId,
+          postImage: postImage,
+        );
+
+        // Send push notification
+        await PushNotificationService().sendRetweetNotification(
+          fromUserId: fromUserId,
+          toUserId: toUserId,
+          postId: postId,
+          fromUserName: actualUserName,
+        );
+
+        print('✅ Retweet notification sent to $toUserId');
+      }
+    } catch (e) {
+      print('❌ Error sending retweet notification: $e');
+    }
   }
 }
 

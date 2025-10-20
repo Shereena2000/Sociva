@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:social_media_app/Features/post/model/post_model.dart';
 import 'package:social_media_app/Features/post/repository/post_repository.dart';
 import 'package:social_media_app/Features/home/view_model/home_view_model.dart';
+import 'package:social_media_app/Features/notifications/service/notification_service.dart';
+import 'package:social_media_app/Features/notifications/service/push_notification_service.dart';
 import 'package:social_media_app/Settings/utils/p_colors.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class CommentsScreen extends StatefulWidget {
   final String postId;
   final String postOwnerName;
+  final String? postOwnerId;
 
   const CommentsScreen({
     super.key,
     required this.postId,
     required this.postOwnerName,
+    this.postOwnerId,
   });
 
   @override
@@ -604,6 +609,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
                   
                   print('✅ Comment added successfully');
                   
+                  // Send notification to post owner
+                  await _sendCommentNotification();
+                  
                   _commentController.clear();
                   _cancelReplyMode();
                   FocusScope.of(context).unfocus();
@@ -661,5 +669,62 @@ class _CommentsScreenState extends State<CommentsScreen> {
         ),
       ),
     );
+  }
+
+  // Notification helper method
+  Future<void> _sendCommentNotification() async {
+    try {
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+      if (currentUserId == null || widget.postOwnerId == null) return;
+
+      // Don't send notification to self
+      if (currentUserId == widget.postOwnerId) return;
+
+      // Get current user details
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUserId)
+          .get();
+      
+      if (userDoc.exists) {
+        final userData = userDoc.data()!;
+        final fromUserName = userData['username'] ?? 'Someone';
+
+        // Get post image for notification
+        final postDoc = await FirebaseFirestore.instance
+            .collection('posts')
+            .doc(widget.postId)
+            .get();
+        
+        String? postImage;
+        if (postDoc.exists) {
+          final postData = postDoc.data()!;
+          postImage = postData['mediaUrls']?.isNotEmpty == true 
+              ? postData['mediaUrls'][0] 
+              : null;
+        }
+
+        // Send in-app notification
+        await NotificationService().notifyComment(
+          fromUserId: currentUserId,
+          toUserId: widget.postOwnerId!,
+          postId: widget.postId,
+          commentId: DateTime.now().millisecondsSinceEpoch.toString(),
+          postImage: postImage,
+        );
+
+        // Send push notification
+        await PushNotificationService().sendCommentNotification(
+          fromUserId: currentUserId,
+          toUserId: widget.postOwnerId!,
+          postId: widget.postId,
+          fromUserName: fromUserName,
+        );
+
+        print('✅ Comment notification sent to ${widget.postOwnerId}');
+      }
+    } catch (e) {
+      print('❌ Error sending comment notification: $e');
+    }
   }
 }

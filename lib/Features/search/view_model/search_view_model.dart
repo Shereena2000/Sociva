@@ -56,6 +56,16 @@ class SearchViewModel extends ChangeNotifier {
       
       final results = await _searchRepository.searchUsers(_currentQuery);
       
+      // Debug each result
+      print('🔍 SearchViewModel - Found ${results.length} results');
+      for (int i = 0; i < results.length; i++) {
+        final user = results[i];
+        print('🔍 SearchViewModel - Result $i: uid="${user.uid}", username="${user.username}", name="${user.name}"');
+        if (user.uid.isEmpty) {
+          print('❌ SearchViewModel - WARNING: User $i has empty uid!');
+        }
+      }
+      
       _searchResults = results;
       _searchError = null;
 

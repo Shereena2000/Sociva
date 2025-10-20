@@ -103,5 +103,71 @@ service cloud.firestore {
       allow update: if isAuthenticated() && request.auth.uid == viewerId;
       allow delete: if isAuthenticated() && request.auth.uid == viewerId;
     }
+    
+    // ========================================
+    // CHAT ROOMS COLLECTION
+    // ========================================
+    match /chatRooms/{chatRoomId} {
+      // Simplified: Allow if authenticated (for testing, then tighten later)
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+      
+      // ========================================
+      // MESSAGES SUBCOLLECTION
+      // ========================================
+      match /messages/{messageId} {
+        // Simplified: Allow if authenticated
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update: if isAuthenticated();
+        allow delete: if isAuthenticated();
+      }
+    }
+    
+    // ========================================
+    // NOTIFICATIONS COLLECTION
+    // ========================================
+    match /notifications/{notificationId} {
+      // Users can read notifications sent to them
+      allow read: if isAuthenticated() && 
+        request.auth.uid == resource.data.toUserId;
+      
+      // Users can create notifications (for sending to others)
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.fromUserId;
+      
+      // Users can update their own notifications (mark as read, etc.)
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.toUserId;
+      
+      // Users can delete notifications sent to them
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.toUserId;
+    }
+    
+    // ========================================
+    // CALLS COLLECTION (for call functionality)
+    // ========================================
+    match /calls/{callId} {
+      // Users can read calls they are part of
+      allow read: if isAuthenticated() && 
+        (request.auth.uid == resource.data.callerId || 
+         request.auth.uid == resource.data.receiverId);
+      
+      // Users can create calls
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.callerId;
+      
+      // Users can update calls they are part of
+      allow update: if isAuthenticated() && 
+        (request.auth.uid == resource.data.callerId || 
+         request.auth.uid == resource.data.receiverId);
+      
+      // Users can delete calls they created
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.callerId;
+    }
   }
 }

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/search/view_model/search_view_model.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
+import 'package:social_media_app/Features/chat/chat_detail/view/ui.dart';
 import 'package:social_media_app/Settings/common/widgets/custom_elevated_button.dart';
-import 'package:social_media_app/Settings/constants/sized_box.dart';
 import 'package:social_media_app/Settings/utils/p_colors.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -318,6 +318,41 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
           ),
+          
+          // Message icon button
+          IconButton(
+            onPressed: () {
+              print('🔍 Search - User data: ${user.toString()}');
+              print('🔍 Search - User uid: ${user.uid}');
+              print('🔍 Search - User displayName: ${user.displayName}');
+              print('🔍 Search - User email: ${user.email}');
+              
+              if (user.uid == null || user.uid.isEmpty) {
+                print('❌ Search - Cannot navigate to chat - user.uid is null or empty');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Cannot start chat - user ID is missing'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatDetailScreen(otherUserId: user.uid),
+                ),
+              );
+            },
+            icon: Icon(
+              Icons.message_outlined,
+              color: PColors.primaryColor,
+              size: 24,
+            ),
+          ),
+          
+          const SizedBox(width: 4),
           
           // Follow/Unfollow button
           _buildFollowButton(user, searchViewModel),

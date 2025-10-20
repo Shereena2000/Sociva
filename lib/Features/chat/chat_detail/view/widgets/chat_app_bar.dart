@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:social_media_app/Settings/common/widgets/custom_icon_button.dart';
 
 import '../../../../../Settings/utils/p_colors.dart';
 
 class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const ChatAppBar({super.key});
+  final String userName;
+  final String userImage;
+  final bool isOnline;
+
+  const ChatAppBar({
+    super.key,
+    required this.userName,
+    required this.userImage,
+    this.isOnline = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      // removes default back button
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       leading: IconButton(
@@ -23,29 +30,37 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: false,
       title: Padding(
         padding: EdgeInsets.all(20),
-        child: Column(
+        child: Row(
           children: [
-            Text(
-              'Teresa May',
-              style: TextStyle(fontSize: 14, color: PColors.white),
-            ),
-            SizedBox(height: 2),
-            Text(
-              'Online',
-              style: TextStyle(fontSize: 13, color: PColors.primaryColor),
+            CircleAvatar(backgroundImage: NetworkImage(userImage)),
+            Column(
+              children: [
+                Text(
+                  userName,
+                  style: TextStyle(fontSize: 14, color: PColors.white),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  isOnline ? 'Online' : 'Offline',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isOnline ? PColors.primaryColor : Colors.grey,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
-   actionsPadding: EdgeInsets.only(right: 10),
+      actionsPadding: EdgeInsets.only(right: 10),
       actions: [
         IconButton(
           onPressed: () {},
-          icon: Icon(Icons.phone,size: 20,), //phone
+          icon: Icon(Icons.phone, size: 20), //phone
         ),
         IconButton(
           onPressed: () {},
-          icon: Icon(Icons.video_camera_back_rounded,size: 24,), //videocall
+          icon: Icon(Icons.video_camera_back_rounded, size: 24), //videocall
         ),
       ],
     );

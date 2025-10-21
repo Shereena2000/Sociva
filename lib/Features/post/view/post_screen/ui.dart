@@ -454,10 +454,28 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                   final asset = viewModel.photoAssets[mediaIndex];
                                   final isVideo = asset.type == AssetType.video;
             
-                                  final isSelected = viewModel.isAssetSelected(asset);
-                                  final selectionIndex = viewModel.getSelectionIndex(asset);
+                                  // Use FutureBuilder for async selection checks
+                                  return FutureBuilder<Map<String, dynamic>>(
+                                    future: _getSelectionInfo(viewModel, asset),
+                                    builder: (context, snapshot) {
+                                      if (!snapshot.hasData) {
+                                        return Container(
+                                          color: Color(0xFF1A1A2E),
+                                          child: Center(
+                                            child: CircularProgressIndicator(
+                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                              strokeWidth: 2,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      
+                                      final isSelected = snapshot.data!['isSelected'] as bool;
+                                      
+                                      // Debug logging
+                                      print('🔍 Asset ${asset.id}: isSelected=$isSelected');
             
-                                  return GestureDetector(
+                                      return GestureDetector(
                                     onTap: () async {
                                       await viewModel.toggleMediaSelection(asset);
                                     },
@@ -469,32 +487,39 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                                 width: 3,
                                               )
                                             : null,
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Stack(
                                         fit: StackFit.expand,
                                         children: [
                                           // Asset thumbnail
-                                          FutureBuilder<Widget>(
-                                            future: _buildAssetThumbnail(asset),
-                                            builder: (context, snapshot) {
-                                              if (snapshot.hasData) {
-                                                return snapshot.data!;
-                                              }
-                                              return Container(
-                                                color: Color(0xFF1A1A2E),
-                                                child: Center(
-                                                  child: CircularProgressIndicator(
-                                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                                    strokeWidth: 2,
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(5),
+                                            child: FutureBuilder<Widget>(
+                                              future: _buildAssetThumbnail(asset),
+                                              builder: (context, snapshot) {
+                                                if (snapshot.hasData) {
+                                                  return snapshot.data!;
+                                                }
+                                                return Container(
+                                                  color: Color(0xFF1A1A2E),
+                                                  child: Center(
+                                                    child: CircularProgressIndicator(
+                                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                      strokeWidth: 2,
+                                                    ),
                                                   ),
-                                                ),
-                                              );
-                                            },
+                                                );
+                                              },
+                                            ),
                                           ),
-                                          // Dark overlay
+                                          // Dark overlay for unselected items
                                           if (!isSelected)
                                             Container(
-                                              color: Colors.black.withOpacity(0.1),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black.withOpacity(0.3),
+                                                borderRadius: BorderRadius.circular(5),
+                                              ),
                                             ),
                                           // Video play indicator
                                           if (isVideo)
@@ -511,6 +536,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                                   borderRadius: BorderRadius.circular(6),
                                                 ),
                                                 child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
                                                   children: [
                                                     Icon(
                                                       Icons.play_arrow_rounded,
@@ -530,42 +556,50 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                                 ),
                                               ),
                                             ),
-                                          // Selection indicator with number
-                                          if (isSelected && selectionIndex != null)
+                                          // Selection indicator with close button only
+                                          if (isSelected)
                                             Positioned(
-                                              bottom: 6,
+                                              top: 6,
                                               right: 6,
-                                              child: Container(
-                                                width: 24,
-                                                height: 24,
-                                                decoration: BoxDecoration(
-                                                  gradient: LinearGradient(
-                                                    colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                                              child: GestureDetector(
+                                                onTap: () async {
+                                                  await viewModel.toggleMediaSelection(asset);
+                                                },
+                                                child: Container(
+                                                  width: 24,
+                                                  height: 24,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.red,
+                                                    shape: BoxShape.circle,
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Colors.red.withOpacity(0.5),
+                                                        blurRadius: 6,
+                                                        spreadRadius: 1,
+                                                      ),
+                                                    ],
                                                   ),
-                                                  shape: BoxShape.circle,
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: Color(0xFF667EEA).withOpacity(0.5),
-                                                      blurRadius: 8,
-                                                      spreadRadius: 1,
-                                                    ),
-                                                  ],
-                                                ),
-                                                child: Center(
-                                                  child: Text(
-                                                    '$selectionIndex',
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 12,
-                                                      fontWeight: FontWeight.bold,
-                                                    ),
+                                                  child: Icon(
+                                                    Icons.close,
+                                                    color: Colors.white,
+                                                    size: 14,
                                                   ),
                                                 ),
+                                              ),
+                                            ),
+                                          // Selected overlay for better visibility
+                                          if (isSelected)
+                                            Container(
+                                              decoration: BoxDecoration(
+                                                color: Color(0xFF667EEA).withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(5),
                                               ),
                                             ),
                                         ],
                                       ),
                                     ),
+                                  );
+                                    },
                                   );
                                 },
                               ),
@@ -794,5 +828,20 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
         ),
       ),
     );
+  }
+
+  // Helper method to get selection info for an asset
+  Future<Map<String, dynamic>> _getSelectionInfo(PostViewModel viewModel, AssetEntity asset) async {
+    try {
+      final isSelected = await viewModel.isAssetSelected(asset);
+      return {
+        'isSelected': isSelected,
+      };
+    } catch (e) {
+      print('❌ Error getting selection info: $e');
+      return {
+        'isSelected': false,
+      };
+    }
   }
 }

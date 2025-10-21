@@ -178,10 +178,15 @@ class PostViewModel extends ChangeNotifier {
   Future<void> toggleMediaSelection(AssetEntity asset) async {
     try {
       final File? file = await asset.file;
-      if (file == null) return;
+    if (file == null) return;
 
-      // Check if already selected
-      final index = _selectedMediaList.indexWhere((f) => f.path == file.path);
+      // Check if already selected by comparing asset ID more reliably
+      final index = _selectedMediaList.indexWhere((f) {
+        // Try multiple comparison methods for better reliability
+        return f.path.contains(asset.id) || 
+               f.path == file.path ||
+               f.absolute.path == file.absolute.path;
+      });
       
       if (index != -1) {
         // Already selected - remove it
@@ -202,6 +207,11 @@ class PostViewModel extends ChangeNotifier {
         _isVideo = false;
       }
       
+      print('🔍 Current selection: ${_selectedMediaList.length} items');
+      for (int i = 0; i < _selectedMediaList.length; i++) {
+        print('  ${i + 1}. ${_selectedMediaList[i].path}');
+      }
+      
       notifyListeners();
     } catch (e) {
       print('❌ Failed to toggle media selection: $e');
@@ -209,14 +219,40 @@ class PostViewModel extends ChangeNotifier {
   }
 
   // Check if an asset is selected
-  bool isAssetSelected(AssetEntity asset) {
-    return _selectedMediaList.any((file) => file.path.contains(asset.id));
+  Future<bool> isAssetSelected(AssetEntity asset) async {
+    try {
+      final File? file = await asset.file;
+      if (file == null) return false;
+      
+      return _selectedMediaList.any((f) {
+        // Use multiple comparison methods for better reliability
+        return f.path.contains(asset.id) || 
+               f.path == file.path ||
+               f.absolute.path == file.absolute.path;
+      });
+    } catch (e) {
+      print('❌ Error checking asset selection: $e');
+      return false;
+    }
   }
 
   // Get selection index (for showing numbers)
-  int? getSelectionIndex(AssetEntity asset) {
-    final index = _selectedMediaList.indexWhere((file) => file.path.contains(asset.id));
-    return index != -1 ? index + 1 : null;
+  Future<int?> getSelectionIndex(AssetEntity asset) async {
+    try {
+      final File? file = await asset.file;
+      if (file == null) return null;
+      
+      final index = _selectedMediaList.indexWhere((f) {
+        // Use multiple comparison methods for better reliability
+        return f.path.contains(asset.id) || 
+               f.path == file.path ||
+               f.absolute.path == file.absolute.path;
+      });
+      return index != -1 ? index + 1 : null;
+    } catch (e) {
+      print('❌ Error getting selection index: $e');
+      return null;
+    }
   }
 
   // Set caption

@@ -249,9 +249,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
         title: Consumer<PostViewModel>(
           builder: (context, viewModel, child) {
             return Text(
-              viewModel.selectedMediaList.length > 1
-                  ? 'New Post (${viewModel.selectedMediaList.length} items)'
-                  : 'New Post',
+             'New Post',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 18, 
@@ -408,6 +406,70 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                     Icons.play_arrow_rounded,
                                     color: Colors.white,
                                     size: 30,
+                                  ),
+                                ),
+                              ),
+                            // Multiple selection indicator
+                            if (viewModel.hasMultipleMedia)
+                              Positioned(
+                                top: 12,
+                                left: 12,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.7),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.layers_rounded,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${viewModel.selectedMediaList.length} items',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            // Current item indicator
+                            if (viewModel.hasMultipleMedia)
+                              Positioned(
+                                top: 12,
+                                right: 12,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.7),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        viewModel.isVideo ? Icons.videocam_rounded : Icons.image_rounded,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Preview',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),

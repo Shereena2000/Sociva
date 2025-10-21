@@ -3,6 +3,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
 import 'package:social_media_app/Features/wrapper/view_model/wrapper_view_model.dart';
+import 'package:social_media_app/company_registration/view_model/company_registration_view_model.dart';
 
 import '../../../../Settings/utils/p_colors.dart';
 import '../../../../Settings/utils/svgs.dart';
@@ -63,8 +64,8 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<WrapperViewModel>(
-      builder: (context, navigationProvider, child) {
+    return Consumer2<WrapperViewModel, CompanyRegistrationViewModel>(
+      builder: (context, navigationProvider, companyVm, child) {
         return Container(
           color: PColors.secondaryColor,
           padding: EdgeInsets.symmetric(vertical: 20),
@@ -95,11 +96,19 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
                 isSelected: navigationProvider.selectedIndex == 3,
                 onTap: () => navigationProvider.setSelectedIndex(3),
               ),
+              // Show Add Job icon only for verified companies
+              if (companyVm.hasRegisteredCompany && companyVm.isCompanyVerified)
+                _buildNavItem(
+                  icon: Svgs.addIcon, // Using add icon for now, can be changed
+                  index: 4,
+                  isSelected: navigationProvider.selectedIndex == 4,
+                  onTap: () => navigationProvider.setSelectedIndex(4),
+                ),
               _buildNavItem(
                 icon: Svgs.moreIcon,
-                index: 4,
-                isSelected: navigationProvider.selectedIndex == 4,
-                onTap: () => navigationProvider.setSelectedIndex(4),
+                index: companyVm.hasRegisteredCompany && companyVm.isCompanyVerified ? 5 : 4,
+                isSelected: navigationProvider.selectedIndex == (companyVm.hasRegisteredCompany && companyVm.isCompanyVerified ? 5 : 4),
+                onTap: () => navigationProvider.setSelectedIndex(companyVm.hasRegisteredCompany && companyVm.isCompanyVerified ? 5 : 4),
               ),
             ],
           ),

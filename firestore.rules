@@ -169,5 +169,47 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && 
         request.auth.uid == resource.data.callerId;
     }
+    
+    // ========================================
+    // COMPANIES COLLECTION (for employer registration)
+    // ========================================
+    match /companies/{companyId} {
+      // Anyone authenticated can read companies (for job listings)
+      allow read: if isAuthenticated();
+      
+      // Users can create a company if they are authenticated
+      // and the userId in the document matches their auth uid
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId;
+      
+      // Users can update their own company
+      // or admins can update (add admin check later)
+      allow update: if isAuthenticated() && 
+        (request.auth.uid == resource.data.userId);
+      
+      // Users can delete their own company
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // ========================================
+    // JOB POSTS COLLECTION (for job postings by verified companies)
+    // ========================================
+    match /jobPosts/{jobId} {
+      // Anyone authenticated can read job posts
+      allow read: if isAuthenticated();
+      
+      // Only company owners can create job posts
+      // (Additional verification check should be done in app logic)
+      allow create: if isAuthenticated();
+      
+      // Only job post owner can update
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+      
+      // Only job post owner can delete
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+    }
   }
 }

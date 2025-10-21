@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import '../../../../Settings/common/widgets/custom_text_feild.dart';
 import '../../../../Settings/utils/p_colors.dart';
 import '../../../../Settings/constants/sized_box.dart';
-import '../../../../Settings/common/widgets/custom_text_feild.dart';
 import '../../../../Settings/common/widgets/custom_elevated_button.dart';
 import '../view_model/status_view_model.dart';
 

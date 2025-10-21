@@ -4,35 +4,57 @@ import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/home/view/ui.dart';
 import 'package:social_media_app/Features/menu/view/ui.dart';
 import 'package:social_media_app/Features/post/view/post_screen/ui.dart';
-import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
 import 'package:social_media_app/Features/jobs/job_listing_screen/view/ui.dart';
+import 'package:social_media_app/Features/jobs/add_job_post/view/ui.dart';
 import 'package:social_media_app/Features/feed/view/ui.dart';
+import 'package:social_media_app/company_registration/view_model/company_registration_view_model.dart';
 
 import '../view_model/wrapper_view_model.dart';
 import 'widgets/custom_bottom_navigation_bar.dart';
 
 
-class WrapperPage extends StatelessWidget {
-  WrapperPage({super.key});
-  final List<Widget> _pages = [
-  HomeScreen(),
-  FeedScreen(),
-   PostScreen(),
-   JobsScreen(),
-  MenuScreen()
+class WrapperPage extends StatefulWidget {
+  const WrapperPage({super.key});
 
-  
-   
-  ];
+  @override
+  State<WrapperPage> createState() => _WrapperPageState();
+}
+
+class _WrapperPageState extends State<WrapperPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Load user's company data when wrapper initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CompanyRegistrationViewModel>().loadUserCompany();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Consumer<WrapperViewModel>(
-        builder: (context, wrapperVm, child) {
-          return IndexedStack(index: wrapperVm.selectedIndex, children: _pages);
-        },
-      ),
-      bottomNavigationBar: CustomBottomNavigationBar(),
+    return Consumer2<WrapperViewModel, CompanyRegistrationViewModel>(
+      builder: (context, wrapperVm, companyVm, child) {
+        // Define pages based on whether user has a registered company
+        final List<Widget> pages = [
+          HomeScreen(),
+          FeedScreen(),
+          PostScreen(),
+          JobsScreen(),
+          // Show AddJobPostScreen if user has registered company, else show placeholder
+          companyVm.hasRegisteredCompany && companyVm.isCompanyVerified
+              ? AddJobPostScreen()
+              : AddJobPostScreen(), // Same screen, it handles the logic internally
+          MenuScreen(),
+        ];
+
+        return Scaffold(
+          body: IndexedStack(
+            index: wrapperVm.selectedIndex,
+            children: pages,
+          ),
+          bottomNavigationBar: CustomBottomNavigationBar(),
+        );
+      },
     );
   }
 }

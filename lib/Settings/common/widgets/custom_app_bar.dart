@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../utils/p_colors.dart'; // adjust path
 import '../../utils/p_text_styles.dart'; // if you want to style text
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -11,13 +10,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
+      leading: IconButton(icon:  Icon(Icons.arrow_back_ios_new_outlined,size: 20,),onPressed: (){Navigator.pop(context);},),
       title: Text(
         title,
-        style: PTextStyles.displaySmall.copyWith(color: Colors.white),
+        style: PTextStyles.headlineMedium.copyWith(color: Colors.white),
       ),
-      backgroundColor: PColors.primaryColor,
-      elevation: 4,
-      centerTitle: false, // optional
+      elevation: 0,
+      centerTitle: true, // optional
       actions: actions
     );
   }

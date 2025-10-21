@@ -12,4 +12,10 @@ class PPages {
    static const String  chatListScreen = "/chatListScreen";
       static const String  chatdetailScreen = "/chatdetailScreen";
       static const String  jobDetailScreen = "/jobDetailScreen";
+      static const String  registerCompanyScreen = "/registerCompanyScreen";
+
+      static const String  contactDetailScreen = "/contactDetailScreen";
+      static const String  bussinessAddressScreen = "/bussinessAddressScreen";
+      static const String  companyDscriptionScreen = "/companyDscriptionScreen";
+      static const String  verificationScreen = "/verificationScreen";
 }

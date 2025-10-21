@@ -111,7 +111,7 @@ class _CustomTextFeildState extends State<CustomTextFeild> {
         horizontal: 12,
       ),
       filled: true,
-      fillColor: widget.filColor ?? PColors.white,
+      fillColor: widget.filColor ?? Colors.transparent,
       counterText: '',
       hintText: widget.hintText,
       hintStyle: getTextStyle(
@@ -122,14 +122,14 @@ class _CustomTextFeildState extends State<CustomTextFeild> {
       enabledBorder: OutlineInputBorder(
         borderSide: BorderSide(
           width: 1.5,
-          color: widget.borderColor ?? PColors.color000000,
+          color: widget.borderColor ?? PColors.white,
         ),
         borderRadius: BorderRadius.circular(widget.borderRadius ?? 8),
       ),
       focusedBorder: OutlineInputBorder(
         borderSide: BorderSide(
           width: 1.5,
-          color: widget.borderColor ?? PColors.primaryColor,
+          color: widget.borderColor ?? PColors.white,
         ),
         borderRadius: BorderRadius.circular(widget.borderRadius ?? 8),
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../Settings/constants/sized_box.dart';
+import '../../../Settings/utils/p_pages.dart';
 import '../../../Settings/utils/p_text_styles.dart';
 import '../../../Settings/utils/p_colors.dart';
 
@@ -54,8 +55,7 @@ class MenuScreen extends StatelessWidget {
               icon: Icons.business_outlined,
               text: "Register Your Company",
               onTap: () {
-                // Navigate or perform any action
-              },
+Navigator.pushNamed(context, PPages.registerCompanyScreen);              },
             ),
             buildProfileTile(
               icon: Icons.info_outline,
@@ -71,7 +71,7 @@ class MenuScreen extends StatelessWidget {
                 // Navigate or perform any action
               },
             ),
-SizeBoxH(8),
+            SizeBoxH(8),
             Text(
               "Log out",
               style: PTextStyles.headlineMedium.copyWith(

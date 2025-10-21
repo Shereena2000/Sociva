@@ -11,6 +11,11 @@ import 'package:social_media_app/Features/auth/sign_in/view/ui.dart';
 import 'package:social_media_app/Features/auth/sign_up/view/ui.dart';
 
 import '../../Features/splash/view/ui.dart';
+import '../../company_registration/view/ui.dart';
+import '../../company_registration/view/widgets/bussiness_address.dart';
+import '../../company_registration/view/widgets/company_dscription.dart';
+import '../../company_registration/view/widgets/contact_detail.dart';
+import '../../company_registration/view/widgets/verification_screen.dart';
 import 'p_pages.dart';
 
 class Routes {
@@ -49,8 +54,11 @@ class Routes {
              case PPages.jobDetailScreen:
         return MaterialPageRoute(builder: (context) => const JobDetailScreen());
 
-
-
+  case PPages.registerCompanyScreen:return MaterialPageRoute(builder: (context) => const RegisterCompanyScreen());
+    case PPages.contactDetailScreen:return MaterialPageRoute(builder: (context) => const ContactDetailScreen());
+    case PPages.bussinessAddressScreen:return MaterialPageRoute(builder: (context) => const BussinessAddressScreen());
+    case PPages.companyDscriptionScreen:return MaterialPageRoute(builder: (context) => const CompanyDscription());
+    case PPages.verificationScreen:return MaterialPageRoute(builder: (context) => const VerificationScreen());
       default:
         return MaterialPageRoute(
           builder: (context) => Scaffold(

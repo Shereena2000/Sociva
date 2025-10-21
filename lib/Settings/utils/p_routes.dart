@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:social_media_app/Features/chat/chat_detail/view/ui.dart';
 import 'package:social_media_app/Features/chat/chat_list/view/ui.dart';
+import 'package:social_media_app/Features/jobs/job_detail_screen/view/ui.dart';
 import 'package:social_media_app/Features/profile/create_profile/view/ui.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
 import 'package:social_media_app/Features/search/view/ui.dart';
@@ -45,7 +46,8 @@ class Routes {
         return MaterialPageRoute(builder: (context) => const ChatListScreen());
          case PPages.chatdetailScreen:
         return MaterialPageRoute(builder: (context) => const ChatDetailScreen());
-
+             case PPages.jobDetailScreen:
+        return MaterialPageRoute(builder: (context) => const JobDetailScreen());
 
 
 

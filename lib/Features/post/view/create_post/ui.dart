@@ -432,13 +432,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        viewModel.postType == 'post'
-                            ? 'Share to Posts (Instagram-style visual feed)'
-                            : 'Share to Feed (Twitter-style updates)',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                      ),
+                     
                     ],
                   ),
                 ),

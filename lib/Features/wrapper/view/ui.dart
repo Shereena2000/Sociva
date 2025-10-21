@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/home/view/ui.dart';
+import 'package:social_media_app/Features/menu/view/ui.dart';
 import 'package:social_media_app/Features/post/view/post_screen/ui.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
-import 'package:social_media_app/Features/reels/view/ui.dart';
+import 'package:social_media_app/Features/jobs/job_listing_screen/view/ui.dart';
 import 'package:social_media_app/Features/feed/view/ui.dart';
 
 import '../view_model/wrapper_view_model.dart';
@@ -17,8 +18,8 @@ class WrapperPage extends StatelessWidget {
   HomeScreen(),
   FeedScreen(),
    PostScreen(),
-   ReelsScreen(),
-  ProfileScreen()
+   JobsScreen(),
+  MenuScreen()
 
   
    

@@ -11,4 +11,5 @@ class PPages {
   static const String searchScreen = "/searchScreen";
    static const String  chatListScreen = "/chatListScreen";
       static const String  chatdetailScreen = "/chatdetailScreen";
+      static const String  jobDetailScreen = "/jobDetailScreen";
 }

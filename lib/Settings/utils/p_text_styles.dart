@@ -50,6 +50,11 @@ class PTextStyles {
     fontSize: 13,
     color: PColors.black,
   );
+    static TextStyle get headlineSmall => getTextStyle(
+    fontWeight: FontWeight.w400,
+    fontSize: 12,
+    color: PColors.black,
+  );
      static TextStyle get labelLarge => getTextStyle(
     fontWeight: FontWeight.w600,
     fontSize: 12,

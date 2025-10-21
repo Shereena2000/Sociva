@@ -310,25 +310,72 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
              child: Column(
                children: [
                  // Preview area - Increased height
-                SizedBox(
+                Container(
                    width: double.infinity,
                    height: MediaQuery.of(context).size.width * 0.85, // Increased to 85% for better visibility
-                  
+                   decoration: BoxDecoration(
+                     color: Color(0xFF1A1A2E), // Background color to avoid black spaces
+                     borderRadius: BorderRadius.circular(8),
+                   ),
                   child: viewModel.selectedMedia != null
                       ? Stack(
                           children: [
                             // Image or video thumbnail
                             ClipRRect(
                               child: viewModel.isVideo
-                                  ? Image.file(
-                                      viewModel.selectedMedia!,
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return _buildErrorPlaceholder(Icons.videocam_rounded);
-                                      },
-                                    )
+                                  ? (viewModel.selectedAsset != null
+                                      ? FutureBuilder<Widget>(
+                                          future: _buildAssetThumbnail(viewModel.selectedAsset!),
+                                          builder: (context, snapshot) {
+                                            if (snapshot.hasData) {
+                                              return Container(
+                                                width: double.infinity,
+                                                height: double.infinity,
+                                                child: snapshot.data!,
+                                              );
+                                            }
+                                            return Container(
+                                              color: Color(0xFF1A1A2E),
+                                              child: Center(
+                                                child: CircularProgressIndicator(
+                                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                  strokeWidth: 2,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      : Container(
+                                          color: Color(0xFF1A1A2E),
+                                          child: Center(
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.videocam_rounded,
+                                                  color: Colors.white.withOpacity(0.3),
+                                                  size: 80,
+                                                ),
+                                                const SizedBox(height: 16),
+                                                Text(
+                                                  'Video Selected',
+                                                  style: TextStyle(
+                                                    color: Colors.white.withOpacity(0.7),
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  'No thumbnail available',
+                                                  style: TextStyle(
+                                                    color: Colors.white.withOpacity(0.5),
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ))
                                   : Image.file(
                                       viewModel.selectedMedia!,
                                       fit: BoxFit.cover,
@@ -339,11 +386,11 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                       },
                                     ),
                             ),
-                            // Video play overlay
+                            // Video play overlay - only show for videos
                             if (viewModel.isVideo)
                               Center(
                                 child: Container(
-                                  padding: const EdgeInsets.all(20),
+                                  padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
@@ -360,7 +407,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                   child: const Icon(
                                     Icons.play_arrow_rounded,
                                     color: Colors.white,
-                                    size: 50,
+                                    size: 30,
                                   ),
                                 ),
                               ),
@@ -766,17 +813,21 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
 
   Future<Widget> _buildAssetThumbnail(AssetEntity asset) async {
     final thumbnail = await asset.thumbnailDataWithSize(
-      const ThumbnailSize(200, 200),
+      const ThumbnailSize(400, 400), // Increased size for better quality
     );
     
     if (thumbnail != null) {
       return Image.memory(
         thumbnail,
         fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
       );
     }
     
     return Container(
+      width: double.infinity,
+      height: double.infinity,
       color: Color(0xFF1A1A2E),
       child: Icon(
         asset.type == AssetType.video ? Icons.videocam : Icons.image,
@@ -844,4 +895,6 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
       };
     }
   }
+
+
 }

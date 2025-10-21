@@ -15,6 +15,7 @@ class PostViewModel extends ChangeNotifier {
   List<AssetEntity> _photoAssets = []; // For photo_manager
   List<File> _selectedMediaList = []; // Multiple selected media
   File? _selectedMedia; // For single media (backward compatibility)
+  AssetEntity? _selectedAsset; // Track the selected asset for thumbnails
   bool _isVideo = false;
   String _caption = '';
   bool _isUploading = false;
@@ -25,6 +26,7 @@ class PostViewModel extends ChangeNotifier {
   List<AssetEntity> get photoAssets => _photoAssets;
   List<File> get selectedMediaList => _selectedMediaList;
   File? get selectedMedia => _selectedMedia;
+  AssetEntity? get selectedAsset => _selectedAsset;
   bool get isVideo => _isVideo;
   String get caption => _caption;
   bool get isUploading => _isUploading;
@@ -201,9 +203,11 @@ class PostViewModel extends ChangeNotifier {
       // Update primary selected media to first in list
       if (_selectedMediaList.isNotEmpty) {
         _selectedMedia = _selectedMediaList.first;
+        _selectedAsset = asset; // Track the selected asset
         _isVideo = asset.type == AssetType.video;
       } else {
         _selectedMedia = null;
+        _selectedAsset = null;
         _isVideo = false;
       }
       
@@ -322,6 +326,7 @@ class PostViewModel extends ChangeNotifier {
   // Clear selected media
   void clearSelectedMedia() {
     _selectedMedia = null;
+    _selectedAsset = null;
     _selectedMediaList = [];
     _caption = '';
     _isVideo = false;

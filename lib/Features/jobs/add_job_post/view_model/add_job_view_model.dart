@@ -35,6 +35,9 @@ class AddJobViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String _errorMessage = '';
   bool _isJobPosted = false;
+  List<JobModel> _userJobs = [];
+  bool _isFetchingJobs = false;
+  JobModel? _editingJob;
 
   // Getters
   String get jobTitle => _jobTitle;
@@ -51,6 +54,10 @@ class AddJobViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String get errorMessage => _errorMessage;
   bool get isJobPosted => _isJobPosted;
+  List<JobModel> get userJobs => _userJobs;
+  bool get isFetchingJobs => _isFetchingJobs;
+  bool get hasJobs => _userJobs.isNotEmpty;
+  JobModel? get editingJob => _editingJob;
 
   // Setters
   void setJobTitle(String? value) {
@@ -218,11 +225,14 @@ class AddJobViewModel extends ChangeNotifier {
       print('✅ Job posted successfully with ID: $jobId');
 
       _isJobPosted = true;
-      _isLoading = false;
       
-      // Clear form after successful post
+      // Refresh jobs list immediately
+      await fetchUserJobs();
+      
+      // Clear form after refreshing list
       clearForm();
       
+      _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
@@ -301,6 +311,8 @@ class AddJobViewModel extends ChangeNotifier {
     _isLoading = false;
     _errorMessage = '';
     _isJobPosted = false;
+    _editingJob = null;
+    // DON'T clear _userJobs - we want to keep the list
     notifyListeners();
   }
 
@@ -308,6 +320,210 @@ class AddJobViewModel extends ChangeNotifier {
   void clearError() {
     _errorMessage = '';
     notifyListeners();
+  }
+
+  // Fetch user's jobs
+  Future<void> fetchUserJobs() async {
+    try {
+      print('🔄 Starting to fetch user jobs...');
+      _isFetchingJobs = true;
+      _errorMessage = '';
+      notifyListeners();
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        print('❌ User not authenticated');
+        _errorMessage = 'User not authenticated';
+        _isFetchingJobs = false;
+        notifyListeners();
+        return;
+      }
+
+      print('👤 Fetching jobs for user: ${user.uid}');
+      _userJobs = await _jobRepository.getJobsByUserId(user.uid);
+      print('✅ Fetched ${_userJobs.length} jobs');
+      
+      if (_userJobs.isNotEmpty) {
+        print('📋 Jobs fetched:');
+        for (var job in _userJobs) {
+          print('  - ${job.jobTitle} (${job.id})');
+        }
+      }
+    } catch (e) {
+      print('❌ Error fetching jobs: $e');
+      _errorMessage = 'Failed to fetch jobs: $e';
+    } finally {
+      _isFetchingJobs = false;
+      notifyListeners();
+      print('🏁 Fetch complete. Total jobs: ${_userJobs.length}');
+    }
+  }
+
+  // Load job for editing
+  Future<void> loadJobForEdit(JobModel job) async {
+    _editingJob = job;
+    
+    // Populate controllers
+    jobTitleController.text = job.jobTitle;
+    experienceController.text = job.experience;
+    vacanciesController.text = job.vacancies.toString();
+    locationController.text = job.location;
+    roleSummaryController.text = job.roleSummary;
+    
+    // Populate lists
+    _responsibilities.clear();
+    _responsibilities.addAll(job.responsibilities);
+    
+    _qualifications.clear();
+    _qualifications.addAll(job.qualifications);
+    
+    _requiredSkills.clear();
+    _requiredSkills.addAll(job.requiredSkills);
+    
+    // Set dropdowns
+    _employmentType = job.employmentType;
+    _workMode = job.workMode;
+    _jobLevel = job.jobLevel;
+    
+    notifyListeners();
+  }
+
+  // Update existing job
+  Future<bool> updateJob() async {
+    if (_editingJob == null) return false;
+    
+    try {
+      _isLoading = true;
+      _errorMessage = '';
+      notifyListeners();
+
+      // Validate form
+      if (!_validateForm()) {
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Get values from controllers
+      _jobTitle = jobTitleController.text.trim();
+      _experience = experienceController.text.trim();
+      _vacancies = int.tryParse(vacanciesController.text.trim()) ?? 1;
+      _location = locationController.text.trim();
+      _roleSummary = roleSummaryController.text.trim();
+
+      // Prepare updates
+      final updates = {
+        'jobTitle': _jobTitle,
+        'experience': _experience,
+        'vacancies': _vacancies,
+        'location': _location,
+        'roleSummary': _roleSummary,
+        'responsibilities': List<String>.from(_responsibilities),
+        'qualifications': List<String>.from(_qualifications),
+        'requiredSkills': List<String>.from(_requiredSkills),
+        'employmentType': _employmentType,
+        'workMode': _workMode,
+        'jobLevel': _jobLevel,
+      };
+
+      // Update in Firebase
+      await _jobRepository.updateJob(_editingJob!.id, updates);
+      
+      print('✅ Job updated successfully');
+
+      _isJobPosted = true;
+      
+      // Refresh jobs list immediately
+      await fetchUserJobs();
+      
+      // Clear form after refreshing list
+      clearForm();
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('❌ Error updating job: $e');
+      _errorMessage = 'Failed to update job: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Deactivate job (soft delete)
+  Future<bool> deactivateJob(String jobId) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      await _jobRepository.deactivateJob(jobId);
+      
+      print('✅ Job deactivated');
+      
+      // Refresh jobs list
+      await fetchUserJobs();
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('❌ Error deactivating job: $e');
+      _errorMessage = 'Failed to deactivate job: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Reactivate job
+  Future<bool> reactivateJob(String jobId) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      await _jobRepository.reactivateJob(jobId);
+      
+      print('✅ Job reactivated');
+      
+      // Refresh jobs list
+      await fetchUserJobs();
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('❌ Error reactivating job: $e');
+      _errorMessage = 'Failed to reactivate job: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Delete job permanently
+  Future<bool> deleteJob(String jobId) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      await _jobRepository.deleteJob(jobId);
+      
+      print('✅ Job deleted');
+      
+      // Refresh jobs list
+      await fetchUserJobs();
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('❌ Error deleting job: $e');
+      _errorMessage = 'Failed to delete job: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   @override

@@ -33,10 +33,13 @@ class JobRepository {
     try {
       final doc = await _firestore.collection('jobs').doc(jobId).get();
       if (doc.exists && doc.data() != null) {
-        return JobModel.fromMap(doc.data()!);
+        final data = doc.data()!;
+        data['id'] = doc.id; // Add document ID
+        return JobModel.fromMap(data);
       }
       return null;
     } catch (e) {
+      print('❌ Error in getJobById: $e');
       throw Exception('Failed to get job: $e');
     }
   }
@@ -52,9 +55,14 @@ class JobRepository {
           .get();
 
       return querySnapshot.docs
-          .map((doc) => JobModel.fromMap(doc.data()))
+          .map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id; // Add document ID
+            return JobModel.fromMap(data);
+          })
           .toList();
     } catch (e) {
+      print('❌ Error in getJobsByCompanyId: $e');
       throw Exception('Failed to get company jobs: $e');
     }
   }
@@ -69,9 +77,14 @@ class JobRepository {
           .get();
 
       return querySnapshot.docs
-          .map((doc) => JobModel.fromMap(doc.data()))
+          .map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id; // Add document ID
+            return JobModel.fromMap(data);
+          })
           .toList();
     } catch (e) {
+      print('❌ Error in getJobsByUserId: $e');
       throw Exception('Failed to get user jobs: $e');
     }
   }
@@ -107,7 +120,11 @@ class JobRepository {
           .get();
 
       return querySnapshot.docs
-          .map((doc) => JobModel.fromMap(doc.data() as Map<String, dynamic>))
+          .map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            data['id'] = doc.id; // Add document ID
+            return JobModel.fromMap(data);
+          })
           .toList();
     } catch (e) {
       throw Exception('Failed to get jobs: $e');

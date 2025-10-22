@@ -62,6 +62,25 @@ class JobModel {
 
   // Create from Map (Firebase)
   factory JobModel.fromMap(Map<String, dynamic> map) {
+    // Handle Timestamp objects from Firestore
+    DateTime parseDateTime(dynamic dateValue) {
+      if (dateValue == null) return DateTime.now();
+      
+      if (dateValue is String) {
+        return DateTime.parse(dateValue);
+      } else if (dateValue is DateTime) {
+        return dateValue;
+      } else {
+        // Handle Firestore Timestamp
+        try {
+          return dateValue.toDate();
+        } catch (e) {
+          print('Error parsing date: $e');
+          return DateTime.now();
+        }
+      }
+    }
+
     return JobModel(
       id: map['id'] ?? '',
       companyId: map['companyId'] ?? '',
@@ -78,8 +97,8 @@ class JobModel {
       workMode: map['workMode'] ?? '',
       jobLevel: map['jobLevel'] ?? '',
       isActive: map['isActive'] ?? true,
-      createdAt: DateTime.parse(map['createdAt'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(map['updatedAt'] ?? DateTime.now().toIso8601String()),
+      createdAt: parseDateTime(map['createdAt']),
+      updatedAt: parseDateTime(map['updatedAt']),
     );
   }
 

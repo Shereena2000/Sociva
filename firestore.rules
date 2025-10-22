@@ -261,5 +261,21 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && 
         request.auth.uid == resource.data.applicantId;
     }
+    
+    // ========================================
+    // SAVED POSTS COLLECTION
+    // ========================================
+    match /savedPosts/{savedPostId} {
+      // Anyone can read saved posts (for checking if post is saved)
+      allow read: if isAuthenticated();
+      
+      // Users can save posts (create saved post record)
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can unsave their own saved posts
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
   }
 }

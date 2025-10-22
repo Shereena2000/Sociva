@@ -717,11 +717,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const Spacer(),
                 
-                // Save button
-                IconButton(
-                  icon: const Icon(Icons.bookmark_border, color: Colors.black),
-                  onPressed: () {
-                    homeViewModel.toggleSave(postWithUser.postId);
+                // Save button with saved state
+                FutureBuilder<bool>(
+                  future: homeViewModel.isPostSaved(postWithUser.postId),
+                  builder: (context, snapshot) {
+                    final isSaved = snapshot.data ?? false;
+                    return IconButton(
+                      icon: Icon(
+                        isSaved ? Icons.bookmark : Icons.bookmark_border,
+                        color: isSaved ? Colors.blue : Colors.black,
+                      ),
+                      onPressed: () async {
+                        await homeViewModel.toggleSave(postWithUser.postId);
+                        // Trigger rebuild to update icon
+                        (context as Element).markNeedsBuild();
+                      },
+                    );
                   },
                 ),
               ],

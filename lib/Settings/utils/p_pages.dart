@@ -18,4 +18,5 @@ class PPages {
       static const String  bussinessAddressScreen = "/bussinessAddressScreen";
       static const String  companyDscriptionScreen = "/companyDscriptionScreen";
       static const String  verificationScreen = "/verificationScreen";
+      static const String  savedPostScreen = "/savedPostScreen";
 }

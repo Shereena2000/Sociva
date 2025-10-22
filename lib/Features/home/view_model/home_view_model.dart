@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:social_media_app/Features/post/repository/post_repository.dart';
 import 'package:social_media_app/Features/profile/create_profile/repository/profile_repository.dart';
 import 'package:social_media_app/Features/profile/status/repository/status_repository.dart';
+import 'package:social_media_app/Features/menu/saved_post/repository/saved_post_repository.dart';
 import 'package:social_media_app/Features/feed/model/post_with_user_model.dart';
 import 'package:social_media_app/Features/feed/model/user_status_group_model.dart';
 import 'package:social_media_app/Features/profile/status/model/status_model.dart';
@@ -12,6 +13,7 @@ class HomeViewModel extends ChangeNotifier {
   final PostRepository _postRepository = PostRepository();
   final ProfileRepository _profileRepository = ProfileRepository();
   final StatusRepository _statusRepository = StatusRepository();
+  final SavedPostRepository _savedPostRepository = SavedPostRepository();
 
   // Posts
   List<PostWithUserModel> _posts = [];
@@ -154,10 +156,42 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
-  /// Save/unsave a post (placeholder for future implementation)
+  /// Check if a post is saved
+  Future<bool> isPostSaved(String postId) async {
+    try {
+      return await _savedPostRepository.isPostSaved(postId);
+    } catch (e) {
+      print('❌ Error checking if post is saved: $e');
+      return false;
+    }
+  }
+
+  /// Save/unsave a post
   Future<void> toggleSave(String postId) async {
-    // TODO: Implement save functionality
-    print('🔖 Toggle save for post: $postId');
+    try {
+      print('🔖 Toggle save for post: $postId');
+      
+      // Check if post is currently saved
+      final isSaved = await _savedPostRepository.isPostSaved(postId);
+      
+      if (isSaved) {
+        // Unsave the post
+        print('📤 Unsaving post...');
+        await _savedPostRepository.unsavePost(postId);
+        print('✅ Post unsaved successfully');
+      } else {
+        // Save the post
+        print('📥 Saving post...');
+        await _savedPostRepository.savePost(postId);
+        print('✅ Post saved successfully');
+      }
+      
+      // Notify listeners to update UI
+      notifyListeners();
+      
+    } catch (e) {
+      print('❌ Error toggling save: $e');
+    }
   }
 
   /// Add a comment to a post (or reply to a comment)

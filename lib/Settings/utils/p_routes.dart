@@ -10,6 +10,7 @@ import 'package:social_media_app/Features/post/view/create_post/ui.dart';
 import 'package:social_media_app/Features/auth/sign_in/view/ui.dart';
 import 'package:social_media_app/Features/auth/sign_up/view/ui.dart';
 
+import '../../Features/menu/saved_post/view/ui.dart';
 import '../../Features/splash/view/ui.dart';
 import '../../Features/company_registration/view/ui.dart';
 import '../../Features/company_registration/view/widgets/bussiness_address.dart';
@@ -47,21 +48,47 @@ class Routes {
         );
       case PPages.searchScreen:
         return MaterialPageRoute(builder: (context) => const SearchScreen());
-         case PPages.chatListScreen:
+      case PPages.chatListScreen:
         return MaterialPageRoute(builder: (context) => const ChatListScreen());
-         case PPages.chatdetailScreen:
-        return MaterialPageRoute(builder: (context) => const ChatDetailScreen());
-             case PPages.jobDetailScreen:
+      case PPages.chatdetailScreen:
+        return MaterialPageRoute(
+          builder: (context) => const ChatDetailScreen(),
+        );
+      case PPages.jobDetailScreen:
         return MaterialPageRoute(
           builder: (context) => const JobDetailScreen(),
           settings: settings, // Pass settings to preserve arguments
         );
 
-  case PPages.registerCompanyScreen:return MaterialPageRoute(builder: (context) => const RegisterCompanyScreen());
-    case PPages.contactDetailScreen:return MaterialPageRoute(builder: (context) => const ContactDetailScreen());
-    case PPages.bussinessAddressScreen:return MaterialPageRoute(builder: (context) => const BussinessAddressScreen());
-    case PPages.companyDscriptionScreen:return MaterialPageRoute(builder: (context) => const CompanyDscription());
-    case PPages.verificationScreen:return MaterialPageRoute(builder: (context) => const VerificationScreen());
+      case PPages.registerCompanyScreen:
+        return MaterialPageRoute(
+          builder: (context) => const RegisterCompanyScreen(),
+        );
+      case PPages.contactDetailScreen:
+        return MaterialPageRoute(
+          builder: (context) => const ContactDetailScreen(),
+        );
+      case PPages.bussinessAddressScreen:
+        return MaterialPageRoute(
+          builder: (context) => const BussinessAddressScreen(),
+        );
+      case PPages.companyDscriptionScreen:
+        return MaterialPageRoute(
+          builder: (context) => const CompanyDscription(),
+        );
+      case PPages.verificationScreen:
+        return MaterialPageRoute(
+          builder: (context) => const VerificationScreen(),
+        );
+
+    case PPages.savedPostScreen:
+        return MaterialPageRoute(
+          builder: (context) => const SavedPostScreen(),
+        );
+
+
+
+
       default:
         return MaterialPageRoute(
           builder: (context) => Scaffold(

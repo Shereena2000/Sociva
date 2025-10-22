@@ -34,6 +34,7 @@ class MenuScreen extends StatelessWidget {
               text: "Saved Posts",
               onTap: () {
                 // Navigate or perform any action
+                Navigator.pushNamed(context, PPages.savedPostScreen);
               },
             ),
             buildProfileTile(
@@ -55,7 +56,8 @@ class MenuScreen extends StatelessWidget {
               icon: Icons.business_outlined,
               text: "Register Your Company",
               onTap: () {
-Navigator.pushNamed(context, PPages.registerCompanyScreen);              },
+                Navigator.pushNamed(context, PPages.registerCompanyScreen);
+              },
             ),
             buildProfileTile(
               icon: Icons.info_outline,

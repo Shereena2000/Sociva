@@ -42,7 +42,9 @@ class CompanyRepository {
 
       if (querySnapshot.docs.isNotEmpty) {
         final doc = querySnapshot.docs.first;
-        return CompanyModel.fromMap(doc.data());
+        final data = doc.data();
+        data['id'] = doc.id; // Add document ID
+        return CompanyModel.fromMap(data);
       }
       return null;
     } catch (e) {
@@ -53,12 +55,18 @@ class CompanyRepository {
   // Get company by company ID
   Future<CompanyModel?> getCompanyById(String companyId) async {
     try {
+      print('🔍 CompanyRepository: Fetching company with ID: $companyId');
       final doc = await _firestore.collection('companies').doc(companyId).get();
       if (doc.exists) {
-        return CompanyModel.fromMap(doc.data()!);
+        final data = doc.data()!;
+        data['id'] = doc.id; // Add document ID
+        print('✅ CompanyRepository: Found company: ${data['companyName']}');
+        return CompanyModel.fromMap(data);
       }
+      print('⚠️ CompanyRepository: Company not found with ID: $companyId');
       return null;
     } catch (e) {
+      print('❌ CompanyRepository: Error getting company: $e');
       throw Exception('Failed to get company: $e');
     }
   }
@@ -99,7 +107,11 @@ class CompanyRepository {
           .get();
 
       return querySnapshot.docs
-          .map((doc) => CompanyModel.fromMap(doc.data()))
+          .map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id; // Add document ID
+            return CompanyModel.fromMap(data);
+          })
           .toList();
     } catch (e) {
       throw Exception('Failed to get companies: $e');
@@ -117,7 +129,11 @@ class CompanyRepository {
           .get();
 
       return querySnapshot.docs
-          .map((doc) => CompanyModel.fromMap(doc.data()))
+          .map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id; // Add document ID
+            return CompanyModel.fromMap(data);
+          })
           .toList();
     } catch (e) {
       throw Exception('Failed to get verified companies: $e');

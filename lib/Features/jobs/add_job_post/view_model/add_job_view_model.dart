@@ -175,9 +175,24 @@ class AddJobViewModel extends ChangeNotifier {
       }
 
       // Get user's company
+      print('🔍 AddJobViewModel: Fetching company for user: ${user.uid}');
       final company = await _companyRepository.getCompanyByUserId(user.uid);
       if (company == null) {
+        print('❌ AddJobViewModel: No company found for user');
         _errorMessage = 'No company registered. Please register your company first.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      print('✅ AddJobViewModel: Company found: ${company.companyName}');
+      print('   Company ID: ${company.id}');
+      print('   Is Verified: ${company.isVerified}');
+
+      // Check if company ID is valid
+      if (company.id.isEmpty) {
+        print('❌ AddJobViewModel: Company ID is EMPTY! This will cause issues.');
+        _errorMessage = 'Company ID is missing. Please re-register your company.';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -185,6 +200,7 @@ class AddJobViewModel extends ChangeNotifier {
 
       // Check if company is verified
       if (!company.isVerified) {
+        print('❌ AddJobViewModel: Company not verified');
         _errorMessage = 'Your company is not verified yet.';
         _isLoading = false;
         notifyListeners();
@@ -199,6 +215,11 @@ class AddJobViewModel extends ChangeNotifier {
       _roleSummary = roleSummaryController.text.trim();
 
       // Create job model
+      print('📝 AddJobViewModel: Creating job with:');
+      print('   Company ID: ${company.id}');
+      print('   User ID: ${user.uid}');
+      print('   Job Title: $_jobTitle');
+      
       final job = JobModel(
         id: '', // Will be set by Firestore
         companyId: company.id,
@@ -219,10 +240,12 @@ class AddJobViewModel extends ChangeNotifier {
         updatedAt: DateTime.now(),
       );
 
+      print('💾 AddJobViewModel: Saving job to Firebase...');
       // Save to Firebase
       final jobId = await _jobRepository.createJob(job);
       
-      print('✅ Job posted successfully with ID: $jobId');
+      print('✅ AddJobViewModel: Job posted successfully with ID: $jobId');
+      print('   Job will be linked to Company ID: ${company.id}');
 
       _isJobPosted = true;
       

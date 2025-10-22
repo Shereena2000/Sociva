@@ -95,6 +95,25 @@ class CompanyModel {
 
   // Create from Map (Firebase)
   factory CompanyModel.fromMap(Map<String, dynamic> map) {
+    // Handle Timestamp objects from Firestore
+    DateTime parseDateTime(dynamic dateValue) {
+      if (dateValue == null) return DateTime.now();
+      
+      if (dateValue is String) {
+        return DateTime.parse(dateValue);
+      } else if (dateValue is DateTime) {
+        return dateValue;
+      } else {
+        // Handle Firestore Timestamp
+        try {
+          return dateValue.toDate();
+        } catch (e) {
+          print('Error parsing date in CompanyModel: $e');
+          return DateTime.now();
+        }
+      }
+    }
+
     return CompanyModel(
       id: map['id'] ?? '',
       companyName: map['companyName'] ?? '',
@@ -122,8 +141,8 @@ class CompanyModel {
       userId: map['userId'] ?? '',
       isVerified: map['isVerified'] ?? false,
       isActive: map['isActive'] ?? true,
-      createdAt: DateTime.parse(map['createdAt'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(map['updatedAt'] ?? DateTime.now().toIso8601String()),
+      createdAt: parseDateTime(map['createdAt']),
+      updatedAt: parseDateTime(map['updatedAt']),
     );
   }
 

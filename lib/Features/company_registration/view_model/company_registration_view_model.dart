@@ -371,6 +371,11 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
       
       print('✅ Company registered with ID: $companyId');
 
+      // Load the company back to get the complete data with ID
+      await loadUserCompany();
+      
+      print('✅ Company loaded into ViewModel: ${_userCompany?.companyName} (ID: ${_userCompany?.id})');
+
       _isRegistrationComplete = true;
       _isLoading = false;
       notifyListeners();

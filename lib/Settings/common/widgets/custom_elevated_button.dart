@@ -34,7 +34,7 @@ class CustomElavatedTextButton extends StatelessWidget {
 
     return Container(
       width: width ?? size.width - 40,
-      height: height ?? 60,
+      height: height ?? 50,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: gradientColors ??

@@ -7,7 +7,7 @@ import 'package:social_media_app/Features/post/view/post_screen/ui.dart';
 import 'package:social_media_app/Features/jobs/job_listing_screen/view/ui.dart';
 import 'package:social_media_app/Features/jobs/add_job_post/view/ui.dart';
 import 'package:social_media_app/Features/feed/view/ui.dart';
-import 'package:social_media_app/company_registration/view_model/company_registration_view_model.dart';
+import 'package:social_media_app/Features/company_registration/view_model/company_registration_view_model.dart';
 
 import '../view_model/wrapper_view_model.dart';
 import 'widgets/custom_bottom_navigation_bar.dart';
@@ -40,12 +40,15 @@ class _WrapperPageState extends State<WrapperPage> {
           FeedScreen(),
           PostScreen(),
           JobsScreen(),
-          // Show AddJobPostScreen if user has registered company, else show placeholder
-          companyVm.hasRegisteredCompany && companyVm.isCompanyVerified
-              ? AddJobPostScreen()
-              : AddJobPostScreen(), // Same screen, it handles the logic internally
-          MenuScreen(),
         ];
+        
+        // Add AddJobPostScreen only for verified companies
+        if (companyVm.hasRegisteredCompany && companyVm.isCompanyVerified) {
+          pages.add(AddJobPostScreen());
+        }
+        
+        // Always add MenuScreen as last
+        pages.add(MenuScreen());
 
         return Scaffold(
           body: IndexedStack(

@@ -10,8 +10,9 @@ import 'package:social_media_app/Features/home/view_model/home_view_model.dart';
 import 'package:social_media_app/Features/feed/view_model/feed_view_model.dart';
 import 'package:social_media_app/Features/search/view_model/search_view_model.dart';
 import 'package:social_media_app/Features/chat/chat_list/view_model/chat_list_view_model.dart';
-import 'package:social_media_app/company_registration/view_model/company_registration_view_model.dart';
+import 'package:social_media_app/Features/company_registration/view_model/company_registration_view_model.dart';
 import 'package:social_media_app/Features/chat/chat_detail/view_model/chat_detail_view_model.dart';
+import 'package:social_media_app/Features/jobs/add_job_post/view_model/add_job_view_model.dart';
 
 List<SingleChildWidget> providers = [
   ChangeNotifierProvider(create: (_) => WrapperViewModel()),
@@ -26,4 +27,5 @@ List<SingleChildWidget> providers = [
   ChangeNotifierProvider(create: (_) => ChatListViewModel()),
   ChangeNotifierProvider(create: (_) => ChatDetailViewModel()),
   ChangeNotifierProvider(create: (_) => CompanyRegistrationViewModel()),
+  ChangeNotifierProvider(create: (_) => AddJobViewModel()),
 ];

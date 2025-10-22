@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import '../model/company_model.dart';
 import '../repository/company_repository.dart';
-import '../../../Service/cloudinary_service.dart';
+import '../../../../Service/cloudinary_service.dart';
 
 class CompanyRegistrationViewModel extends ChangeNotifier {
   final CompanyRepository _companyRepository = CompanyRepository();

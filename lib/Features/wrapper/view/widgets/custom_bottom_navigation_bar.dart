@@ -3,7 +3,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
 import 'package:social_media_app/Features/wrapper/view_model/wrapper_view_model.dart';
-import 'package:social_media_app/company_registration/view_model/company_registration_view_model.dart';
+import 'package:social_media_app/Features/company_registration/view_model/company_registration_view_model.dart';
 
 import '../../../../Settings/utils/p_colors.dart';
 import '../../../../Settings/utils/svgs.dart';
@@ -66,51 +66,38 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
   Widget build(BuildContext context) {
     return Consumer2<WrapperViewModel, CompanyRegistrationViewModel>(
       builder: (context, navigationProvider, companyVm, child) {
+        // Define navigation items based on company status
+        final List<Map<String, dynamic>> navItems = [
+          {'icon': Svgs.homeIcon, 'index': 0},
+          {'icon': Svgs.feedIcon, 'index': 1},
+          {'icon': Svgs.addIcon, 'index': 2},
+          {'icon': Svgs.jobIcon, 'index': 3},
+        ];
+        
+        // Add Add Job Post only for verified companies
+        if (companyVm.hasRegisteredCompany && companyVm.isCompanyVerified) {
+          navItems.add({'icon': Svgs.addIcon, 'index': 4}); // Add Job Post
+        }
+        
+        // Always add Menu as last item
+        navItems.add({
+          'icon': Svgs.moreIcon, 
+          'index': companyVm.hasRegisteredCompany && companyVm.isCompanyVerified ? 5 : 4
+        });
+        
         return Container(
           color: PColors.secondaryColor,
           padding: EdgeInsets.symmetric(vertical: 20),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildNavItem(
-                icon: Svgs.homeIcon,
-                index: 0,
-                isSelected: navigationProvider.selectedIndex == 0,
-                onTap: () => navigationProvider.setSelectedIndex(0),
-              ),
-              _buildNavItem(
-                icon: Svgs.feedIcon,
-                index: 1,
-                isSelected: navigationProvider.selectedIndex == 1,
-                onTap: () => navigationProvider.setSelectedIndex(1),
-              ),
-              _buildNavItem(
-               icon: Svgs.addIcon,
-                index: 2,
-                isSelected: navigationProvider.selectedIndex == 2,
-                onTap: () => navigationProvider.setSelectedIndex(2),
-              ),
-              _buildNavItem(
-              icon: Svgs.jobIcon,
-                index: 3,
-                isSelected: navigationProvider.selectedIndex == 3,
-                onTap: () => navigationProvider.setSelectedIndex(3),
-              ),
-              // Show Add Job icon only for verified companies
-              if (companyVm.hasRegisteredCompany && companyVm.isCompanyVerified)
-                _buildNavItem(
-                  icon: Svgs.addIcon, // Using add icon for now, can be changed
-                  index: 4,
-                  isSelected: navigationProvider.selectedIndex == 4,
-                  onTap: () => navigationProvider.setSelectedIndex(4),
-                ),
-              _buildNavItem(
-                icon: Svgs.moreIcon,
-                index: companyVm.hasRegisteredCompany && companyVm.isCompanyVerified ? 5 : 4,
-                isSelected: navigationProvider.selectedIndex == (companyVm.hasRegisteredCompany && companyVm.isCompanyVerified ? 5 : 4),
-                onTap: () => navigationProvider.setSelectedIndex(companyVm.hasRegisteredCompany && companyVm.isCompanyVerified ? 5 : 4),
-              ),
-            ],
+            children: navItems.map((item) {
+              return _buildNavItem(
+                icon: item['icon'],
+                index: item['index'],
+                isSelected: navigationProvider.selectedIndex == item['index'],
+                onTap: () => navigationProvider.setSelectedIndex(item['index']),
+              );
+            }).toList(),
           ),
         );
       },

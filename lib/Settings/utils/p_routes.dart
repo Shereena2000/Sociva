@@ -11,11 +11,11 @@ import 'package:social_media_app/Features/auth/sign_in/view/ui.dart';
 import 'package:social_media_app/Features/auth/sign_up/view/ui.dart';
 
 import '../../Features/splash/view/ui.dart';
-import '../../company_registration/view/ui.dart';
-import '../../company_registration/view/widgets/bussiness_address.dart';
-import '../../company_registration/view/widgets/company_dscription.dart';
-import '../../company_registration/view/widgets/contact_detail.dart';
-import '../../company_registration/view/widgets/verification_screen.dart';
+import '../../Features/company_registration/view/ui.dart';
+import '../../Features/company_registration/view/widgets/bussiness_address.dart';
+import '../../Features/company_registration/view/widgets/company_dscription.dart';
+import '../../Features/company_registration/view/widgets/contact_detail.dart';
+import '../../Features/company_registration/view/widgets/verification_screen.dart';
 import 'p_pages.dart';
 
 class Routes {

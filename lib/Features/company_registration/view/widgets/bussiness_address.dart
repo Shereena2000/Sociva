@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../Settings/common/widgets/custom_app_bar.dart';
-import '../../../Settings/common/widgets/custom_elevated_button.dart';
-import '../../../Settings/common/widgets/custom_text_feild.dart';
-import '../../../Settings/constants/sized_box.dart';
-import '../../../Settings/utils/p_pages.dart';
-import '../../../Settings/utils/p_text_styles.dart';
+import '../../../../Settings/common/widgets/custom_app_bar.dart';
+import '../../../../Settings/common/widgets/custom_elevated_button.dart';
+import '../../../../Settings/common/widgets/custom_text_feild.dart';
+import '../../../../Settings/constants/sized_box.dart';
+import '../../../../Settings/utils/p_pages.dart';
+import '../../../../Settings/utils/p_text_styles.dart';
 import '../../view_model/company_registration_view_model.dart';
 
 class BussinessAddressScreen extends StatelessWidget {

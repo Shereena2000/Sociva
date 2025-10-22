@@ -24,9 +24,10 @@ class ChatDetailViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
 
-  Future<void> initializeChat(String otherUserId) async {
+  Future<void> initializeChat(String otherUserId, [String? chatRoomId]) async {
     print('🔍 ChatDetailViewModel - Current user ID: $_currentUserId');
     print('🔍 ChatDetailViewModel - Other user ID: $otherUserId');
+    print('🔍 ChatDetailViewModel - Chat room ID: $chatRoomId');
     
     if (_currentUserId == null) {
       _errorMessage = 'User not authenticated';
@@ -49,8 +50,15 @@ class ChatDetailViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _chatRoomId = await _chatRepository.createOrGetChatRoom(otherUserId);
-      print('✅ Chat room ID: $_chatRoomId');
+      // Use provided chatRoomId or create/get one
+      if (chatRoomId != null && chatRoomId.isNotEmpty) {
+        print('✅ Using provided chat room ID: $chatRoomId');
+        _chatRoomId = chatRoomId;
+      } else {
+        print('🔍 Creating or getting chat room...');
+        _chatRoomId = await _chatRepository.createOrGetChatRoom(otherUserId);
+        print('✅ Chat room ID: $_chatRoomId');
+      }
       
       _otherUserDetails = await _chatRepository.getUserDetails(otherUserId);
       print('✅ User details loaded: ${_otherUserDetails?['username']}');
@@ -71,10 +79,18 @@ class ChatDetailViewModel extends ChangeNotifier {
   }
 
   void _loadMessages() {
-    if (_chatRoomId.isEmpty) return;
+    if (_chatRoomId.isEmpty) {
+      print('❌ Chat room ID is empty, cannot load messages');
+      return;
+    }
 
+    print('🔍 Loading messages for chat room: $_chatRoomId');
     _chatRepository.getMessages(_chatRoomId).listen(
       (messages) {
+        print('📨 Loaded ${messages.length} messages');
+        for (var message in messages) {
+          print('   - ${message.content} (${message.messageType})');
+        }
         _messages = messages;
         notifyListeners();
       },

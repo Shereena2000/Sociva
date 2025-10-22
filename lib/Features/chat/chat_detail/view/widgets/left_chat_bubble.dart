@@ -7,8 +7,16 @@ import 'package:social_media_app/Settings/utils/p_colors.dart';
 class LeftChatBubble extends StatelessWidget {
   final String message;
   final String time;
+  final String? mediaUrl;
+  final String? messageType;
 
-  const LeftChatBubble({super.key, required this.message, required this.time});
+  const LeftChatBubble({
+    super.key, 
+    required this.message, 
+    required this.time,
+    this.mediaUrl,
+    this.messageType,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +52,7 @@ class LeftChatBubble extends StatelessWidget {
                 bottomLeft: Radius.zero, // Sharp corner
               ),
             ),
-            child: _buildClickableText(context, message),
+            child: _buildMessageContent(context),
           ),
           const SizedBox(height: 4),
           Padding(
@@ -57,6 +65,154 @@ class LeftChatBubble extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildMessageContent(BuildContext context) {
+    // Debug parameters
+    print('🔍 LeftChatBubble: messageType=$messageType, mediaUrl=$mediaUrl');
+    
+    // Handle file attachments
+    if (messageType == 'jobApplication' && mediaUrl != null) {
+      print('✅ LeftChatBubble: Building resume attachment');
+      return _buildResumeAttachment(context);
+    }
+    
+    // Handle regular text messages
+    print('📝 LeftChatBubble: Building regular text message');
+    return _buildClickableText(context, message);
+  }
+
+  Widget _buildResumeAttachment(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Message text
+        Text(
+          message,
+          style: TextStyle(fontSize: 16, color: Colors.white),
+        ),
+        const SizedBox(height: 12),
+        // Resume attachment
+        GestureDetector(
+          onTap: () => _navigateToPDFViewer(context),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.white.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.description,
+                  color: Colors.white,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _getResumeFileName(),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tap to open in browser/PDF app',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.open_in_new,
+                  color: Colors.white70,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _navigateToPDFViewer(BuildContext context) async {
+    print('🔍 LeftChatBubble - _navigateToPDFViewer called');
+    print('🔍 MediaUrl value: $mediaUrl');
+    print('🔍 MediaUrl is null: ${mediaUrl == null}');
+    print('🔍 MediaUrl is empty: ${mediaUrl?.isEmpty}');
+    
+    if (mediaUrl != null && mediaUrl!.isNotEmpty) {
+      print('✅ MediaUrl is valid: $mediaUrl');
+      print('🔍 Attempting to parse URL...');
+      
+      try {
+        final uri = Uri.parse(mediaUrl!);
+        print('✅ URL parsed successfully');
+        print('🔍 URI scheme: ${uri.scheme}');
+        print('🔍 URI host: ${uri.host}');
+        print('🔍 URI path: ${uri.path}');
+        
+        print('🔍 Checking if URL can be launched...');
+        final canLaunch = await canLaunchUrl(uri);
+        print('🔍 Can launch URL: $canLaunch');
+        
+        if (canLaunch) {
+          print('🚀 Launching URL in external application...');
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          print('✅ PDF opened in external app');
+        } else {
+          print('❌ Cannot launch PDF URL - canLaunchUrl returned false');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Cannot open PDF. URL: ${uri.toString().substring(0, 50)}...'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      } catch (e, stackTrace) {
+        print('❌ Error opening PDF: $e');
+        print('❌ Stack trace: $stackTrace');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening PDF: $e'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    } else {
+      print('❌ Resume URL is not available or empty');
+      print('   mediaUrl: $mediaUrl');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Resume URL is not available'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  String _getResumeFileName() {
+    // Extract file name from message content
+    final resumeRegex = RegExp(r'resume \(([^)]+)\)');
+    final match = resumeRegex.firstMatch(message);
+    if (match != null) {
+      return match.group(1)!;
+    }
+    return 'Resume.pdf'; // Fallback
   }
 
   Widget _buildClickableText(BuildContext context, String text) {

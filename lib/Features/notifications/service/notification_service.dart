@@ -165,6 +165,30 @@ class NotificationService {
     }
   }
 
+  // Create job application notification
+  Future<void> notifyJobApplication({
+    required String fromUserId,
+    required String toUserId,
+    required String jobTitle,
+    required String applicationId,
+  }) async {
+    if (fromUserId == toUserId) return; // Don't notify self
+
+    try {
+      final userDetails = await _getUserDetails(fromUserId);
+      await _repository.createJobApplicationNotification(
+        fromUserId: fromUserId,
+        fromUserName: userDetails['username']!,
+        fromUserImage: userDetails['profilePhotoUrl']!,
+        toUserId: toUserId,
+        jobTitle: jobTitle,
+        applicationId: applicationId,
+      );
+    } catch (e) {
+      print('Error creating job application notification: $e');
+    }
+  }
+
   // Process mentions in post content
   Future<void> processMentions({
     required String postContent,

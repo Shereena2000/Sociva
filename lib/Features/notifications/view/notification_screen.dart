@@ -300,6 +300,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
         return Colors.cyan;
       case NotificationType.postShare:
         return Colors.teal;
+      case NotificationType.jobApplication:
+        return Colors.indigo;
     }
   }
 
@@ -321,6 +323,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
       case NotificationType.statusView:
         // Navigate to status viewer
         // Navigator.pushNamed(context, '/status', arguments: notification.fromUserId);
+        break;
+      case NotificationType.jobApplication:
+        // Navigate to chat with applicant or job applications
+        // Navigator.pushNamed(context, '/chat', arguments: notification.fromUserId);
         break;
     }
   }

@@ -23,8 +23,9 @@ class ChatDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final userId = otherUserId ?? args?['otherUserId'] ?? '';
+    final roomId = chatRoomId ?? args?['chatRoomId'] ?? '';
 
-   
+    print('🔍 ChatDetailScreen: Building with userId: $userId, chatRoomId: $roomId');
 
     if (userId.isEmpty) {
       return Scaffold(
@@ -56,7 +57,7 @@ class ChatDetailScreen extends StatelessWidget {
     }
 
     return ChangeNotifierProvider(
-      create: (_) => ChatDetailViewModel()..initializeChat(userId),
+      create: (_) => ChatDetailViewModel()..initializeChat(userId, roomId),
       child: Consumer<ChatDetailViewModel>(
         builder: (context, viewModel, child) {
           final messageController = TextEditingController();
@@ -128,6 +129,13 @@ class ChatDetailScreen extends StatelessWidget {
                               final message = viewModel.messages[index];
                               final isMyMessage = viewModel.isMyMessage(message.senderId);
                               final showDateSeparator = viewModel.shouldShowDateSeparator(index);
+                              
+                              // Debug message data
+                              print('🔍 ChatDetailScreen: Message $index:');
+                              print('   Content: ${message.content}');
+                              print('   MessageType: ${message.messageType}');
+                              print('   MediaUrl: ${message.mediaUrl}');
+                              print('   SenderId: ${message.senderId}');
 
                               return Column(
                                 children: [
@@ -152,11 +160,15 @@ class ChatDetailScreen extends StatelessWidget {
                                     RightChatBubble(
                                       message: message.content,
                                       time: viewModel.getFormattedTime(message.timestamp),
+                                      mediaUrl: message.mediaUrl,
+                                      messageType: message.messageType.toString().split('.').last,
                                     )
                                   else
                                     LeftChatBubble(
                                       message: message.content,
                                       time: viewModel.getFormattedTime(message.timestamp),
+                                      mediaUrl: message.mediaUrl,
+                                      messageType: message.messageType.toString().split('.').last,
                                     ),
                                   const SizedBox(height: 12),
                                 ],

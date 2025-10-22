@@ -100,6 +100,11 @@ class ChatRepository {
         throw Exception('User not authenticated');
       }
 
+      print('📤 ChatRepository: Sending message to chat room: $chatRoomId');
+      print('   Content: $content');
+      print('   Type: $messageType');
+      print('   Media URL: $mediaUrl');
+
       final messageId = _firestore.collection('chatRooms').doc().id;
       final message = MessageModel(
         messageId: messageId,
@@ -113,6 +118,7 @@ class ChatRepository {
         mediaUrl: mediaUrl,
       );
 
+      print('📤 ChatRepository: Storing message in Firestore...');
       await _firestore
           .collection('chatRooms')
           .doc(chatRoomId)
@@ -120,6 +126,7 @@ class ChatRepository {
           .doc(messageId)
           .set(message.toMap());
 
+      print('📤 ChatRepository: Updating chat room last message...');
       await _updateChatRoomLastMessage(
         chatRoomId: chatRoomId,
         lastMessage: content,
@@ -127,9 +134,9 @@ class ChatRepository {
         receiverId: receiverId,
       );
 
-      print('✅ Message sent: $messageId');
+      print('✅ ChatRepository: Message sent successfully: $messageId');
     } catch (e) {
-      print('❌ Error sending message: $e');
+      print('❌ ChatRepository: Error sending message: $e');
       throw Exception('Failed to send message: $e');
     }
   }
@@ -166,6 +173,7 @@ class ChatRepository {
   /// Get messages
   Stream<List<MessageModel>> getMessages(String chatRoomId) {
     try {
+      print('🔍 ChatRepository: Getting messages for chat room: $chatRoomId');
       return _firestore
           .collection('chatRooms')
           .doc(chatRoomId)
@@ -173,9 +181,12 @@ class ChatRepository {
           .orderBy('timestamp', descending: true)
           .snapshots()
           .map((snapshot) {
-        return snapshot.docs.map((doc) {
+        print('📊 ChatRepository: Found ${snapshot.docs.length} messages');
+        final messages = snapshot.docs.map((doc) {
+          print('   - Message: ${doc.data()['content']}');
           return MessageModel.fromMap(doc.data());
         }).toList();
+        return messages;
       });
     } catch (e) {
       print('❌ Error getting messages: $e');

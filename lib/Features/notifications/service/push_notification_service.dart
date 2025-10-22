@@ -13,39 +13,79 @@ class PushNotificationService {
 
   // Initialize push notifications
   Future<void> initialize() async {
-    // Request permission for notifications
-    NotificationSettings settings = await _messaging.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
-      sound: true,
-    );
+    try {
+      print('🔔 Initializing push notifications...');
+      
+      // Request permission for notifications
+      NotificationSettings settings = await _messaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
 
-    print('🔔 Notification permission status: ${settings.authorizationStatus}');
+      print('🔔 Notification permission status: ${settings.authorizationStatus}');
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print('✅ User granted notification permission');
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        print('✅ User granted notification permission');
+        
+        // Get FCM token with error handling
+        try {
+          String? token = await _messaging.getToken();
+          print('📱 FCM Token: $token');
+          
+          // Save token to user document only if user is authenticated
+          if (_auth.currentUser != null) {
+            await _saveTokenToDatabase(token);
+          }
+          
+          // Listen for token refresh
+          _messaging.onTokenRefresh.listen(_saveTokenToDatabase);
+          
+          // Handle foreground messages
+          FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+          
+          // Handle background messages
+          FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessage);
+        } catch (tokenError) {
+          print('⚠️ FCM Token error (non-critical): $tokenError');
+          // Continue with app initialization even if token fails
+        }
+      } else {
+        print('❌ User denied notification permission');
+      }
+    } catch (e) {
+      print('⚠️ Push notification initialization failed (non-critical): $e');
+      // Don't throw the error - let the app continue
+    }
+  }
+
+  // Initialize push notifications after user authentication
+  Future<void> initializeAfterAuth() async {
+    if (_auth.currentUser == null) {
+      print('⚠️ No authenticated user, skipping push notification setup');
+      return;
+    }
+
+    try {
+      print('🔔 Setting up push notifications for authenticated user...');
       
       // Get FCM token
       String? token = await _messaging.getToken();
-      print('📱 FCM Token: $token');
-      
-      // Save token to user document
-      await _saveTokenToDatabase(token);
+      if (token != null) {
+        print('📱 FCM Token: $token');
+        await _saveTokenToDatabase(token);
+      }
       
       // Listen for token refresh
       _messaging.onTokenRefresh.listen(_saveTokenToDatabase);
       
-      // Handle foreground messages
-      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-      
-      // Handle background messages
-      FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessage);
-    } else {
-      print('❌ User denied notification permission');
+      print('✅ Push notifications setup completed for authenticated user');
+    } catch (e) {
+      print('⚠️ Push notification setup failed: $e');
     }
   }
 

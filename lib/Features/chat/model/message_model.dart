@@ -5,6 +5,8 @@ enum MessageType {
   image,
   video,
   audio,
+  resume,
+  jobApplication,
 }
 
 class MessageModel {
@@ -17,6 +19,7 @@ class MessageModel {
   final DateTime timestamp;
   final bool isRead;
   final String? mediaUrl;
+  final Map<String, dynamic>? metadata;
 
   MessageModel({
     required this.messageId,
@@ -28,6 +31,7 @@ class MessageModel {
     required this.timestamp,
     this.isRead = false,
     this.mediaUrl,
+    this.metadata,
   });
 
   Map<String, dynamic> toMap() {
@@ -41,6 +45,7 @@ class MessageModel {
       'timestamp': Timestamp.fromDate(timestamp),
       'isRead': isRead,
       'mediaUrl': mediaUrl,
+      'metadata': metadata,
     };
   }
 
@@ -55,6 +60,7 @@ class MessageModel {
       timestamp: (map['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isRead: map['isRead'] ?? false,
       mediaUrl: map['mediaUrl'],
+      metadata: map['metadata'] != null ? Map<String, dynamic>.from(map['metadata']) : null,
     );
   }
 
@@ -66,6 +72,10 @@ class MessageModel {
         return MessageType.video;
       case 'audio':
         return MessageType.audio;
+      case 'resume':
+        return MessageType.resume;
+      case 'jobApplication':
+        return MessageType.jobApplication;
       default:
         return MessageType.text;
     }

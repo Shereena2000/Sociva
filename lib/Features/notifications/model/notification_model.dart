@@ -6,6 +6,7 @@ enum NotificationType {
   mention,
   statusView,
   postShare,
+  jobApplication,
 }
 
 enum NotificationStatus {
@@ -169,6 +170,8 @@ class NotificationModel {
         return 'viewed your status';
       case NotificationType.postShare:
         return 'shared your post';
+      case NotificationType.jobApplication:
+        return 'applied for your job';
     }
   }
 
@@ -188,6 +191,8 @@ class NotificationModel {
         return '👁️';
       case NotificationType.postShare:
         return '📤';
+      case NotificationType.jobApplication:
+        return '💼';
     }
   }
 }

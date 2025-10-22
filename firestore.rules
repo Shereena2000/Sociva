@@ -232,5 +232,34 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && 
         request.auth.uid == resource.data.userId;
     }
+    
+    // ========================================
+    // JOB APPLICATIONS COLLECTION (for job applications)
+    // ========================================
+    match /jobApplications/{applicationId} {
+      // Applicants can read their own applications
+      allow read: if isAuthenticated() && 
+        request.auth.uid == resource.data.applicantId;
+      
+      // Companies can read applications for their jobs
+      allow read: if isAuthenticated() && 
+        request.auth.uid == resource.data.companyId;
+      
+      // Users can create applications for jobs
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.applicantId;
+      
+      // Companies can update application status (accept/reject)
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.companyId;
+      
+      // Applicants can update their own applications (withdraw)
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.applicantId;
+      
+      // Only applicants can delete their own applications
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.applicantId;
+    }
   }
 }

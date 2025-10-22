@@ -251,6 +251,34 @@ class NotificationRepository {
     await createNotification(notification);
   }
 
+  // Create job application notification
+  Future<void> createJobApplicationNotification({
+    required String fromUserId,
+    required String fromUserName,
+    required String fromUserImage,
+    required String toUserId,
+    required String jobTitle,
+    required String applicationId,
+  }) async {
+    final notification = NotificationModel(
+      id: _firestore.collection('notifications').doc().id,
+      fromUserId: fromUserId,
+      toUserId: toUserId,
+      fromUserName: fromUserName,
+      fromUserImage: fromUserImage,
+      type: NotificationType.jobApplication,
+      content: '$fromUserName applied for $jobTitle',
+      timestamp: DateTime.now(),
+      metadata: {
+        'jobTitle': jobTitle,
+        'applicationId': applicationId,
+        'type': 'jobApplication',
+      },
+    );
+
+    await createNotification(notification);
+  }
+
   // Check if notification already exists (to prevent duplicates)
   Future<bool> notificationExists({
     required String fromUserId,

@@ -14,6 +14,10 @@ import 'package:social_media_app/Features/company_registration/view_model/compan
 import 'package:social_media_app/Features/chat/chat_detail/view_model/chat_detail_view_model.dart';
 import 'package:social_media_app/Features/jobs/add_job_post/view_model/add_job_view_model.dart';
 import 'package:social_media_app/Features/jobs/job_listing_screen/view_model/job_listing_view_model.dart';
+import 'package:social_media_app/Features/jobs/job_detail_screen/view_model/job_detail_view_model.dart';
+import 'package:social_media_app/Features/jobs/add_job_post/repository/job_repository.dart';
+import 'package:social_media_app/Features/company_registration/repository/company_repository.dart';
+import 'package:social_media_app/Features/jobs/service/job_application_service.dart';
 
 List<SingleChildWidget> providers = [
   ChangeNotifierProvider(create: (_) => WrapperViewModel()),
@@ -30,4 +34,12 @@ List<SingleChildWidget> providers = [
   ChangeNotifierProvider(create: (_) => CompanyRegistrationViewModel()),
   ChangeNotifierProvider(create: (_) => AddJobViewModel()),
   ChangeNotifierProvider(create: (_) => JobListingViewModel()),
+  ChangeNotifierProvider(
+    create: (_) => JobDetailViewModel(
+      jobRepository: JobRepository(),
+      companyRepository: CompanyRepository(),
+      jobApplicationService: JobApplicationService(),
+    ),
+    lazy: true, // Make it lazy to avoid initialization issues
+  ),
 ];

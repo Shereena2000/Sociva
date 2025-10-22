@@ -52,7 +52,10 @@ class Routes {
          case PPages.chatdetailScreen:
         return MaterialPageRoute(builder: (context) => const ChatDetailScreen());
              case PPages.jobDetailScreen:
-        return MaterialPageRoute(builder: (context) => const JobDetailScreen());
+        return MaterialPageRoute(
+          builder: (context) => const JobDetailScreen(),
+          settings: settings, // Pass settings to preserve arguments
+        );
 
   case PPages.registerCompanyScreen:return MaterialPageRoute(builder: (context) => const RegisterCompanyScreen());
     case PPages.contactDetailScreen:return MaterialPageRoute(builder: (context) => const ContactDetailScreen());

@@ -16,14 +16,17 @@ class SavedFeedViewModel extends ChangeNotifier {
   bool get hasSavedFeeds => _savedFeeds.isNotEmpty;
 
   SavedFeedViewModel() {
+    _isLoading = true; // Set loading to true initially
     _savedFeedsSubscription = _savedFeedRepository.getSavedFeeds().listen((feeds) {
       if (!_isDisposed) {
         _savedFeeds = feeds;
+        _isLoading = false; // Set loading to false when data arrives
         notifyListeners();
       }
     }, onError: (error) {
       if (!_isDisposed) {
         _errorMessage = 'Failed to load saved feeds: $error';
+        _isLoading = false; // Set loading to false on error
         notifyListeners();
       }
     });

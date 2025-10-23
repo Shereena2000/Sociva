@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view_model/profile_view_model.dart';
-import 'package:social_media_app/Features/profile/profile_screen/view/widgets/photos_scrollable_view.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 
 class PhotoTabs extends StatelessWidget {
@@ -91,16 +90,7 @@ class PhotoTabs extends StatelessWidget {
             
             return GestureDetector(
               onTap: () {
-                // Navigate to Instagram-style scrollable view
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => PhotosScrollableView(
-                      photos: photos,
-                      initialIndex: index,
-                    ),
-                  ),
-                );
+                // No navigation - just display photo in grid
               },
               child: Container(
                 decoration: BoxDecoration(

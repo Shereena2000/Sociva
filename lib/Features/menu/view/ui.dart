@@ -114,7 +114,7 @@ class MenuScreen extends StatelessWidget {
   void _showLogoutDialog(BuildContext context, ProfileViewModel viewModel) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           backgroundColor: Colors.grey[900],
           title: Text('Logout', style: TextStyle(color: Colors.white)),
@@ -124,13 +124,13 @@ class MenuScreen extends StatelessWidget {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
-                viewModel.logout(context);
+                Navigator.of(dialogContext).pop(); // Close dialog with dialog context
+                viewModel.logout(context); // Use outer menu screen context for logout
               },
               child: Text('Logout', style: TextStyle(color: Colors.red)),
             ),

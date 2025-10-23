@@ -17,6 +17,13 @@ class SavedFeedViewModel extends ChangeNotifier {
 
   SavedFeedViewModel() {
     _isLoading = true; // Set loading to true initially
+    // Notify listeners immediately so UI shows loading indicator
+    Future.microtask(() {
+      if (!_isDisposed) {
+        notifyListeners();
+      }
+    });
+    
     _savedFeedsSubscription = _savedFeedRepository.getSavedFeeds().listen((feeds) {
       if (!_isDisposed) {
         _savedFeeds = feeds;

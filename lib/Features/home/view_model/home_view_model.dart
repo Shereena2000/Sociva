@@ -31,6 +31,7 @@ class HomeViewModel extends ChangeNotifier {
   // Followers/Following for Instagram-style filtering
   Set<String> _followingUserIds = {};
   Set<String> _followerUserIds = {};
+  List<StatusModel> _rawStatuses = []; // Store raw statuses for re-filtering
 
   // Getters - Posts
   List<PostWithUserModel> get posts => _posts;
@@ -230,28 +231,49 @@ class HomeViewModel extends ChangeNotifier {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     if (currentUserId == null) return;
 
-    // Listen to following list for filtering
+    // Combined approach: Listen to following/followers, then filter statuses
     _followRepository.getFollowingList().listen((followingList) {
       _followingUserIds = followingList.toSet();
+      debugPrint('✅ Following list updated: ${_followingUserIds.length} users');
+      // Re-process statuses when following list updates
+      if (_rawStatuses.isNotEmpty) {
+        _processAndFilterStatuses(_rawStatuses);
+      }
     });
 
-    // Listen to followers list for filtering
     _followRepository.getFollowersList().listen((followersList) {
       _followerUserIds = followersList.toSet();
+      debugPrint('✅ Followers list updated: ${_followerUserIds.length} users');
+      // Re-process statuses when followers list updates
+      if (_rawStatuses.isNotEmpty) {
+        _processAndFilterStatuses(_rawStatuses);
+      }
     });
 
     // Get all statuses and filter client-side (Instagram-style)
     _statusRepository.getAllStatuses().listen(
       (statuses) async {
-        
+        _rawStatuses = statuses; // Store raw statuses
+        _processAndFilterStatuses(statuses);
+      },
+      onError: (error) {
+        _errorMessage = 'Error loading statuses: $error';
+        _isLoadingStatuses = false;
+        _statusGroups = [];
+        notifyListeners();
+      },
+    );
+  }
+
+  /// Process and filter statuses (Instagram-style: current user + followers + following)
+  void _processAndFilterStatuses(List<StatusModel> statuses) async {
         final currentUserId = FirebaseAuth.instance.currentUser?.uid;
         
-        // Debug: Print all status details
-        if (statuses.isNotEmpty) {
-          for (var status in statuses) {
-          }
-        } else {
-        }
+        debugPrint('📊 PROCESSING STATUSES:');
+        debugPrint('   Total raw statuses: ${statuses.length}');
+        debugPrint('   Current User: $currentUserId');
+        debugPrint('   Following: ${_followingUserIds.length} users → $_followingUserIds');
+        debugPrint('   Followers: ${_followerUserIds.length} users → $_followerUserIds');
         
         // Group statuses by user
         Map<String, List<StatusModel>> statusesByUser = {};
@@ -261,6 +283,8 @@ class HomeViewModel extends ChangeNotifier {
           }
           statusesByUser[status.userId]!.add(status);
         }
+        
+        debugPrint('   Grouped by ${statusesByUser.length} users');
         
 
         // Create UserStatusGroupModel for each user
@@ -332,6 +356,11 @@ class HomeViewModel extends ChangeNotifier {
           return b.latestStatusTime!.compareTo(a.latestStatusTime!);
         });
 
+        debugPrint('✅ FINAL RESULT: ${groups.length} status groups will be displayed');
+        for (var group in groups) {
+          debugPrint('   - ${group.userName} (${group.userId})');
+        }
+
         _statusGroups = groups;
         _isLoadingStatuses = false;
         
@@ -342,15 +371,6 @@ class HomeViewModel extends ChangeNotifier {
         }
         
         notifyListeners();
-      },
-      onError: (error) {
-        
-        _errorMessage = 'Error loading statuses: $error';
-        _isLoadingStatuses = false;
-        _statusGroups = [];
-        notifyListeners();
-      },
-    );
   }
 
   /// Load viewed status IDs from Firebase

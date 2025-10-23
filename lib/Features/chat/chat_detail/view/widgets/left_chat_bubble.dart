@@ -74,16 +74,13 @@ class LeftChatBubble extends StatelessWidget {
 
   Widget _buildMessageContent(BuildContext context) {
     // Debug parameters
-    print('🔍 LeftChatBubble: messageType=$messageType, mediaUrl=$mediaUrl');
     
     // Handle file attachments
     if (messageType == 'jobApplication' && mediaUrl != null) {
-      print('✅ LeftChatBubble: Building resume attachment');
       return _buildResumeAttachment(context);
     }
     
     // Handle regular text messages
-    print('📝 LeftChatBubble: Building regular text message');
     return _buildClickableText(context, message);
   }
 
@@ -152,32 +149,17 @@ class LeftChatBubble extends StatelessWidget {
   }
 
   void _navigateToPDFViewer(BuildContext context) async {
-    print('🔍 LeftChatBubble - _navigateToPDFViewer called');
-    print('🔍 MediaUrl value: $mediaUrl');
-    print('🔍 MediaUrl is null: ${mediaUrl == null}');
-    print('🔍 MediaUrl is empty: ${mediaUrl?.isEmpty}');
     
     if (mediaUrl != null && mediaUrl!.isNotEmpty) {
-      print('✅ MediaUrl is valid: $mediaUrl');
-      print('🔍 Attempting to parse URL...');
       
       try {
         final uri = Uri.parse(mediaUrl!);
-        print('✅ URL parsed successfully');
-        print('🔍 URI scheme: ${uri.scheme}');
-        print('🔍 URI host: ${uri.host}');
-        print('🔍 URI path: ${uri.path}');
         
-        print('🔍 Checking if URL can be launched...');
         final canLaunch = await canLaunchUrl(uri);
-        print('🔍 Can launch URL: $canLaunch');
         
         if (canLaunch) {
-          print('🚀 Launching URL in external application...');
           await launchUrl(uri, mode: LaunchMode.externalApplication);
-          print('✅ PDF opened in external app');
         } else {
-          print('❌ Cannot launch PDF URL - canLaunchUrl returned false');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Cannot open PDF. URL: ${uri.toString().substring(0, 50)}...'),
@@ -187,8 +169,6 @@ class LeftChatBubble extends StatelessWidget {
           );
         }
       } catch (e, stackTrace) {
-        print('❌ Error opening PDF: $e');
-        print('❌ Stack trace: $stackTrace');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error opening PDF: $e'),
@@ -198,8 +178,6 @@ class LeftChatBubble extends StatelessWidget {
         );
       }
     } else {
-      print('❌ Resume URL is not available or empty');
-      print('   mediaUrl: $mediaUrl');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Resume URL is not available'),
@@ -323,7 +301,6 @@ class LeftChatBubble extends StatelessWidget {
   }
 
   void _handlePostLinkTap(BuildContext context, String postId) {
-    print('🔍 LeftChatBubble - Extracted post ID from link: $postId');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -339,7 +316,6 @@ class LeftChatBubble extends StatelessWidget {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      print('❌ Error launching URL: $e');
     }
   }
 }

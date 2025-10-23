@@ -132,7 +132,6 @@ class _SignInScreenContent extends StatelessWidget {
                               try {
                                 context.read<WrapperViewModel>().resetToHome();
                               } catch (e) {
-                                print('⚠️ WrapperViewModel not found in context, will reset on wrapper init');
                               }
                               
                               Navigator.pushNamedAndRemoveUntil(

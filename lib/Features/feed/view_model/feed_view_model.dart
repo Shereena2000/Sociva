@@ -44,7 +44,6 @@ class FeedViewModel extends ChangeNotifier {
 
   /// Initialize feed - fetch user profile and start fetching posts
   void initializeFeed() {
-    print('🔄 Initializing feed screen...');
     fetchCurrentUserProfile();
     fetchForYouPosts();
     fetchFollowingList();
@@ -60,7 +59,6 @@ class FeedViewModel extends ChangeNotifier {
       _currentUserProfile = profile;
       notifyListeners();
     } catch (e) {
-      print('❌ Error fetching current user profile: $e');
     }
   }
 
@@ -70,16 +68,12 @@ class FeedViewModel extends ChangeNotifier {
     _forYouError = null;
     notifyListeners();
 
-    print('📡 Fetching For You posts...');
     
     try {
       _postRepository.getPostsByType('feed').listen(
         (posts) async {
-          print('📦 Received ${posts.length} feed posts from Firebase');
-          print('🔄 Stream update detected - rebuilding posts...');
           
           if (posts.isEmpty) {
-            print('⚠️ No feed posts found in database');
             _forYouPosts = [];
             _isLoadingForYou = false;
             _forYouError = null;
@@ -98,7 +92,6 @@ class FeedViewModel extends ChangeNotifier {
                 userProfile: userProfile,
               ));
             } catch (e) {
-              print('⚠️ Error loading user profile for post ${post.postId}: $e');
               postsWithUsers.add(PostWithUserModel(
                 post: post,
                 userProfile: null,
@@ -110,13 +103,9 @@ class FeedViewModel extends ChangeNotifier {
           _isLoadingForYou = false;
           _forYouError = null;
           
-          print('✅ Loaded ${_forYouPosts.length} For You posts with user data');
-          print('🔔 Calling notifyListeners() to update UI');
           notifyListeners();
         },
         onError: (error) {
-          print('❌ Error fetching For You posts: $error');
-          print('❌ Error type: ${error.runtimeType}');
           _isLoadingForYou = false;
           _forYouError = error.toString();
           _forYouPosts = [];
@@ -124,7 +113,6 @@ class FeedViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
-      print('❌ Exception in fetchForYouPosts: $e');
       _isLoadingForYou = false;
       _forYouError = e.toString();
       _forYouPosts = [];
@@ -136,14 +124,12 @@ class FeedViewModel extends ChangeNotifier {
   void fetchFollowingList() {
     _followRepository.getFollowingList().listen(
       (followingIds) {
-        print('👥 Following ${followingIds.length} users');
         _followingUserIds = followingIds;
         
         // Fetch posts from followed users
         fetchFollowingPosts();
       },
       onError: (error) {
-        print('❌ Error fetching following list: $error');
         _followingUserIds = [];
       },
     );
@@ -152,7 +138,6 @@ class FeedViewModel extends ChangeNotifier {
   /// Fetch posts for "Following" tab (posts from users you follow)
   void fetchFollowingPosts() {
     if (_followingUserIds.isEmpty) {
-      print('⚠️ Not following anyone yet');
       _followingPosts = [];
       _isLoadingFollowing = false;
       _followingError = null;
@@ -164,15 +149,12 @@ class FeedViewModel extends ChangeNotifier {
     _followingError = null;
     notifyListeners();
 
-    print('📡 Fetching Following posts from ${_followingUserIds.length} users...');
     
     try {
       _postRepository.getFollowingPosts(_followingUserIds).listen(
         (posts) async {
-          print('📦 Received ${posts.length} posts from followed users');
           
           if (posts.isEmpty) {
-            print('⚠️ No posts found from followed users');
             _followingPosts = [];
             _isLoadingFollowing = false;
             _followingError = null;
@@ -191,7 +173,6 @@ class FeedViewModel extends ChangeNotifier {
                 userProfile: userProfile,
               ));
             } catch (e) {
-              print('⚠️ Error loading user profile for post ${post.postId}: $e');
               postsWithUsers.add(PostWithUserModel(
                 post: post,
                 userProfile: null,
@@ -203,12 +184,9 @@ class FeedViewModel extends ChangeNotifier {
           _isLoadingFollowing = false;
           _followingError = null;
           
-          print('✅ Loaded ${_followingPosts.length} Following posts with user data');
           notifyListeners();
         },
         onError: (error) {
-          print('❌ Error fetching Following posts: $error');
-          print('❌ Error type: ${error.runtimeType}');
           _isLoadingFollowing = false;
           _followingError = error.toString();
           _followingPosts = [];
@@ -216,7 +194,6 @@ class FeedViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
-      print('❌ Exception in fetchFollowingPosts: $e');
       _isLoadingFollowing = false;
       _followingError = e.toString();
       _followingPosts = [];
@@ -226,35 +203,29 @@ class FeedViewModel extends ChangeNotifier {
 
   /// Refresh For You posts
   Future<void> refreshForYou() async {
-    print('🔄 Refreshing For You posts...');
     fetchForYouPosts();
   }
 
   /// Refresh Following posts
   Future<void> refreshFollowing() async {
-    print('🔄 Refreshing Following posts...');
     fetchFollowingList();
   }
 
   /// Toggle like on a post
   Future<void> toggleLike(String postId, bool isCurrentlyLiked) async {
     try {
-      print('❤️ Toggle like for post: $postId (currently liked: $isCurrentlyLiked)');
       await _postRepository.toggleLike(postId, isCurrentlyLiked);
       // The UI will update automatically through the stream
     } catch (e) {
-      print('❌ Error toggling like: $e');
     }
   }
 
   /// Toggle retweet on a post
   Future<void> toggleRetweet(String postId, bool isCurrentlyRetweeted) async {
     try {
-      print('🔄 Toggle retweet for post: $postId (currently retweeted: $isCurrentlyRetweeted)');
       await _postRepository.toggleRetweet(postId, isCurrentlyRetweeted);
       // The UI will update automatically through the stream
     } catch (e) {
-      print('❌ Error toggling retweet: $e');
     }
   }
 
@@ -263,7 +234,6 @@ class FeedViewModel extends ChangeNotifier {
     try {
       return await _savedFeedRepository.isFeedSaved(feedId);
     } catch (e) {
-      print('❌ Error checking if feed is saved: $e');
       return false;
     }
   }
@@ -271,39 +241,30 @@ class FeedViewModel extends ChangeNotifier {
   /// Toggle save on a feed item
   Future<void> toggleSave(String feedId) async {
     try {
-      print('🔖 Toggle save for feed: $feedId');
       
       // Check if feed is currently saved
       final isSaved = await _savedFeedRepository.isFeedSaved(feedId);
       
       if (isSaved) {
         // Unsave the feed
-        print('📤 Unsaving feed...');
         await _savedFeedRepository.unsaveFeed(feedId);
-        print('✅ Feed unsaved successfully');
       } else {
         // Save the feed
-        print('📥 Saving feed...');
         await _savedFeedRepository.saveFeed(feedId);
-        print('✅ Feed saved successfully');
       }
       
       // Notify listeners to update UI
       notifyListeners();
       
     } catch (e) {
-      print('❌ Error toggling save: $e');
     }
   }
 
   /// Delete a post
   Future<void> deletePost(String postId) async {
     try {
-      print('🗑️ Deleting post: $postId');
       await _postRepository.deletePost(postId);
-      print('✅ Post deleted successfully');
     } catch (e) {
-      print('❌ Error deleting post: $e');
       rethrow;
     }
   }

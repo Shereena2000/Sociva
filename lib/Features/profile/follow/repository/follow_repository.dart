@@ -11,22 +11,16 @@ class FollowRepository {
   /// Follow a user using subcollections
   Future<void> followUser(String targetUserId) async {
     try {
-      print('🔍 FOLLOW DEBUG: Starting followUser');
       final user = currentUser;
       if (user == null) {
-        print('❌ FOLLOW DEBUG: User not authenticated');
         throw Exception('User not authenticated');
       }
 
-      print('🔍 FOLLOW DEBUG: Current user: ${user.uid}');
-      print('🔍 FOLLOW DEBUG: Target user: $targetUserId');
 
       if (user.uid == targetUserId) {
-        print('❌ FOLLOW DEBUG: Cannot follow yourself');
         throw Exception('Cannot follow yourself');
       }
 
-      print('🔍 FOLLOW DEBUG: Creating batch operation');
       final batch = _firestore.batch();
 
       // Add to current user's following list
@@ -64,13 +58,8 @@ class FollowRepository {
         'followersCount': FieldValue.increment(1),
       }, SetOptions(merge: true));
 
-      print('🔍 FOLLOW DEBUG: Committing batch operation');
       await batch.commit();
-      print('✅ Successfully followed user: $targetUserId');
     } catch (e) {
-      print('❌ Error following user: $e');
-      print('❌ Error type: ${e.runtimeType}');
-      print('❌ Error details: ${e.toString()}');
       throw Exception('Failed to follow user: $e');
     }
   }
@@ -115,9 +104,7 @@ class FollowRepository {
       }, SetOptions(merge: true));
 
       await batch.commit();
-      print('✅ Successfully unfollowed user: $targetUserId');
     } catch (e) {
-      print('❌ Error unfollowing user: $e');
       throw Exception('Failed to unfollow user: $e');
     }
   }
@@ -137,7 +124,6 @@ class FollowRepository {
 
       return doc.exists;
     } catch (e) {
-      print('❌ Error checking follow status: $e');
       return false;
     }
   }
@@ -197,7 +183,6 @@ class FollowRepository {
 
       return snapshot.docs.length;
     } catch (e) {
-      print('❌ Error getting followers count: $e');
       return 0;
     }
   }
@@ -213,7 +198,6 @@ class FollowRepository {
 
       return snapshot.docs.length;
     } catch (e) {
-      print('❌ Error getting following count: $e');
       return 0;
     }
   }

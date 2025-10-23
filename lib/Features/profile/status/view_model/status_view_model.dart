@@ -44,7 +44,6 @@ class StatusViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }, onError: (error) {
-      print('❌ Error fetching statuses: $error');
       _errorMessage = 'Failed to load statuses';
       _isLoading = false;
       notifyListeners();
@@ -72,12 +71,10 @@ class StatusViewModel extends ChangeNotifier {
       if (media != null) {
         _selectedMediaPath = media.path;
         _selectedMediaType = isVideo ? 'video' : 'image';
-        print('✅ Media selected: $_selectedMediaType');
         notifyListeners();
       }
     } catch (e) {
       _errorMessage = 'Failed to pick media: $e';
-      print('❌ Error picking media: $e');
       notifyListeners();
     }
   }
@@ -94,7 +91,6 @@ class StatusViewModel extends ChangeNotifier {
       _isUploading = true;
       notifyListeners();
 
-      print('🔄 Uploading $_selectedMediaType to Cloudinary...');
       
       // Use the appropriate upload method based on media type
       final mediaUrl = _selectedMediaType == 'video'
@@ -104,7 +100,6 @@ class StatusViewModel extends ChangeNotifier {
             )
           : await _cloudinaryService.uploadImage(_selectedMediaPath!);
 
-      print('✅ Media uploaded successfully: $mediaUrl');
       _isUploading = false;
       notifyListeners();
       
@@ -112,7 +107,6 @@ class StatusViewModel extends ChangeNotifier {
     } catch (e) {
       _isUploading = false;
       _errorMessage = 'Failed to upload media: $e';
-      print('❌ Error uploading media: $e');
       notifyListeners();
       return null;
     }
@@ -175,7 +169,6 @@ class StatusViewModel extends ChangeNotifier {
     } catch (e) {
       _isUploading = false;
       _errorMessage = 'Failed to create status: $e';
-      print('❌ Error creating status: $e');
       notifyListeners();
       return false;
     }
@@ -185,10 +178,8 @@ class StatusViewModel extends ChangeNotifier {
   Future<void> deleteStatus(String statusId) async {
     try {
       await _statusRepository.deleteStatus(statusId);
-      print('✅ Status deleted');
     } catch (e) {
       _errorMessage = 'Failed to delete status: $e';
-      print('❌ Error deleting status: $e');
       notifyListeners();
     }
   }

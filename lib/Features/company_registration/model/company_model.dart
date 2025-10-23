@@ -108,7 +108,6 @@ class CompanyModel {
         try {
           return dateValue.toDate();
         } catch (e) {
-          print('Error parsing date in CompanyModel: $e');
           return DateTime.now();
         }
       }

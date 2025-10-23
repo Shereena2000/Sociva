@@ -39,9 +39,7 @@ class ProfileRepository {
           .doc(user.uid)
           .set(userProfile.toMap(), SetOptions(merge: true));
 
-      print('✅ Profile created/updated successfully');
     } catch (e) {
-      print('❌ Error creating/updating profile: $e');
       throw Exception('Failed to create/update profile: $e');
     }
   }
@@ -55,7 +53,6 @@ class ProfileRepository {
       }
       return null;
     } catch (e) {
-      print('❌ Error getting user profile: $e');
       throw Exception('Failed to get user profile: $e');
     }
   }
@@ -70,7 +67,6 @@ class ProfileRepository {
       
       return query.docs.isEmpty;
     } catch (e) {
-      print('❌ Error checking username availability: $e');
       return false;
     }
   }
@@ -88,9 +84,7 @@ class ProfileRepository {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      print('✅ Profile photo updated successfully');
     } catch (e) {
-      print('❌ Error updating profile photo: $e');
       throw Exception('Failed to update profile photo: $e');
     }
   }

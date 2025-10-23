@@ -14,6 +14,5 @@ class WrapperViewModel with ChangeNotifier {
   void resetToHome() {
     _selectedIndex = 0;
     notifyListeners();
-    print('✅ WrapperViewModel: Reset to Home screen (index 0)');
   }
 }

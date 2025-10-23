@@ -31,21 +31,12 @@ class FirebaseService {
         postType: postType,
       );
 
-      print('💾 Saving post to Firebase:');
-      print('   PostId: $postId');
-      print('   UserId: $userId');
-      print('   MediaType: $mediaType');
-      print('   Caption: $caption');
-      print('   PostType: $postType');
-
       await _firestore
           .collection('posts')
           .doc(postId)
           .set(post.toMap());
       
-      print('✅ Post saved successfully to Firebase');
     } catch (e) {
-      print('❌ Failed to save post: $e');
       throw Exception('Failed to create post: $e');
     }
   }
@@ -74,22 +65,12 @@ class FirebaseService {
         postType: postType,
       );
 
-      print('💾 Saving post with ${mediaUrls.length} media to Firebase:');
-      print('   PostId: $postId');
-      print('   UserId: $userId');
-      print('   MediaType: $mediaType');
-      print('   Media count: ${mediaUrls.length}');
-      print('   Caption: $caption');
-      print('   PostType: $postType');
-
       await _firestore
           .collection('posts')
           .doc(postId)
           .set(post.toMap());
       
-      print('✅ Post with multiple media saved successfully to Firebase');
     } catch (e) {
-      print('❌ Failed to save post: $e');
       throw Exception('Failed to create post: $e');
     }
   }
@@ -141,7 +122,6 @@ class FirebaseService {
       // Sort by timestamp in descending order (newest first)
       posts.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       
-      print('✅ Fetched ${posts.length} posts for user: $userId');
       return posts;
     });
   }

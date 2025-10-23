@@ -46,7 +46,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         
         if (needsInitialization) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            print('🔄 Initializing profile for user: $currentUserId');
             viewModel.initializeProfile(widget.userId);
             _initialized = true;
             _lastInitializedUserId = currentUserId;
@@ -152,7 +151,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // Get the userId being viewed
     final viewingUserId = widget.userId;
     
-    print('🔍 Profile - viewingUserId: $viewingUserId');
     
     return Row(
       children: [
@@ -201,7 +199,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             text: "Message",
             onPressed: () {
               if (viewingUserId == null || viewingUserId.isEmpty) {
-                print('❌ Cannot navigate to chat - viewingUserId is null or empty');
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Cannot start chat - invalid user'),
@@ -211,7 +208,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 return;
               }
               
-              print('🔍 Navigating to chat with userId: $viewingUserId');
               
               // Navigate to chat detail screen using MaterialPageRoute
               Navigator.push(

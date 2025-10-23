@@ -58,9 +58,7 @@ class FollowRepositoryOptimized {
       });
 
       await batch.commit();
-      print('✅ Successfully followed user: $targetUserId');
     } catch (e) {
-      print('❌ Error following user: $e');
       throw Exception('Failed to follow user: $e');
     }
   }
@@ -105,9 +103,7 @@ class FollowRepositoryOptimized {
       });
 
       await batch.commit();
-      print('✅ Successfully unfollowed user: $targetUserId');
     } catch (e) {
-      print('❌ Error unfollowing user: $e');
       throw Exception('Failed to unfollow user: $e');
     }
   }
@@ -127,7 +123,6 @@ class FollowRepositoryOptimized {
 
       return doc.exists;
     } catch (e) {
-      print('❌ Error checking follow status: $e');
       return false;
     }
   }
@@ -187,7 +182,6 @@ class FollowRepositoryOptimized {
 
       return snapshot.docs.length;
     } catch (e) {
-      print('❌ Error getting followers count: $e');
       return 0;
     }
   }
@@ -203,7 +197,6 @@ class FollowRepositoryOptimized {
 
       return snapshot.docs.length;
     } catch (e) {
-      print('❌ Error getting following count: $e');
       return 0;
     }
   }

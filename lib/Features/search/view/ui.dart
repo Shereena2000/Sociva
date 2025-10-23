@@ -321,13 +321,8 @@ class _SearchScreenState extends State<SearchScreen> {
           // // Message icon button
           // IconButton(
           //   onPressed: () {
-          //     print('🔍 Search - User data: ${user.toString()}');
-          //     print('🔍 Search - User uid: ${user.uid}');
-          //     print('🔍 Search - User displayName: ${user.displayName}');
-          //     print('🔍 Search - User email: ${user.email}');
               
           //     if (user.uid == null || user.uid.isEmpty) {
-          //       print('❌ Search - Cannot navigate to chat - user.uid is null or empty');
           //       ScaffoldMessenger.of(context).showSnackBar(
           //         SnackBar(
           //           content: Text('Cannot start chat - user ID is missing'),

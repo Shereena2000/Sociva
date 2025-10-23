@@ -44,7 +44,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       await _controller!.initialize().timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          print('⏰ Video initialization timeout');
           throw Exception('Video initialization timeout');
         },
       );
@@ -71,7 +70,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         });
       }
     } catch (e) {
-      print('❌ Error initializing video: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;

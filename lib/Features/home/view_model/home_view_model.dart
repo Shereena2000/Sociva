@@ -47,7 +47,6 @@ class HomeViewModel extends ChangeNotifier {
 
   /// Initialize and start fetching posts and statuses
   void initializeFeed() {
-    print('🔄 Initializing home feed...');
     fetchCurrentUserProfile();
     fetchPosts();
     fetchStatuses();
@@ -64,7 +63,6 @@ class HomeViewModel extends ChangeNotifier {
       _currentUserProfile = profile;
       notifyListeners();
     } catch (e) {
-      print('❌ Error fetching current user profile: $e');
     }
   }
 
@@ -74,12 +72,9 @@ class HomeViewModel extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    print('📡 Fetching posts stream for Home screen (post type)...');
     
       _postRepository.getPostsByType('post').listen(
       (posts) async {
-        print('📦 Received ${posts.length} posts from Firebase');
-        print('🔄 Stream update detected - rebuilding home posts...');
         
         // Fetch user profiles for each post
         List<PostWithUserModel> postsWithUsers = [];
@@ -95,9 +90,7 @@ class HomeViewModel extends ChangeNotifier {
               userProfile: userProfile,
             ));
             
-            print('✅ Loaded post ${post.postId} with user: ${userProfile?.username ?? 'unknown'}');
           } catch (e) {
-            print('⚠️ Error loading user profile for post ${post.postId}: $e');
             // Still add the post without user profile
             postsWithUsers.add(PostWithUserModel(
               post: post,
@@ -110,12 +103,9 @@ class HomeViewModel extends ChangeNotifier {
         _isLoading = false;
         _errorMessage = null;
         
-        print('✅ Successfully loaded ${_posts.length} posts with user data');
-        print('🔔 Calling notifyListeners() to update UI');
         notifyListeners();
       },
       onError: (error) {
-        print('❌ Error fetching posts: $error');
         _isLoading = false;
         _errorMessage = error.toString();
         _posts = [];
@@ -126,18 +116,15 @@ class HomeViewModel extends ChangeNotifier {
 
   /// Refresh posts
   Future<void> refreshPosts() async {
-    print('🔄 Refreshing posts...');
     fetchPosts();
   }
 
   /// Like/unlike a post
   Future<void> toggleLike(String postId, bool isCurrentlyLiked) async {
     try {
-      print('❤️ Toggle like for post: $postId (currently liked: $isCurrentlyLiked)');
       await _postRepository.toggleLike(postId, isCurrentlyLiked);
       // The UI will update automatically through the stream
     } catch (e) {
-      print('❌ Error toggling like: $e');
       _errorMessage = 'Failed to like post';
       notifyListeners();
     }
@@ -146,11 +133,9 @@ class HomeViewModel extends ChangeNotifier {
   /// Retweet/unretweet a post
   Future<void> toggleRetweet(String postId, bool isCurrentlyRetweeted) async {
     try {
-      print('🔄 Toggle retweet for post: $postId (currently retweeted: $isCurrentlyRetweeted)');
       await _postRepository.toggleRetweet(postId, isCurrentlyRetweeted);
       // The UI will update automatically through the stream
     } catch (e) {
-      print('❌ Error toggling retweet: $e');
       _errorMessage = 'Failed to retweet post';
       notifyListeners();
     }
@@ -161,7 +146,6 @@ class HomeViewModel extends ChangeNotifier {
     try {
       return await _savedPostRepository.isPostSaved(postId);
     } catch (e) {
-      print('❌ Error checking if post is saved: $e');
       return false;
     }
   }
@@ -169,28 +153,22 @@ class HomeViewModel extends ChangeNotifier {
   /// Save/unsave a post
   Future<void> toggleSave(String postId) async {
     try {
-      print('🔖 Toggle save for post: $postId');
       
       // Check if post is currently saved
       final isSaved = await _savedPostRepository.isPostSaved(postId);
       
       if (isSaved) {
         // Unsave the post
-        print('📤 Unsaving post...');
         await _savedPostRepository.unsavePost(postId);
-        print('✅ Post unsaved successfully');
       } else {
         // Save the post
-        print('📥 Saving post...');
         await _savedPostRepository.savePost(postId);
-        print('✅ Post saved successfully');
       }
       
       // Notify listeners to update UI
       notifyListeners();
       
     } catch (e) {
-      print('❌ Error toggling save: $e');
     }
   }
 
@@ -207,9 +185,7 @@ class HomeViewModel extends ChangeNotifier {
       }
 
       if (parentCommentId != null) {
-        print('💬 Adding reply to comment: $parentCommentId');
       } else {
-        print('💬 Adding comment to post: $postId');
       }
       
       await _postRepository.addComment(
@@ -221,9 +197,7 @@ class HomeViewModel extends ChangeNotifier {
         replyToUserName: replyToUserName,
       );
       
-      print('✅ Comment added successfully');
     } catch (e) {
-      print('❌ Error adding comment: $e');
       _errorMessage = 'Failed to add comment';
       notifyListeners();
       rethrow;
@@ -233,11 +207,8 @@ class HomeViewModel extends ChangeNotifier {
   /// Delete a post
   Future<void> deletePost(String postId) async {
     try {
-      print('🗑️ Deleting post: $postId');
       await _postRepository.deletePost(postId);
-      print('✅ Post deleted successfully');
     } catch (e) {
-      print('❌ Error deleting post: $e');
       rethrow;
     }
   }
@@ -250,32 +221,17 @@ class HomeViewModel extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    print('📡 Fetching all statuses...');
-    print('⏰ Current time: ${DateTime.now()}');
     
     _statusRepository.getAllStatuses().listen(
       (statuses) async {
-        print('');
-        print('=== STATUS FETCH DEBUG ===');
-        print('📦 Total statuses received from Firebase: ${statuses.length}');
         
         final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-        print('👤 Current user ID: $currentUserId');
         
         // Debug: Print all status details
         if (statuses.isNotEmpty) {
-          print('');
-          print('📋 All statuses in database:');
           for (var status in statuses) {
-            print('  - User: ${status.userName} (${status.userId})');
-            print('    Caption: ${status.caption}');
-            print('    Created: ${status.createdAt}');
-            print('    Expired: ${status.isExpired}');
-            print('    Is current user: ${status.userId == currentUserId}');
           }
         } else {
-          print('⚠️ No statuses found in database!');
-          print('   Create a status to test.');
         }
         
         // Group statuses by user
@@ -287,9 +243,6 @@ class HomeViewModel extends ChangeNotifier {
           statusesByUser[status.userId]!.add(status);
         }
         
-        print('');
-        print('👥 Grouped statuses from ${statusesByUser.length} users');
-        print('   Users with statuses: ${statusesByUser.keys.map((id) => id == currentUserId ? "$id (YOU)" : id).join(", ")}');
 
         // Create UserStatusGroupModel for each user
         List<UserStatusGroupModel> groups = [];
@@ -333,28 +286,15 @@ class HomeViewModel extends ChangeNotifier {
         _statusGroups = groups;
         _isLoadingStatuses = false;
         
-        print('');
-        print('✅ Successfully loaded ${_statusGroups.length} status groups');
-        print('   Current user has status: ${_statusGroups.any((g) => g.userId == currentUserId)}');
-        print('   Other users with statuses: ${_statusGroups.where((g) => g.userId != currentUserId).length}');
         if (_statusGroups.isNotEmpty) {
-          print('');
-          print('📊 Status groups created:');
           for (var group in _statusGroups) {
             final isCurrentUser = group.userId == currentUserId;
-            print('  - ${group.userName} (${isCurrentUser ? "YOU" : "Other User"})');
-            print('    Status count: ${group.statusCount}');
-            print('    Has unseen: ${group.hasUnseenStatus}');
           }
         }
-        print('=== END DEBUG ===');
-        print('');
         
         notifyListeners();
       },
       onError: (error) {
-        print('❌ Error fetching statuses: $error');
-        print('Error type: ${error.runtimeType}');
         
         _errorMessage = 'Error loading statuses: $error';
         _isLoadingStatuses = false;
@@ -368,10 +308,8 @@ class HomeViewModel extends ChangeNotifier {
   Future<void> loadViewedStatusIds() async {
     try {
       _viewedStatusIds = await _statusRepository.getViewedStatusIds();
-      print('✅ Loaded ${_viewedStatusIds.length} viewed status IDs');
       notifyListeners();
     } catch (e) {
-      print('❌ Error loading viewed status IDs: $e');
     }
   }
 
@@ -386,7 +324,6 @@ class HomeViewModel extends ChangeNotifier {
       
       notifyListeners();
     } catch (e) {
-      print('❌ Error marking status as viewed: $e');
     }
   }
 
@@ -419,7 +356,6 @@ class HomeViewModel extends ChangeNotifier {
 
   /// Refresh statuses
   Future<void> refreshStatuses() async {
-    print('🔄 Refreshing statuses...');
     await loadViewedStatusIds();
     fetchStatuses();
   }

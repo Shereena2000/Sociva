@@ -15,41 +15,28 @@ import 'Features/notifications/service/push_notification_service.dart';
 
 void main() async {
   try {
-    print('🚀 Starting app initialization...');
     WidgetsFlutterBinding.ensureInitialized();
     
     // Initialize Firebase with options
-    print('🔥 Initializing Firebase...');
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('✅ Firebase initialized');
     
     // Load environment variables
-    print('📄 Loading environment variables...');
     await dotenv.load(fileName: ".env");
-    print('✅ Environment variables loaded');
     
     // Initialize Cloudinary
-    print('☁️ Initializing Cloudinary...');
     await CloudinaryService().initialize();
-    print('✅ Cloudinary initialized');
 
     // Initialize push notifications (non-critical)
-    print('🔔 Initializing push notifications...');
     try {
       await PushNotificationService().initialize();
-      print('✅ Push notifications initialized');
     } catch (e) {
-      print('⚠️ Push notifications failed to initialize (non-critical): $e');
       // Continue with app initialization
     }
 
-    print('🎯 Starting app...');
     runApp(MultiProvider(providers: providers, child: MyApp()));
   } catch (e, stackTrace) {
-    print('❌ App initialization failed: $e');
-    print('Stack trace: $stackTrace');
     // Run app anyway with error handling
     runApp(MaterialApp(
       home: Scaffold(
@@ -129,7 +116,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     switch (state) {
       case AppLifecycleState.resumed:
         // App is in foreground
-        print('🟢 App resumed - setting user online');
         _presenceService.setUserOnline();
         break;
       case AppLifecycleState.paused:
@@ -137,7 +123,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       case AppLifecycleState.detached:
       case AppLifecycleState.hidden:
         // App is in background or closing
-        print('🔴 App paused - setting user offline');
         _presenceService.setUserOffline();
         break;
     }

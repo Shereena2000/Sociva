@@ -39,7 +39,6 @@ class JobRepository {
       }
       return null;
     } catch (e) {
-      print('❌ Error in getJobById: $e');
       throw Exception('Failed to get job: $e');
     }
   }
@@ -62,7 +61,6 @@ class JobRepository {
           })
           .toList();
     } catch (e) {
-      print('❌ Error in getJobsByCompanyId: $e');
       throw Exception('Failed to get company jobs: $e');
     }
   }
@@ -84,7 +82,6 @@ class JobRepository {
           })
           .toList();
     } catch (e) {
-      print('❌ Error in getJobsByUserId: $e');
       throw Exception('Failed to get user jobs: $e');
     }
   }

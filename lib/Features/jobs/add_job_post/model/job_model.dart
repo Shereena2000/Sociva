@@ -75,7 +75,6 @@ class JobModel {
         try {
           return dateValue.toDate();
         } catch (e) {
-          print('Error parsing date: $e');
           return DateTime.now();
         }
       }

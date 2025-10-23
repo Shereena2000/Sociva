@@ -36,8 +36,6 @@ class JobListingViewModel extends ChangeNotifier {
   // Fetch all active jobs with company details
   Future<void> fetchAllJobs() async {
     try {
-      print('🔄 JobListingViewModel: Starting to fetch all jobs...');
-      print('🔍 Filters: EmploymentType: $_selectedEmploymentType, WorkMode: $_selectedWorkMode, JobLevel: $_selectedJobLevel, Location: $_selectedLocation');
       
       _isLoading = true;
       _errorMessage = '';
@@ -50,39 +48,27 @@ class JobListingViewModel extends ChangeNotifier {
         location: _selectedLocation.isNotEmpty ? _selectedLocation : null,
       );
 
-      print('✅ JobListingViewModel: Fetched ${_jobs.length} jobs successfully');
       if (_jobs.isEmpty) {
-        print('⚠️ JobListingViewModel: No jobs found! This could mean:');
-        print('   1. No jobs are posted in Firebase');
-        print('   2. Jobs exist but companies are missing');
-        print('   3. Jobs exist but not marked as active');
       } else {
-        print('📋 Jobs found:');
         for (var job in _jobs) {
-          print('   - ${job.jobTitle} at ${job.companyName} (CompanyID: ${job.job.companyId})');
         }
       }
     } catch (e) {
-      print('❌ JobListingViewModel: Error fetching jobs: $e');
-      print('   Stack trace: ${StackTrace.current}');
       _errorMessage = 'Failed to load jobs: $e';
     } finally {
       _isLoading = false;
       notifyListeners();
-      print('🏁 JobListingViewModel: Fetch complete. Loading: $_isLoading, HasJobs: ${_jobs.isNotEmpty}');
     }
   }
 
   // Search jobs
   Future<void> searchJobs(String query) async {
     if (query.trim().isEmpty) {
-      print('🔄 JobListingViewModel: Empty search query, clearing search...');
       clearSearch();
       return;
     }
 
     try {
-      print('🔍 JobListingViewModel: Starting search for: "$query"');
       _isSearching = true;
       _searchQuery = query;
       _errorMessage = '';
@@ -90,23 +76,18 @@ class JobListingViewModel extends ChangeNotifier {
 
       _jobs = await _repository.searchJobsWithCompanies(query);
 
-      print('🔍 JobListingViewModel: Search complete - Found ${_jobs.length} matching jobs');
       if (_jobs.isEmpty) {
-        print('⚠️ JobListingViewModel: No search results found for: "$query"');
       }
     } catch (e) {
-      print('❌ JobListingViewModel: Error searching jobs: $e');
       _errorMessage = 'Failed to search jobs: $e';
     } finally {
       _isSearching = false;
       notifyListeners();
-      print('🏁 JobListingViewModel: Search finished. Results: ${_jobs.length} jobs');
     }
   }
 
   // Clear search
   void clearSearch() {
-    print('🔄 JobListingViewModel: Clearing search...');
     _searchQuery = '';
     _isSearching = false;
     notifyListeners();
@@ -187,10 +168,8 @@ class JobListingViewModel extends ChangeNotifier {
   // Get featured jobs (for homepage or special sections)
   Future<List<JobWithCompanyModel>> getFeaturedJobs({int limit = 5}) async {
     try {
-      print('⭐ JobListingViewModel: Fetching featured jobs...');
       return await _repository.getFeaturedJobs(limit: limit);
     } catch (e) {
-      print('❌ JobListingViewModel: Error fetching featured jobs: $e');
       return [];
     }
   }

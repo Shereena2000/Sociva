@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:social_media_app/Settings/constants/sized_box.dart';
 import 'package:social_media_app/Settings/constants/text_styles.dart';
-import 'package:social_media_app/Settings/utils/p_colors.dart';
 import 'package:social_media_app/Settings/utils/p_text_styles.dart';
 import '../../../../Settings/utils/p_pages.dart';
 import '../view_model/sign_up_view_model.dart';

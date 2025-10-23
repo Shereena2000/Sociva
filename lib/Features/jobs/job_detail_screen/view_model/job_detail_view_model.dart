@@ -18,7 +18,6 @@ class JobDetailViewModel extends ChangeNotifier {
   })  : _jobRepository = jobRepository,
         _companyRepository = companyRepository,
         _jobApplicationService = jobApplicationService {
-    print('🔧 JobDetailViewModel: Initialized');
   }
 
   // State
@@ -42,9 +41,6 @@ class JobDetailViewModel extends ChangeNotifier {
 
   // Initialize with JobWithCompanyModel (from navigation)
   void initializeWithJobData(JobWithCompanyModel jobWithCompany) {
-    print('📱 JobDetailViewModel: Initializing with job data...');
-    print('   Job: ${jobWithCompany.job.jobTitle}');
-    print('   Company: ${jobWithCompany.company.companyName}');
     
     _jobWithCompany = jobWithCompany;
     _errorMessage = '';
@@ -57,7 +53,6 @@ class JobDetailViewModel extends ChangeNotifier {
   // Fetch job details by ID (if navigating with just job ID)
   Future<void> fetchJobDetails(String jobId) async {
     try {
-      print('🔍 JobDetailViewModel: Fetching job details for ID: $jobId');
       _isLoading = true;
       _errorMessage = '';
       notifyListeners();
@@ -68,7 +63,6 @@ class JobDetailViewModel extends ChangeNotifier {
         throw Exception('Job not found');
       }
 
-      print('   ✅ Job fetched: ${job.jobTitle}');
 
       // Fetch company
       final company = await _companyRepository.getCompanyById(job.companyId);
@@ -76,7 +70,6 @@ class JobDetailViewModel extends ChangeNotifier {
         throw Exception('Company not found');
       }
 
-      print('   ✅ Company fetched: ${company.companyName}');
 
       // Combine
       _jobWithCompany = JobWithCompanyModel(
@@ -84,12 +77,10 @@ class JobDetailViewModel extends ChangeNotifier {
         company: company,
       );
 
-      print('🎉 JobDetailViewModel: Job details loaded successfully');
       
       // Check if user has already applied
       checkIfUserHasApplied(job.id);
     } catch (e) {
-      print('❌ JobDetailViewModel: Error fetching job details: $e');
       _errorMessage = 'Failed to load job details: $e';
     } finally {
       _isLoading = false;
@@ -108,15 +99,10 @@ class JobDetailViewModel extends ChangeNotifier {
   void toggleSaveJob() {
     _isSaved = !_isSaved;
     notifyListeners();
-    print('💾 JobDetailViewModel: Job ${_isSaved ? 'saved' : 'unsaved'}');
-    
-    // TODO: Implement actual save to Firebase
-    // This would save to user's saved jobs collection
   }
 
-  // Check if job is saved (TODO: Implement with Firebase)
+  // Check if job is saved
   Future<void> checkIfJobSaved(String jobId) async {
-    // TODO: Check if job is in user's saved jobs
     _isSaved = false;
     notifyListeners();
   }
@@ -124,7 +110,6 @@ class JobDetailViewModel extends ChangeNotifier {
   // Apply for job (opens popup)
   void applyForJob() {
     if (_jobWithCompany == null) return;
-    print('📝 JobDetailViewModel: Opening apply job popup for: ${job!.jobTitle}');
   }
 
   // Submit job application with resume
@@ -136,10 +121,6 @@ class JobDetailViewModel extends ChangeNotifier {
     required String resumeFileName,
   }) async {
     try {
-      print('📝 JobDetailViewModel: Submitting job application...');
-      print('   Job: $jobTitle');
-      print('   Company: $companyName');
-      print('   Resume: $resumeFileName');
       
       if (_jobWithCompany == null) {
         throw Exception('Job details not available');
@@ -155,15 +136,8 @@ class JobDetailViewModel extends ChangeNotifier {
         resumeFileName: resumeFileName,
       );
       
-      print('✅ JobDetailViewModel: Application submitted successfully');
-      print('   - Resume uploaded to Cloudinary');
-      print('   - Application created in Firestore');
-      print('   - Chat room created with company');
-      print('   - Resume sent as chat message');
-      print('   - Company notified');
       
     } catch (e) {
-      print('❌ JobDetailViewModel: Error submitting application: $e');
       throw Exception('Failed to submit application: $e');
     }
   }
@@ -171,11 +145,6 @@ class JobDetailViewModel extends ChangeNotifier {
   // Share job
   void shareJob() {
     if (_jobWithCompany == null) return;
-    
-    print('🔗 JobDetailViewModel: Sharing job: ${job!.jobTitle}');
-    
-    // TODO: Implement share functionality
-    // This would use share_plus package to share job details
   }
 
   // Check if user has already applied to this job
@@ -186,12 +155,7 @@ class JobDetailViewModel extends ChangeNotifier {
 
       _hasApplied = await _jobApplicationService.hasUserAppliedToJob(jobId);
       
-      print(_hasApplied 
-          ? '✅ User has already applied to this job' 
-          : '❌ User has not applied to this job');
-      
     } catch (e) {
-      print('❌ Error checking application status: $e');
       _hasApplied = false;
     } finally {
       _isCheckingApplication = false;
@@ -203,12 +167,10 @@ class JobDetailViewModel extends ChangeNotifier {
   void markAsApplied() {
     _hasApplied = true;
     notifyListeners();
-    print('✅ Job marked as applied');
   }
 
   @override
   void dispose() {
-    print('🗑️ JobDetailViewModel: Disposed');
     super.dispose();
   }
 }

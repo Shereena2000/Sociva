@@ -107,7 +107,6 @@ class VideoTabs extends StatelessWidget {
   ) {
     return GestureDetector(
       onTap: () {
-        print('Play video $index');
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),

@@ -19,7 +19,6 @@ class ShareBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('🔍 ShareBottomSheet - Post ID: $postId');
     final postLink = 'https://yourapp.com/post/$postId'; // Using the actual post ID from database
 
     return Container(
@@ -334,7 +333,6 @@ class _ChatSelectionScreen extends StatelessWidget {
 
       Navigator.pop(context, true);
     } catch (e) {
-      print('❌ Error sharing post to chat: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to share post'),

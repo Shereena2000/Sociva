@@ -25,10 +25,6 @@ class JobCard extends StatelessWidget {
     
     return GestureDetector(
       onTap: onTap ?? () {
-        print('🎯 JobCard: Tapped!');
-        print('   Job: ${job.jobTitle}');
-        print('   Company: ${company.companyName}');
-        print('   Navigating to JobDetailScreen with arguments...');
         
         Navigator.pushNamed(
           context, 

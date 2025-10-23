@@ -7,14 +7,11 @@ class NotificationRepository {
   // Create a new notification
   Future<void> createNotification(NotificationModel notification) async {
     try {
-      print('🔔 Creating notification: ${notification.content}');
       await _firestore
           .collection('notifications')
           .doc(notification.id)
           .set(notification.toJson());
-      print('✅ Notification created successfully');
     } catch (e) {
-      print('❌ Error creating notification: $e');
       if (e.toString().contains('permission')) {
         throw Exception('Permission denied. Please check your Firebase security rules.');
       } else if (e.toString().contains('network')) {
@@ -27,14 +24,12 @@ class NotificationRepository {
 
   // Get notifications for current user
   Stream<List<NotificationModel>> getNotifications(String userId) {
-    print('🔍 Fetching notifications for user: $userId');
     return _firestore
         .collection('notifications')
         .where('toUserId', isEqualTo: userId)
         .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-      print('📊 Found ${snapshot.docs.length} notifications');
       return snapshot.docs
           .map((doc) => NotificationModel.fromJson(doc.data()))
           .toList();

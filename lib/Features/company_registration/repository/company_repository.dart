@@ -55,18 +55,14 @@ class CompanyRepository {
   // Get company by company ID
   Future<CompanyModel?> getCompanyById(String companyId) async {
     try {
-      print('🔍 CompanyRepository: Fetching company with ID: $companyId');
       final doc = await _firestore.collection('companies').doc(companyId).get();
       if (doc.exists) {
         final data = doc.data()!;
         data['id'] = doc.id; // Add document ID
-        print('✅ CompanyRepository: Found company: ${data['companyName']}');
         return CompanyModel.fromMap(data);
       }
-      print('⚠️ CompanyRepository: Company not found with ID: $companyId');
       return null;
     } catch (e) {
-      print('❌ CompanyRepository: Error getting company: $e');
       throw Exception('Failed to get company: $e');
     }
   }

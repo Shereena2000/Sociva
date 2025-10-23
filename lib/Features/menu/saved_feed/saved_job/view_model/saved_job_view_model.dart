@@ -80,7 +80,6 @@ class SavedJobViewModel extends ChangeNotifier {
     try {
       return await _savedJobRepository.isJobSaved(jobId);
     } catch (e) {
-      print('Error checking if job is saved: $e');
       return false;
     }
   }

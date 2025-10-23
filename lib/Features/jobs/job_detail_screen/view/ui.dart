@@ -20,9 +20,6 @@ class JobDetailScreen extends StatelessWidget {
     final arguments = ModalRoute.of(context)!.settings.arguments;
     
     // Debug: Print what we received
-    print('🔍 JobDetailScreen: Building with arguments...');
-    print('   Arguments type: ${arguments.runtimeType}');
-    print('   Arguments received: ${arguments != null ? "YES" : "NO"}');
     
     JobWithCompanyModel? jobWithCompany;
     bool needsCompanyData = false;
@@ -35,26 +32,17 @@ class JobDetailScreen extends StatelessWidget {
       
       if (jobData is JobWithCompanyModel) {
         jobWithCompany = jobData;
-        print('   Job (from Map): ${jobWithCompany.job.jobTitle}');
-        print('   Show Apply Button: $showApplyButton');
       } else if (jobData is JobModel) {
-        print('   Job (from Map): ${jobData.jobTitle}');
-        print('   Show Apply Button: $showApplyButton');
         needsCompanyData = true;
       }
     } else if (arguments is JobWithCompanyModel) {
       // Full data already available
       jobWithCompany = arguments;
-      print('   Job: ${jobWithCompany.job.jobTitle}');
-      print('   Company: ${jobWithCompany.company.companyName}');
     } else if (arguments is JobModel) {
       // Only job data, need to fetch company
-      print('   Job: ${arguments.jobTitle}');
-      print('   Company: Need to fetch company data');
       needsCompanyData = true;
     } else {
       // No data or wrong type
-      print('   Error: Invalid argument type');
     }
 
     // If no data passed, show error immediately
@@ -139,9 +127,6 @@ class JobDetailScreen extends StatelessWidget {
       // ),
       body: Consumer<JobDetailViewModel>(
         builder: (context, viewModel, child) {
-          print('🔄 JobDetailScreen Consumer: Building...');
-          print('   ViewModel hasData: ${viewModel.hasData}');
-          print('   ViewModel isLoading: ${viewModel.isLoading}');
           
           // Handle different initialization scenarios
           if (jobWithCompany != null) {
@@ -150,7 +135,6 @@ class JobDetailScreen extends StatelessWidget {
                              (viewModel.hasData && viewModel.job!.id != jobWithCompany.job.id);
             
             if (needsInit && !viewModel.isLoading) {
-              print('   ✅ Initializing ViewModel with full job data...');
               Future.microtask(() {
                 viewModel.initializeWithJobData(jobWithCompany!);
               });
@@ -166,7 +150,6 @@ class JobDetailScreen extends StatelessWidget {
                              (viewModel.hasData && viewModel.job!.id != job.id);
             
             if (needsInit && !viewModel.isLoading) {
-              print('   ✅ Fetching company data for job...');
               Future.microtask(() {
                 viewModel.fetchJobDetails(job.id);
               });
@@ -278,7 +261,6 @@ class JobDetailScreen extends StatelessWidget {
           
           // Hide Apply button if showApplyButton is false (employer viewing own job)
           if (!showApplyButton) {
-            print('🔍 Apply button hidden - showApplyButton: $showApplyButton');
             return SizedBox.shrink();
           }
           

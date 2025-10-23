@@ -21,7 +21,6 @@ class _FeedScreenState extends State<FeedScreen> {
         // Initialize feed only once
         if (!_initialized) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            print('🔄 Initializing Feed screen');
             feedViewModel.initializeFeed();
             _initialized = true;
           });

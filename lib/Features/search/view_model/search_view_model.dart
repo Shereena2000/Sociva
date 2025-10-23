@@ -59,17 +59,13 @@ class SearchViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      print('🔍 Searching for users: "$_currentQuery"');
       
       final results = await _searchRepository.searchUsers(_currentQuery);
       
       // Debug each result
-      print('🔍 SearchViewModel - Found ${results.length} results');
       for (int i = 0; i < results.length; i++) {
         final user = results[i];
-        print('🔍 SearchViewModel - Result $i: uid="${user.uid}", username="${user.username}", name="${user.name}"');
         if (user.uid.isEmpty) {
-          print('❌ SearchViewModel - WARNING: User $i has empty uid!');
         }
       }
       
@@ -79,9 +75,7 @@ class SearchViewModel extends ChangeNotifier {
       // Load follow status for each user
       await _loadFollowStatusForResults();
 
-      print('✅ Search completed: ${results.length} results');
     } catch (e) {
-      print('❌ Search error: $e');
       _searchError = e.toString();
       _searchResults = [];
     } finally {
@@ -97,7 +91,6 @@ class SearchViewModel extends ChangeNotifier {
         final isFollowing = await _followRepository.isFollowing(user.uid);
         _followingStatus[user.uid] = isFollowing;
       } catch (e) {
-        print('⚠️ Error loading follow status for ${user.username}: $e');
         _followingStatus[user.uid] = false;
       }
     }
@@ -117,11 +110,9 @@ class SearchViewModel extends ChangeNotifier {
       if (currentlyFollowing) {
         await _followRepository.unfollowUser(userId);
         _followingStatus[userId] = false;
-        print('✅ Unfollowed user: $userId');
       } else {
         await _followRepository.followUser(userId);
         _followingStatus[userId] = true;
-        print('✅ Followed user: $userId');
       }
 
       // Update the user's follower count in search results
@@ -135,7 +126,6 @@ class SearchViewModel extends ChangeNotifier {
         _searchResults[userIndex] = updatedUser;
       }
     } catch (e) {
-      print('❌ Error toggling follow for $userId: $e');
       // Revert the follow action loading state
     } finally {
       _followActionLoading[userId] = false;
@@ -165,7 +155,6 @@ class SearchViewModel extends ChangeNotifier {
       _recentSearches = await _searchRepository.getRecentSearches();
       notifyListeners();
     } catch (e) {
-      print('❌ Error loading recent searches: $e');
     }
   }
 
@@ -177,7 +166,6 @@ class SearchViewModel extends ChangeNotifier {
       await _searchRepository.saveRecentSearch(query.trim());
       await loadRecentSearches();
     } catch (e) {
-      print('❌ Error saving recent search: $e');
     }
   }
 
@@ -188,7 +176,6 @@ class SearchViewModel extends ChangeNotifier {
       _recentSearches = [];
       notifyListeners();
     } catch (e) {
-      print('❌ Error clearing recent searches: $e');
     }
   }
 
@@ -200,16 +187,13 @@ class SearchViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      print('🎯 Loading suggested users...');
       final users = await _searchRepository.getSuggestedUsers(limit: 15);
       _suggestedUsers = users;
 
       // Load follow status for suggested users
       await _loadFollowStatusForSuggestedUsers();
 
-      print('✅ Loaded ${users.length} suggested users');
     } catch (e) {
-      print('❌ Error loading suggested users: $e');
       _suggestedUsers = [];
     } finally {
       _isLoadingSuggested = false;
@@ -224,7 +208,6 @@ class SearchViewModel extends ChangeNotifier {
         final isFollowing = await _followRepository.isFollowing(user.uid);
         _followingStatus[user.uid] = isFollowing;
       } catch (e) {
-        print('⚠️ Error loading follow status for ${user.username}: $e');
         _followingStatus[user.uid] = false;
       }
     }

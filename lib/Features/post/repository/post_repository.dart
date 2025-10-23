@@ -54,14 +54,12 @@ class PostRepository {
         throw Exception('No media files provided');
       }
 
-      print('📤 Uploading ${mediaFiles.length} media files...');
       
       // Upload all media files to Cloudinary
       List<String> mediaUrls = [];
       bool hasVideo = false;
       
       for (int i = 0; i < mediaFiles.length; i++) {
-        print('   Uploading file ${i + 1}/${mediaFiles.length}...');
         final file = mediaFiles[i];
         final isVideo = _isVideoFile(file.path);
         
@@ -73,10 +71,8 @@ class PostRepository {
         );
         
         mediaUrls.add(mediaUrl);
-        print('   ✅ Uploaded ${i + 1}/${mediaFiles.length}');
       }
 
-      print('✅ All media uploaded successfully');
       
       // Determine mediaType: 'mixed' if both, 'video' if any video, 'image' otherwise
       final mediaType = hasVideo ? 'video' : 'image';
@@ -92,7 +88,6 @@ class PostRepository {
 
       return mediaUrls;
     } catch (e) {
-      print('❌ Error in createPostWithMultipleMedia: $e');
       throw Exception('Failed to create post: $e');
     }
   }
@@ -133,7 +128,6 @@ class PostRepository {
   // Get posts from users that current user is following (for Following tab)
   Stream<List<PostModel>> getFollowingPosts(List<String> followingUserIds) {
     if (followingUserIds.isEmpty) {
-      print('⚠️ No following users provided');
       return Stream.value([]);
     }
 
@@ -141,7 +135,6 @@ class PostRepository {
     // For now, take first 10 users
     final userIdsToQuery = followingUserIds.take(10).toList();
     
-    print('🔍 Querying posts from ${userIdsToQuery.length} users');
 
     return _firestore
         .collection('posts')
@@ -149,7 +142,6 @@ class PostRepository {
         .where('userId', whereIn: userIdsToQuery)
         .snapshots()
         .map((snapshot) {
-      print('📦 Found ${snapshot.docs.length} posts from following');
       final posts = snapshot.docs.map((doc) {
         final data = doc.data();
         data['postId'] = doc.id;
@@ -161,7 +153,6 @@ class PostRepository {
       
       return posts;
     }).handleError((error) {
-      print('❌ Error in getFollowingPosts stream: $error');
       return <PostModel>[];
     });
   }
@@ -194,9 +185,7 @@ class PostRepository {
         'likes': FieldValue.arrayUnion([userId]),
       });
 
-      print('✅ Post liked: $postId by $userId');
     } catch (e) {
-      print('❌ Error liking post: $e');
       throw Exception('Failed to like post: $e');
     }
   }
@@ -214,9 +203,7 @@ class PostRepository {
         'likes': FieldValue.arrayRemove([userId]),
       });
 
-      print('✅ Post unliked: $postId by $userId');
     } catch (e) {
-      print('❌ Error unliking post: $e');
       throw Exception('Failed to unlike post: $e');
     }
   }
@@ -245,9 +232,7 @@ class PostRepository {
         'retweets': FieldValue.arrayUnion([userId]),
       });
 
-      print('✅ Post retweeted: $postId by $userId');
     } catch (e) {
-      print('❌ Error retweeting post: $e');
       throw Exception('Failed to retweet post: $e');
     }
   }
@@ -265,9 +250,7 @@ class PostRepository {
         'retweets': FieldValue.arrayRemove([userId]),
       });
 
-      print('✅ Post unretweeted: $postId by $userId');
     } catch (e) {
-      print('❌ Error unretweeting post: $e');
       throw Exception('Failed to unretweet post: $e');
     }
   }
@@ -295,7 +278,6 @@ class PostRepository {
         return PostModel.fromMap(data);
       }).toList();
     }).handleError((error) {
-      print('❌ Error in getUserRetweetedPosts stream: $error');
       return <PostModel>[];
     });
   }
@@ -337,10 +319,6 @@ class PostRepository {
         replyToUserName: replyToUserName,
       );
 
-      print('💾 Saving comment to Firestore...');
-      print('   Comment ID: $commentId');
-      print('   User: $userName');
-      print('   Is reply: ${parentCommentId != null}');
       
       // Save comment to Firestore (as subcollection under post)
       await _firestore
@@ -350,14 +328,12 @@ class PostRepository {
           .doc(commentId)
           .set(comment.toMap());
 
-      print('✅ Comment document created');
 
       // Increment comment count on post (use set with merge to handle missing field)
       await _firestore.collection('posts').doc(postId).set({
         'commentCount': FieldValue.increment(1),
       }, SetOptions(merge: true));
 
-      print('✅ Comment count updated on post');
 
       // If this is a reply, increment reply count on parent comment
       if (parentCommentId != null) {
@@ -369,19 +345,15 @@ class PostRepository {
             .set({
           'replyCount': FieldValue.increment(1),
         }, SetOptions(merge: true));
-        print('✅ Reply added to comment: $parentCommentId');
       } else {
-        print('✅ Comment added to post: $postId');
       }
     } catch (e) {
-      print('❌ Error adding comment: $e');
       throw Exception('Failed to add comment: $e');
     }
   }
 
   /// Get comments for a post (main comments only, not replies)
   Stream<List<CommentModel>> getComments(String postId) {
-    print('🔍 Fetching comments for post: $postId');
     
     return _firestore
         .collection('posts')
@@ -390,7 +362,6 @@ class PostRepository {
         .orderBy('timestamp', descending: false) // Oldest first (like Instagram)
         .snapshots()
         .map((snapshot) {
-      print('📦 Received ${snapshot.docs.length} comment documents');
       
       // Filter main comments (where parentCommentId is null) in code
       final mainComments = snapshot.docs
@@ -398,7 +369,6 @@ class PostRepository {
             try {
               return CommentModel.fromFirestore(doc);
             } catch (e) {
-              print('⚠️ Error parsing comment ${doc.id}: $e');
               return null;
             }
           })
@@ -406,17 +376,14 @@ class PostRepository {
           .cast<CommentModel>()
           .toList();
       
-      print('✅ Filtered to ${mainComments.length} main comments');
       return mainComments;
     }).handleError((error) {
-      print('❌ Error in getComments stream: $error');
       return <CommentModel>[];
     });
   }
 
   /// Get replies for a specific comment
   Stream<List<CommentModel>> getReplies(String postId, String commentId) {
-    print('🔍 Querying replies for comment: $commentId in post: $postId');
     return _firestore
         .collection('posts')
         .doc(postId)
@@ -424,11 +391,9 @@ class PostRepository {
         .where('parentCommentId', isEqualTo: commentId)
         .snapshots()
         .map((snapshot) {
-      print('📦 getReplies received ${snapshot.docs.length} documents');
       if (snapshot.docs.isNotEmpty) {
         for (var doc in snapshot.docs) {
           final data = doc.data();
-          print('   Reply: ${data['userName']} - ${data['text']} (parent: ${data['parentCommentId']})');
         }
       }
       
@@ -438,7 +403,6 @@ class PostRepository {
             try {
               return CommentModel.fromFirestore(doc);
             } catch (e) {
-              print('⚠️ Error parsing reply ${doc.id}: $e');
               return null;
             }
           })
@@ -451,7 +415,6 @@ class PostRepository {
       
       return replies;
     }).handleError((error) {
-      print('❌ Error in getReplies stream: $error');
       return <CommentModel>[];
     });
   }
@@ -489,9 +452,7 @@ class PostRepository {
         });
       }
 
-      print('✅ Comment deleted: $commentId');
     } catch (e) {
-      print('❌ Error deleting comment: $e');
       throw Exception('Failed to delete comment: $e');
     }
   }
@@ -507,7 +468,6 @@ class PostRepository {
 
       return snapshot.docs.length;
     } catch (e) {
-      print('❌ Error getting comment count: $e');
       return 0;
     }
   }

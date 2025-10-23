@@ -340,7 +340,6 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
 
       if (_isEditMode && _userCompany != null) {
         // UPDATE existing company
-        print('📝 Updating existing company: ${_userCompany!.id}');
         
         final updates = {
           'companyName': _companyName,
@@ -366,10 +365,8 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
         };
         
         await _companyRepository.updateCompany(_userCompany!.id, updates);
-        print('✅ Company updated successfully');
       } else {
         // CREATE new company
-        print('📝 Creating new company...');
         
         final company = CompanyModel(
           id: '', // Will be set by Firestore
@@ -403,13 +400,11 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
 
         // Save to Firebase
         final companyId = await _companyRepository.createCompany(company);
-        print('✅ Company registered with ID: $companyId');
       }
 
       // Load the company back to get the complete data
       await loadUserCompany();
       
-      print('✅ Company loaded into ViewModel: ${_userCompany?.companyName} (ID: ${_userCompany?.id})');
 
       _isRegistrationComplete = true;
       _isEditMode = false; // Reset edit mode
@@ -557,30 +552,25 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        print('❌ No user logged in');
         _hasRegisteredCompany = false;
         _userCompany = null;
         notifyListeners();
         return;
       }
 
-      print('🔍 Loading company for user: ${user.uid}');
       _isLoading = true;
       notifyListeners();
 
       final company = await _companyRepository.getCompanyByUserId(user.uid);
       
       if (company != null) {
-        print('✅ Company found: ${company.companyName}, Verified: ${company.isVerified}');
         _hasRegisteredCompany = true;
         _userCompany = company;
       } else {
-        print('❌ No company found for user');
         _hasRegisteredCompany = false;
         _userCompany = null;
       }
     } catch (e) {
-      print('❌ Error loading user company: $e');
       _hasRegisteredCompany = false;
       _userCompany = null;
     } finally {
@@ -596,7 +586,6 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
   void loadCompanyForEdit() {
     if (_userCompany == null) return;
     
-    print('📝 Loading company data for editing...');
     
     _isEditMode = true; // Set edit mode
     
@@ -625,7 +614,6 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
     _businessLicenseUrl = _userCompany!.businessLicenseUrl;
     
     notifyListeners();
-    print('✅ Company data loaded for editing (Edit Mode: ON)');
   }
 
   // Delete company
@@ -633,7 +621,6 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
     if (_userCompany == null) return false;
     
     try {
-      print('🗑️ Deleting company: ${_userCompany!.companyName}');
       _isLoading = true;
       notifyListeners();
       
@@ -654,13 +641,11 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
       _userCompany = null;
       clearForm();
       
-      print('✅ Company deleted successfully');
       _isLoading = false;
       notifyListeners();
       
       return true;
     } catch (e) {
-      print('❌ Error deleting company: $e');
       _errorMessage = 'Failed to delete company: $e';
       _isLoading = false;
       notifyListeners();

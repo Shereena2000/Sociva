@@ -95,7 +95,6 @@ class RetweetsTab extends StatelessWidget {
             return GestureDetector(
               onTap: () {
                 // Handle tap - can navigate to post detail
-                print('Tapped retweeted post: ${post.postId}');
               },
               child: Container(
                 decoration: BoxDecoration(

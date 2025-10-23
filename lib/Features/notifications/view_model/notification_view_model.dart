@@ -39,7 +39,6 @@ class NotificationViewModel extends ChangeNotifier {
         notifyListeners();
       },
       onError: (error) {
-        print('❌ Error loading notifications: $error');
         _errorMessage = 'Failed to load notifications. Please check your internet connection and try again.';
         _isLoading = false;
         notifyListeners();
@@ -53,7 +52,6 @@ class NotificationViewModel extends ChangeNotifier {
         notifyListeners();
       },
       onError: (error) {
-        print('❌ Error loading unread count: $error');
         // Don't set error message for unread count as it's not critical
       },
     );
@@ -125,7 +123,6 @@ class NotificationViewModel extends ChangeNotifier {
         );
       }
     } catch (e) {
-      print('Error creating follow notification: $e');
     }
   }
 
@@ -158,7 +155,6 @@ class NotificationViewModel extends ChangeNotifier {
         );
       }
     } catch (e) {
-      print('Error creating like notification: $e');
     }
   }
 
@@ -183,7 +179,6 @@ class NotificationViewModel extends ChangeNotifier {
         postImage: postImage,
       );
     } catch (e) {
-      print('Error creating comment notification: $e');
     }
   }
 
@@ -216,7 +211,6 @@ class NotificationViewModel extends ChangeNotifier {
         );
       }
     } catch (e) {
-      print('Error creating retweet notification: $e');
     }
   }
 
@@ -239,7 +233,6 @@ class NotificationViewModel extends ChangeNotifier {
         postImage: postImage,
       );
     } catch (e) {
-      print('Error creating mention notification: $e');
     }
   }
 
@@ -267,7 +260,6 @@ class NotificationViewModel extends ChangeNotifier {
         );
       }
     } catch (e) {
-      print('Error creating status view notification: $e');
     }
   }
 

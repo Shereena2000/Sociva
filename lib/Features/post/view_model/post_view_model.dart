@@ -39,7 +39,6 @@ class PostViewModel extends ChangeNotifier {
       // Request permission first
       final PermissionState ps = await PhotoManager.requestPermissionExtend();
       if (!ps.isAuth) {
-        print('Permission denied');
         return;
       }
 
@@ -50,7 +49,6 @@ class PostViewModel extends ChangeNotifier {
       );
 
       if (albums.isEmpty) {
-        print('No albums found');
         return;
       }
 
@@ -73,9 +71,7 @@ class PostViewModel extends ChangeNotifier {
         }
       }
       
-      print('✅ Loaded ${assets.length} media items (photos and videos)');
     } catch (e) {
-      print('❌ Failed to load device media: $e');
       // Don't throw, just print error
     }
   }
@@ -105,7 +101,6 @@ class PostViewModel extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('Failed to load device media automatically: $e');
       // Don't throw, just print error
     }
   }
@@ -172,7 +167,6 @@ class PostViewModel extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('Failed to select photo asset: $e');
     }
   }
 
@@ -193,11 +187,9 @@ class PostViewModel extends ChangeNotifier {
       if (index != -1) {
         // Already selected - remove it
         _selectedMediaList.removeAt(index);
-        print('🗑️ Removed media from selection (${_selectedMediaList.length} remaining)');
       } else {
         // Not selected - add it
         _selectedMediaList.add(file);
-        print('✅ Added media to selection (${_selectedMediaList.length} total)');
       }
 
       // Update primary selected media to first in list
@@ -211,14 +203,11 @@ class PostViewModel extends ChangeNotifier {
         _isVideo = false;
       }
       
-      print('🔍 Current selection: ${_selectedMediaList.length} items');
       for (int i = 0; i < _selectedMediaList.length; i++) {
-        print('  ${i + 1}. ${_selectedMediaList[i].path}');
       }
       
       notifyListeners();
     } catch (e) {
-      print('❌ Failed to toggle media selection: $e');
     }
   }
 
@@ -235,7 +224,6 @@ class PostViewModel extends ChangeNotifier {
                f.absolute.path == file.absolute.path;
       });
     } catch (e) {
-      print('❌ Error checking asset selection: $e');
       return false;
     }
   }
@@ -254,7 +242,6 @@ class PostViewModel extends ChangeNotifier {
       });
       return index != -1 ? index + 1 : null;
     } catch (e) {
-      print('❌ Error getting selection index: $e');
       return null;
     }
   }
@@ -268,7 +255,6 @@ class PostViewModel extends ChangeNotifier {
   // Set post type ('home' or 'feed')
   void setPostType(String postType) {
     _postType = postType;
-    print('📝 Post type set to: $postType');
     notifyListeners();
   }
 
@@ -288,9 +274,6 @@ class PostViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      print('📤 Creating post for user: ${user.uid}');
-      print('📝 Post type: $_postType');
-      print('📸 Media count: ${_selectedMediaList.length}');
       
       await _postRepository.createPostWithMultipleMedia(
         mediaFiles: _selectedMediaList.isNotEmpty ? _selectedMediaList : [_selectedMedia!],
@@ -299,7 +282,6 @@ class PostViewModel extends ChangeNotifier {
         postType: _postType,
       );
       
-      print('✅ Post created successfully with ${_selectedMediaList.length} media items');
 
       // Reset state after successful upload
       _selectedMedia = null;
@@ -310,7 +292,6 @@ class PostViewModel extends ChangeNotifier {
       _photoAssets = [];
       _postType = 'post'; // Reset to default
     } catch (e) {
-      print('❌ Error creating post: $e');
       rethrow;
     } finally {
       _isUploading = false;

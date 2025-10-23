@@ -55,15 +55,11 @@ class ProfileViewModel extends ChangeNotifier {
   void initializeProfile([String? userId]) {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
-      print('❌ Cannot initialize profile: User not authenticated');
       return;
     }
     
     final targetUserId = userId ?? currentUser.uid;
     
-    print('🔄 Initializing profile for user: $targetUserId');
-    print('🔍 Current _viewingUserId: $_viewingUserId');
-    print('🔍 Current user ID: ${currentUser.uid}');
     
     // Reset state for new user
     _viewingUserId = targetUserId;
@@ -88,7 +84,6 @@ class ProfileViewModel extends ChangeNotifier {
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) {
-        print('⚠️ No user logged in');
         return;
       }
 
@@ -98,20 +93,16 @@ class ProfileViewModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      print('🔄 Fetching user profile for uid: $targetUserId');
       final profile = await _profileRepository.getUserProfile(targetUserId);
       
       if (profile != null) {
         _userProfile = profile;
-        print('✅ User profile loaded: ${profile.name}');
       } else {
-        print('⚠️ No profile found for user');
       }
 
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      print('❌ Error fetching user profile: $e');
       _isLoading = false;
       notifyListeners();
     }
@@ -121,14 +112,12 @@ class ProfileViewModel extends ChangeNotifier {
   void fetchPosts() {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
-      print('⚠️ No user logged in for fetching posts');
       return;
     }
 
     // Determine which user's posts to fetch
     final targetUserId = _viewingUserId ?? currentUser.uid;
     
-    print('🔄 Starting to fetch posts for user: $targetUserId');
     
     _postRepository.getUserPosts(targetUserId).listen((posts) {
       _allPosts = posts;
@@ -144,18 +133,14 @@ class ProfileViewModel extends ChangeNotifier {
       // Filter feed posts (postType == 'feed')
       _feedPosts = posts.where((post) => post.postType == 'feed').toList();
       
-      print('✅ Fetched ${posts.length} posts for user $targetUserId');
-      print('📸 Photos: ${_photoPosts.length}, 🎥 Videos: ${_videoPosts.length}, 📰 Feed: ${_feedPosts.length}');
       
       // Debug: print first post details if available
       if (posts.isNotEmpty) {
         final firstPost = posts.first;
-        print('📄 First post - ID: ${firstPost.postId}, Type: ${firstPost.mediaType}, UserId: ${firstPost.userId}');
       }
       
       notifyListeners();
     }, onError: (error) {
-      print('❌ Error fetching user posts: $error');
       _allPosts = [];
       _photoPosts = [];
       _videoPosts = [];
@@ -216,7 +201,6 @@ class ProfileViewModel extends ChangeNotifier {
   void fetchStatuses() {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
-      print('⚠️ No user logged in for fetching statuses');
       return;
     }
 
@@ -228,7 +212,6 @@ class ProfileViewModel extends ChangeNotifier {
         _statuses = statuses;
         notifyListeners();
       }, onError: (error) {
-        print('❌ Error fetching statuses: $error');
         notifyListeners();
       });
     } else {
@@ -237,7 +220,6 @@ class ProfileViewModel extends ChangeNotifier {
         _statuses = statuses;
         notifyListeners();
       }, onError: (error) {
-        print('❌ Error fetching statuses: $error');
         notifyListeners();
       });
     }
@@ -247,9 +229,7 @@ class ProfileViewModel extends ChangeNotifier {
   Future<void> deleteStatus(String statusId) async {
     try {
       await _statusRepository.deleteStatus(statusId);
-      print('✅ Status deleted');
     } catch (e) {
-      print('❌ Error deleting status: $e');
     }
   }
 
@@ -270,29 +250,21 @@ class ProfileViewModel extends ChangeNotifier {
     _statuses = [];
     _isFollowing = false;
     _isFollowActionLoading = false;
-    print('🔄 Profile state reset');
   }
 
   // Check if current user is following the viewed profile
   Future<void> checkFollowStatus() async {
-    print('🔍 CHECK FOLLOW STATUS: Starting');
-    print('🔍 Is current user: $isCurrentUser');
-    print('🔍 Viewing user ID: $_viewingUserId');
     
     if (isCurrentUser || _viewingUserId == null) {
-      print('⏭️ Skipping follow check (viewing own profile or no user ID)');
       _isFollowing = false;
       notifyListeners();
       return;
     }
 
     try {
-      print('🔍 Checking if following user: $_viewingUserId');
       _isFollowing = await _followRepository.isFollowing(_viewingUserId!);
-      print('✅ Follow status checked: $_isFollowing');
       notifyListeners();
     } catch (e) {
-      print('❌ Error checking follow status: $e');
       _isFollowing = false;
       notifyListeners();
     }
@@ -300,14 +272,8 @@ class ProfileViewModel extends ChangeNotifier {
 
   // Follow or unfollow the viewed user
   Future<void> toggleFollow() async {
-    print('🔍 DEBUG: Starting toggleFollow');
-    print('🔍 Current user: ${FirebaseAuth.instance.currentUser?.uid}');
-    print('🔍 Target user: $_viewingUserId');
-    print('🔍 Is current user: $isCurrentUser');
-    print('🔍 Is following: $_isFollowing');
     
     if (_viewingUserId == null || isCurrentUser) {
-      print('❌ DEBUG: Cannot follow - viewingUserId: $_viewingUserId, isCurrentUser: $isCurrentUser');
       return;
     }
 
@@ -316,44 +282,32 @@ class ProfileViewModel extends ChangeNotifier {
 
     try {
       if (_isFollowing) {
-        print('🔍 DEBUG: Unfollowing user');
         await _followRepository.unfollowUser(_viewingUserId!);
         _isFollowing = false;
-        print('✅ Unfollowed user successfully');
       } else {
-        print('🔍 DEBUG: Following user');
         await _followRepository.followUser(_viewingUserId!);
         _isFollowing = true;
-        print('✅ Followed user successfully');
         
         // Send follow notification
         try {
           final currentUserId = FirebaseAuth.instance.currentUser?.uid;
           if (currentUserId != null) {
-            print('📱 Sending follow notification to user: $_viewingUserId');
             await _notificationService.notifyFollow(
               fromUserId: currentUserId,
               toUserId: _viewingUserId!,
             );
-            print('✅ Follow notification sent successfully');
           }
         } catch (e) {
-          print('⚠️ Failed to send follow notification: $e');
           // Don't throw error here - follow was successful, notification is secondary
         }
       }
 
       // Refresh the profile to get updated follower counts
-      print('🔄 Refreshing profile to update counts');
       await fetchUserProfile();
       
-      print('✅ Follow toggle completed successfully');
       _isFollowActionLoading = false;
       notifyListeners();
     } catch (e) {
-      print('❌ Error toggling follow: $e');
-      print('❌ Error type: ${e.runtimeType}');
-      print('❌ Error details: ${e.toString()}');
       
       // Make sure to reset loading state even on error
       _isFollowActionLoading = false;
@@ -366,47 +320,37 @@ class ProfileViewModel extends ChangeNotifier {
 
   // Logout functionality
   Future<void> logout(BuildContext context) async {
-    print('🔄 Starting logout process...');
     _isLoggingOut = true;
     notifyListeners();
 
     try {
       // Set user offline before signing out with timeout
-      print('🔴 Setting user offline...');
       await _presenceService.setUserOffline().timeout(
         Duration(seconds: 3),
         onTimeout: () {
-          print('⚠️ Setting user offline timed out, continuing with logout');
         },
       );
-      print('✅ User set to offline');
       
       // Sign out from Firebase with timeout
-      print('👋 Signing out from Firebase...');
       await _authRepository.signOut().timeout(
         Duration(seconds: 5),
         onTimeout: () {
-          print('⚠️ Firebase signOut timed out');
           throw 'Logout is taking too long. Please check your connection.';
         },
       );
-      print('✅ Firebase sign out successful');
       
       _isLoggingOut = false;
       notifyListeners();
       
       if (context.mounted) {
-        print('🔄 Navigating to login screen...');
         // Navigate to login screen and clear all previous routes
         Navigator.pushNamedAndRemoveUntil(
           context,
           PPages.login,
           (route) => false,
         );
-        print('✅ Logout complete!');
       }
     } catch (e) {
-      print('❌ Logout error: $e');
       _isLoggingOut = false;
       notifyListeners();
       

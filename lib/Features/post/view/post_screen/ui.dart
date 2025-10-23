@@ -97,7 +97,6 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                       try {
                         await viewModel.loadDeviceMediaFromGallery();
                       } catch (e) {
-                        print('Error loading gallery: $e');
                       } finally {
                         if (mounted) setState(() => _isLoadingMedia = false);
                       }
@@ -120,7 +119,6 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                       try {
                         await viewModel.takePhoto();
                       } catch (e) {
-                        print('Error taking photo: $e');
                       } finally {
                         if (mounted) setState(() => _isLoadingMedia = false);
                       }
@@ -143,7 +141,6 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                       try {
                         await viewModel.takeVideo();
                       } catch (e) {
-                        print('Error taking video: $e');
                       } finally {
                         if (mounted) setState(() => _isLoadingMedia = false);
                       }
@@ -582,7 +579,6 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                       final isSelected = snapshot.data!['isSelected'] as bool;
                                       
                                       // Debug logging
-                                      print('🔍 Asset ${asset.id}: isSelected=$isSelected');
             
                                       return GestureDetector(
                                     onTap: () async {
@@ -820,7 +816,6 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                       try {
                         await viewModel.loadDeviceMediaFromGallery();
                       } catch (e) {
-                        print('Error: $e');
                       } finally {
                         if (mounted) setState(() => _isLoadingMedia = false);
                       }
@@ -837,7 +832,6 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                       try {
                         await viewModel.takePhoto();
                       } catch (e) {
-                        print('Error: $e');
                       } finally {
                         if (mounted) setState(() => _isLoadingMedia = false);
                       }
@@ -854,7 +848,6 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                       try {
                         await viewModel.takeVideo();
                       } catch (e) {
-                        print('Error: $e');
                       } finally {
                         if (mounted) setState(() => _isLoadingMedia = false);
                       }
@@ -951,7 +944,6 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
         'isSelected': isSelected,
       };
     } catch (e) {
-      print('❌ Error getting selection info: $e');
       return {
         'isSelected': false,
       };

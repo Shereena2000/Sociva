@@ -175,23 +175,17 @@ class AddJobViewModel extends ChangeNotifier {
       }
 
       // Get user's company
-      print('🔍 AddJobViewModel: Fetching company for user: ${user.uid}');
       final company = await _companyRepository.getCompanyByUserId(user.uid);
       if (company == null) {
-        print('❌ AddJobViewModel: No company found for user');
         _errorMessage = 'No company registered. Please register your company first.';
         _isLoading = false;
         notifyListeners();
         return false;
       }
 
-      print('✅ AddJobViewModel: Company found: ${company.companyName}');
-      print('   Company ID: ${company.id}');
-      print('   Is Verified: ${company.isVerified}');
 
       // Check if company ID is valid
       if (company.id.isEmpty) {
-        print('❌ AddJobViewModel: Company ID is EMPTY! This will cause issues.');
         _errorMessage = 'Company ID is missing. Please re-register your company.';
         _isLoading = false;
         notifyListeners();
@@ -200,7 +194,6 @@ class AddJobViewModel extends ChangeNotifier {
 
       // Check if company is verified
       if (!company.isVerified) {
-        print('❌ AddJobViewModel: Company not verified');
         _errorMessage = 'Your company is not verified yet.';
         _isLoading = false;
         notifyListeners();
@@ -215,10 +208,6 @@ class AddJobViewModel extends ChangeNotifier {
       _roleSummary = roleSummaryController.text.trim();
 
       // Create job model
-      print('📝 AddJobViewModel: Creating job with:');
-      print('   Company ID: ${company.id}');
-      print('   User ID: ${user.uid}');
-      print('   Job Title: $_jobTitle');
       
       final job = JobModel(
         id: '', // Will be set by Firestore
@@ -240,12 +229,9 @@ class AddJobViewModel extends ChangeNotifier {
         updatedAt: DateTime.now(),
       );
 
-      print('💾 AddJobViewModel: Saving job to Firebase...');
       // Save to Firebase
       final jobId = await _jobRepository.createJob(job);
       
-      print('✅ AddJobViewModel: Job posted successfully with ID: $jobId');
-      print('   Job will be linked to Company ID: ${company.id}');
 
       _isJobPosted = true;
       
@@ -259,7 +245,6 @@ class AddJobViewModel extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      print('❌ Error posting job: $e');
       _errorMessage = 'Failed to post job: $e';
       _isLoading = false;
       notifyListeners();
@@ -348,37 +333,29 @@ class AddJobViewModel extends ChangeNotifier {
   // Fetch user's jobs
   Future<void> fetchUserJobs() async {
     try {
-      print('🔄 Starting to fetch user jobs...');
       _isFetchingJobs = true;
       _errorMessage = '';
       notifyListeners();
 
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        print('❌ User not authenticated');
         _errorMessage = 'User not authenticated';
         _isFetchingJobs = false;
         notifyListeners();
         return;
       }
 
-      print('👤 Fetching jobs for user: ${user.uid}');
       _userJobs = await _jobRepository.getJobsByUserId(user.uid);
-      print('✅ Fetched ${_userJobs.length} jobs');
       
       if (_userJobs.isNotEmpty) {
-        print('📋 Jobs fetched:');
         for (var job in _userJobs) {
-          print('  - ${job.jobTitle} (${job.id})');
         }
       }
     } catch (e) {
-      print('❌ Error fetching jobs: $e');
       _errorMessage = 'Failed to fetch jobs: $e';
     } finally {
       _isFetchingJobs = false;
       notifyListeners();
-      print('🏁 Fetch complete. Total jobs: ${_userJobs.length}');
     }
   }
 
@@ -452,7 +429,6 @@ class AddJobViewModel extends ChangeNotifier {
       // Update in Firebase
       await _jobRepository.updateJob(_editingJob!.id, updates);
       
-      print('✅ Job updated successfully');
 
       _isJobPosted = true;
       
@@ -466,7 +442,6 @@ class AddJobViewModel extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      print('❌ Error updating job: $e');
       _errorMessage = 'Failed to update job: $e';
       _isLoading = false;
       notifyListeners();
@@ -482,7 +457,6 @@ class AddJobViewModel extends ChangeNotifier {
 
       await _jobRepository.deactivateJob(jobId);
       
-      print('✅ Job deactivated');
       
       // Refresh jobs list
       await fetchUserJobs();
@@ -491,7 +465,6 @@ class AddJobViewModel extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      print('❌ Error deactivating job: $e');
       _errorMessage = 'Failed to deactivate job: $e';
       _isLoading = false;
       notifyListeners();
@@ -507,7 +480,6 @@ class AddJobViewModel extends ChangeNotifier {
 
       await _jobRepository.reactivateJob(jobId);
       
-      print('✅ Job reactivated');
       
       // Refresh jobs list
       await fetchUserJobs();
@@ -516,7 +488,6 @@ class AddJobViewModel extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      print('❌ Error reactivating job: $e');
       _errorMessage = 'Failed to reactivate job: $e';
       _isLoading = false;
       notifyListeners();
@@ -532,7 +503,6 @@ class AddJobViewModel extends ChangeNotifier {
 
       await _jobRepository.deleteJob(jobId);
       
-      print('✅ Job deleted');
       
       // Refresh jobs list
       await fetchUserJobs();
@@ -541,7 +511,6 @@ class AddJobViewModel extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      print('❌ Error deleting job: $e');
       _errorMessage = 'Failed to delete job: $e';
       _isLoading = false;
       notifyListeners();

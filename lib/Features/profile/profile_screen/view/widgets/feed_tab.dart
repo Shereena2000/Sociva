@@ -95,7 +95,6 @@ class FeedTab extends StatelessWidget {
             return GestureDetector(
               onTap: () {
                 // Handle tap - can navigate to post detail
-                print('Tapped feed post: ${post.postId}');
               },
               child: Container(
                 decoration: BoxDecoration(

@@ -29,7 +29,6 @@ class ChatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        print('🔍 ChatTile - Navigating to chat with userId: $otherUserId, chatRoomId: $chatRoomId');
         Navigator.push(
           context,
           MaterialPageRoute(

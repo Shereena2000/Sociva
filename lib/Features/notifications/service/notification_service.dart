@@ -65,7 +65,6 @@ class NotificationService {
         toUserId: toUserId,
       );
     } catch (e) {
-      print('Error creating follow notification: $e');
     }
   }
 
@@ -89,7 +88,6 @@ class NotificationService {
         postImage: postImage,
       );
     } catch (e) {
-      print('Error creating like notification: $e');
     }
   }
 
@@ -115,7 +113,6 @@ class NotificationService {
         postImage: postImage,
       );
     } catch (e) {
-      print('Error creating comment notification: $e');
     }
   }
 
@@ -139,7 +136,6 @@ class NotificationService {
         postImage: postImage,
       );
     } catch (e) {
-      print('Error creating retweet notification: $e');
     }
   }
 
@@ -163,7 +159,6 @@ class NotificationService {
         postImage: postImage,
       );
     } catch (e) {
-      print('Error creating mention notification: $e');
     }
   }
 
@@ -183,7 +178,6 @@ class NotificationService {
         toUserId: toUserId,
       );
     } catch (e) {
-      print('Error creating status view notification: $e');
     }
   }
 
@@ -207,7 +201,6 @@ class NotificationService {
         applicationId: applicationId,
       );
     } catch (e) {
-      print('Error creating job application notification: $e');
     }
   }
 
@@ -243,7 +236,6 @@ class NotificationService {
             );
           }
         } catch (e) {
-          print('Error processing mention for $username: $e');
         }
       }
     }
@@ -293,7 +285,6 @@ class NotificationService {
         }
       }
     } catch (e) {
-      print('Error in batch notification: $e');
     }
   }
 }

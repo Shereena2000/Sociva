@@ -206,7 +206,6 @@ class ChatDetailScreen extends StatelessWidget {
     final userId = otherUserId ?? args?['otherUserId'] ?? '';
     final roomId = chatRoomId ?? args?['chatRoomId'] ?? '';
 
-    print('🔍 ChatDetailScreen: Building with userId: $userId, chatRoomId: $roomId');
 
     if (userId.isEmpty) {
       return Scaffold(
@@ -313,11 +312,6 @@ class ChatDetailScreen extends StatelessWidget {
                               final showDateSeparator = viewModel.shouldShowDateSeparator(index);
                               
                               // Debug message data
-                              print('🔍 ChatDetailScreen: Message $index:');
-                              print('   Content: ${message.content}');
-                              print('   MessageType: ${message.messageType}');
-                              print('   MediaUrl: ${message.mediaUrl}');
-                              print('   SenderId: ${message.senderId}');
 
                               return Column(
                                 children: [
@@ -364,7 +358,6 @@ class ChatDetailScreen extends StatelessWidget {
                 ChatInputBar(
                   controller: messageController,
                   onMicTap: () {
-                    print("Mic tapped");
                   },
                   onTextChanged: (text) {},
                   onSendTap: () {

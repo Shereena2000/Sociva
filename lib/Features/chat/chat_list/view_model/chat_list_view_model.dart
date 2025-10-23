@@ -59,7 +59,6 @@ class ChatListViewModel extends ChangeNotifier {
         notifyListeners();
       },
       onError: (error) {
-        print('❌ Error loading chat rooms: $error');
         _errorMessage = 'Failed to load chats';
         _isLoading = false;
         notifyListeners();
@@ -120,7 +119,6 @@ class ChatListViewModel extends ChangeNotifier {
       final chatRoomId = await _chatRepository.createOrGetChatRoom(otherUserId);
       return chatRoomId;
     } catch (e) {
-      print('❌ Error starting chat: $e');
       _errorMessage = 'Failed to start chat';
       notifyListeners();
       return null;

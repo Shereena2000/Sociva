@@ -342,8 +342,6 @@ class _ApplyJobPopupState extends State<ApplyJobPopup> {
 
   Future<void> _pickResume() async {
     try {
-      print('📁 Starting file picker...');
-      print('   FilePicker.platform: ${FilePicker.platform}');
       
       // Try the standard file picker first
       FilePickerResult? result;
@@ -357,7 +355,6 @@ class _ApplyJobPopupState extends State<ApplyJobPopup> {
           withReadStream: false, // Don't create read stream
         );
       } catch (platformError) {
-        print('❌ Platform file picker failed: $platformError');
         
         // Fallback: Try with different parameters
         try {
@@ -368,13 +365,11 @@ class _ApplyJobPopupState extends State<ApplyJobPopup> {
             withReadStream: false,
           );
         } catch (fallbackError) {
-          print('❌ Fallback file picker also failed: $fallbackError');
           
           // Last resort: Try with minimal parameters
           try {
             result = await FilePicker.platform.pickFiles();
           } catch (minimalError) {
-            print('❌ Minimal file picker also failed: $minimalError');
             throw Exception('File picker is not available. Please try again or restart the app.');
           }
         }
@@ -382,7 +377,6 @@ class _ApplyJobPopupState extends State<ApplyJobPopup> {
 
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.first;
-        print('✅ File selected: ${file.name}');
         
         // Validate file
         if (file.path == null || file.path!.isEmpty) {
@@ -414,10 +408,8 @@ class _ApplyJobPopupState extends State<ApplyJobPopup> {
           ),
         );
       } else {
-        print('ℹ️ No file selected');
       }
     } catch (e) {
-      print('❌ Error picking file: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error selecting file: ${e.toString()}'),
@@ -460,7 +452,6 @@ class _ApplyJobPopupState extends State<ApplyJobPopup> {
       // Close popup
       Navigator.pop(context);
     } catch (e) {
-      print('Error submitting application: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error submitting application: $e'),

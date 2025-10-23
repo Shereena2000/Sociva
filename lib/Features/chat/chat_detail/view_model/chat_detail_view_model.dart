@@ -36,9 +36,6 @@ class ChatDetailViewModel extends ChangeNotifier {
   Timestamp? get otherUserLastSeen => _otherUserLastSeen;
 
   Future<void> initializeChat(String otherUserId, [String? chatRoomId]) async {
-    print('🔍 ChatDetailViewModel - Current user ID: $_currentUserId');
-    print('🔍 ChatDetailViewModel - Other user ID: $otherUserId');
-    print('🔍 ChatDetailViewModel - Chat room ID: $chatRoomId');
     
     if (_currentUserId == null) {
       _errorMessage = 'User not authenticated';
@@ -48,13 +45,11 @@ class ChatDetailViewModel extends ChangeNotifier {
 
     // Validate otherUserId
     if (otherUserId.isEmpty) {
-      print('❌ Error: otherUserId is empty');
       _errorMessage = 'Invalid user ID';
       notifyListeners();
       return;
     }
 
-    print('🔍 Initializing chat with user: $otherUserId');
 
     _isLoading = true;
     _otherUserId = otherUserId;
@@ -63,16 +58,12 @@ class ChatDetailViewModel extends ChangeNotifier {
     try {
       // Use provided chatRoomId or create/get one
       if (chatRoomId != null && chatRoomId.isNotEmpty) {
-        print('✅ Using provided chat room ID: $chatRoomId');
         _chatRoomId = chatRoomId;
       } else {
-        print('🔍 Creating or getting chat room...');
         _chatRoomId = await _chatRepository.createOrGetChatRoom(otherUserId);
-        print('✅ Chat room ID: $_chatRoomId');
       }
       
       _otherUserDetails = await _chatRepository.getUserDetails(otherUserId);
-      print('✅ User details loaded: ${_otherUserDetails?['username']}');
 
       _loadMessages();
       _listenToUserPresence();
@@ -83,7 +74,6 @@ class ChatDetailViewModel extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
     } catch (e) {
-      print('❌ Error initializing chat: $e');
       _errorMessage = 'Failed to load chat';
       _isLoading = false;
       notifyListeners();
@@ -92,22 +82,17 @@ class ChatDetailViewModel extends ChangeNotifier {
 
   void _loadMessages() {
     if (_chatRoomId.isEmpty) {
-      print('❌ Chat room ID is empty, cannot load messages');
       return;
     }
 
-    print('🔍 Loading messages for chat room: $_chatRoomId');
     _chatRepository.getMessages(_chatRoomId).listen(
       (messages) {
-        print('📨 Loaded ${messages.length} messages');
         for (var message in messages) {
-          print('   - ${message.content} (${message.messageType})');
         }
         _messages = messages;
         notifyListeners();
       },
       onError: (error) {
-        print('❌ Error loading messages: $error');
         _errorMessage = 'Failed to load messages';
         notifyListeners();
       },
@@ -134,7 +119,6 @@ class ChatDetailViewModel extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
     } catch (e) {
-      print('❌ Error sending message: $e');
       _errorMessage = 'Failed to send message';
       _isSending = false;
       notifyListeners();
@@ -211,11 +195,9 @@ class ChatDetailViewModel extends ChangeNotifier {
       (presence) {
         _isOtherUserOnline = presence['isOnline'] ?? false;
         _otherUserLastSeen = presence['lastSeen'];
-        print('👤 User presence updated: Online: $_isOtherUserOnline, Last seen: $_otherUserLastSeen');
         notifyListeners();
       },
       onError: (error) {
-        print('❌ Error listening to user presence: $error');
       },
     );
   }
@@ -234,17 +216,13 @@ class ChatDetailViewModel extends ChangeNotifier {
   /// Delete a single message
   Future<bool> deleteMessage(String messageId) async {
     if (_chatRoomId.isEmpty) {
-      print('❌ Cannot delete message: chat room ID is empty');
       return false;
     }
 
     try {
-      print('🗑️ Deleting message...');
       await _chatRepository.deleteMessage(_chatRoomId, messageId);
-      print('✅ Message deleted successfully');
       return true;
     } catch (e) {
-      print('❌ Error deleting message: $e');
       _errorMessage = 'Failed to delete message';
       notifyListeners();
       return false;
@@ -254,17 +232,13 @@ class ChatDetailViewModel extends ChangeNotifier {
   /// Delete chat conversation
   Future<bool> deleteChat() async {
     if (_chatRoomId.isEmpty) {
-      print('❌ Cannot delete chat: chat room ID is empty');
       return false;
     }
 
     try {
-      print('🗑️ Deleting chat...');
       await _chatRepository.deleteChat(_chatRoomId);
-      print('✅ Chat deleted successfully');
       return true;
     } catch (e) {
-      print('❌ Error deleting chat: $e');
       _errorMessage = 'Failed to delete chat';
       notifyListeners();
       return false;

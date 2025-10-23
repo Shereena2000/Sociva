@@ -44,12 +44,7 @@ class StatusRepository {
           .doc(statusId)
           .set(status.toMap());
 
-      print('✅ Status created successfully in top-level collection');
-      print('   StatusId: $statusId');
-      print('   UserId: ${user.uid}');
-      print('   UserName: $userName');
     } catch (e) {
-      print('❌ Error creating status: $e');
       throw Exception('Failed to create status: $e');
     }
   }
@@ -92,9 +87,7 @@ class StatusRepository {
           .doc(statusId)
           .delete();
 
-      print('✅ Status deleted successfully');
     } catch (e) {
-      print('❌ Error deleting status: $e');
       throw Exception('Failed to delete status: $e');
     }
   }
@@ -121,9 +114,7 @@ class StatusRepository {
       }
 
       await batch.commit();
-      print('✅ Expired statuses cleaned up');
     } catch (e) {
-      print('❌ Error cleaning up expired statuses: $e');
     }
   }
 
@@ -140,20 +131,17 @@ class StatusRepository {
           .where((status) => !status.isExpired)
           .length;
     } catch (e) {
-      print('❌ Error getting status count: $e');
       return 0;
     }
   }
 
   // Get all statuses from all users (for home feed) - Simple top-level query
   Stream<List<StatusModel>> getAllStatuses() {
-    print('📡 Querying top-level statuses collection...');
     return _firestore
         .collection('statuses')
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      print('📦 Received ${snapshot.docs.length} documents from statuses collection');
       return snapshot.docs
           .map((doc) => StatusModel.fromFirestore(doc))
           .where((status) => !status.isExpired) // Filter out expired statuses
@@ -180,9 +168,7 @@ class StatusRepository {
         'viewerId': user.uid,
       });
 
-      print('✅ Status marked as viewed');
     } catch (e) {
-      print('❌ Error marking status as viewed: $e');
     }
   }
 
@@ -201,7 +187,6 @@ class StatusRepository {
 
       return doc.exists;
     } catch (e) {
-      print('❌ Error checking viewed status: $e');
       return false;
     }
   }
@@ -223,7 +208,6 @@ class StatusRepository {
           .where((id) => id.isNotEmpty)
           .toSet();
     } catch (e) {
-      print('❌ Error getting viewed status IDs: $e');
       return {};
     }
   }
@@ -242,7 +226,6 @@ class StatusRepository {
       }
       return false;
     } catch (e) {
-      print('❌ Error checking unseen statuses: $e');
       return false;
     }
   }

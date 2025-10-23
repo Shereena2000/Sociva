@@ -8,7 +8,6 @@ import 'package:social_media_app/Features/home/view_model/home_view_model.dart';
 import 'package:social_media_app/Features/post/model/post_model.dart';
 import 'package:social_media_app/Features/feed/view/status_viewer_dialog.dart';
 import 'package:social_media_app/Features/profile/status/view/add_status_dialog.dart';
-import 'package:social_media_app/Features/home/view/debug_status_screen.dart';
 import 'package:social_media_app/Features/feed/view/comments_screen.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
 import 'package:social_media_app/Features/notifications/view/notification_screen.dart';
@@ -17,7 +16,6 @@ import 'package:social_media_app/Features/notifications/service/notification_ser
 import 'package:social_media_app/Features/notifications/service/push_notification_service.dart';
 import 'package:social_media_app/Features/chat/chat_list/view_model/chat_list_view_model.dart';
 import 'package:social_media_app/Features/post/view/widgets/share_bottom_sheet.dart';
-import 'package:social_media_app/Features/post/view/test_share_debug.dart';
 import 'package:social_media_app/Settings/constants/sized_box.dart';
 import 'package:social_media_app/Settings/utils/p_pages.dart';
 import 'package:social_media_app/Settings/utils/svgs.dart';
@@ -148,37 +146,18 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const Spacer(),
-        // Debug button (long press for 2 seconds to open)
-        GestureDetector(
-          onLongPress: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const DebugStatusScreen(),
-              ),
-            );
-          },
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const TestShareDebug(),
-              ),
-            );
-          },
-          child: IconButton(
-            icon: SvgPicture.asset(
-              Svgs.searchIcon,
-              colorFilter: const ColorFilter.mode(
-                Colors.white,
-                BlendMode.srcIn,
-              ),
+        // Search button
+        IconButton(
+          icon: SvgPicture.asset(
+            Svgs.searchIcon,
+            colorFilter: const ColorFilter.mode(
+              Colors.white,
+              BlendMode.srcIn,
             ),
-            onPressed: () {
-              Navigator.pushNamed(context, PPages.searchScreen);
-            
-            },
           ),
+          onPressed: () {
+            Navigator.pushNamed(context, PPages.searchScreen);
+          },
         ),
         // Notification icon (heart/love icon)
         Consumer<NotificationViewModel>(
@@ -775,7 +754,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 IconButton(
                   icon: const Icon(Icons.send_outlined, color: Colors.black),
                   onPressed: () {
-                    print('🔍 HomeScreen - Sharing post with ID: ${postWithUser.postId}');
                     showModalBottomSheet(
                       context: context,
                       backgroundColor: Colors.transparent,
@@ -1161,10 +1139,8 @@ class _HomeScreenState extends State<HomeScreen> {
           fromUserName: actualUserName,
         );
 
-        print('✅ Like notification sent to $toUserId');
       }
     } catch (e) {
-      print('❌ Error sending like notification: $e');
     }
   }
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:social_media_app/Features/menu/saved_post/repository/saved_post_repository.dart';
-import 'package:social_media_app/Features/menu/saved_post/model/saved_post_model.dart';
 
 class SavedPostViewModel extends ChangeNotifier {
   final SavedPostRepository _repository = SavedPostRepository();
@@ -21,11 +20,9 @@ class SavedPostViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      print('🔍 Loading saved posts...');
       
       // Listen to saved posts stream
       _repository.getSavedPosts().listen((savedPostsList) async {
-        print('📥 Received ${savedPostsList.length} saved posts');
         
         // Get full post details for each saved post
         final List<Map<String, dynamic>> postsWithDetails = [];
@@ -45,16 +42,13 @@ class SavedPostViewModel extends ChangeNotifier {
         _errorMessage = null;
         notifyListeners();
         
-        print('✅ Loaded ${_savedPosts.length} saved posts with details');
       }, onError: (error) {
-        print('❌ Error in saved posts stream: $error');
         _errorMessage = 'Failed to load saved posts';
         _isLoading = false;
         notifyListeners();
       });
       
     } catch (e) {
-      print('❌ Error loading saved posts: $e');
       _errorMessage = 'Failed to load saved posts: $e';
       _isLoading = false;
       notifyListeners();
@@ -73,7 +67,6 @@ class SavedPostViewModel extends ChangeNotifier {
       // Reload saved posts
       await loadSavedPosts();
     } catch (e) {
-      print('❌ Error in savePost: $e');
       _errorMessage = 'Failed to save post';
       notifyListeners();
     }
@@ -87,7 +80,6 @@ class SavedPostViewModel extends ChangeNotifier {
       _savedPosts.removeWhere((post) => post['post'].postId == postId);
       notifyListeners();
     } catch (e) {
-      print('❌ Error in unsavePost: $e');
       _errorMessage = 'Failed to unsave post';
       notifyListeners();
     }

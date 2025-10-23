@@ -35,46 +35,34 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
     if (_viewerAttempt == 0) {
       // Try Google Docs Viewer first
       viewerUrl = 'https://docs.google.com/gview?embedded=true&url=$encodedUrl';
-      print('🔍 PDF Viewer: Attempt ${_viewerAttempt + 1} - Google Docs Viewer');
     } else if (_viewerAttempt == 1) {
       // Try Mozilla PDF.js viewer
       viewerUrl = 'https://mozilla.github.io/pdf.js/web/viewer.html?file=$encodedUrl';
-      print('🔍 PDF Viewer: Attempt ${_viewerAttempt + 1} - Mozilla PDF.js');
     } else {
       // Try direct URL
       viewerUrl = widget.pdfUrl;
-      print('🔍 PDF Viewer: Attempt ${_viewerAttempt + 1} - Direct URL');
     }
     
-    print('🔍 PDF Viewer: Original URL: ${widget.pdfUrl}');
-    print('🔍 PDF Viewer: Viewer URL: $viewerUrl');
     
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
-            print('📄 PDF Viewer: Page started loading: $url');
             setState(() {
               _isLoading = true;
               _hasError = false;
             });
           },
           onPageFinished: (String url) {
-            print('✅ PDF Viewer: Page finished loading');
             setState(() {
               _isLoading = false;
             });
           },
           onWebResourceError: (WebResourceError error) {
-            print('❌ PDF Viewer Error:');
-            print('   Code: ${error.errorCode}');
-            print('   Description: ${error.description}');
-            print('   Type: ${error.errorType}');
             
             // Try next viewer method if available
             if (_viewerAttempt < 2) {
-              print('🔄 Trying alternative viewer...');
               setState(() {
                 _viewerAttempt++;
               });

@@ -14,7 +14,6 @@ class PushNotificationService {
   // Initialize push notifications
   Future<void> initialize() async {
     try {
-      print('🔔 Initializing push notifications...');
       
       // Request permission for notifications
       NotificationSettings settings = await _messaging.requestPermission(
@@ -27,15 +26,12 @@ class PushNotificationService {
         sound: true,
       );
 
-      print('🔔 Notification permission status: ${settings.authorizationStatus}');
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        print('✅ User granted notification permission');
         
         // Get FCM token with error handling
         try {
           String? token = await _messaging.getToken();
-          print('📱 FCM Token: $token');
           
           // Save token to user document only if user is authenticated
           if (_auth.currentUser != null) {
@@ -51,14 +47,11 @@ class PushNotificationService {
           // Handle background messages
           FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessage);
         } catch (tokenError) {
-          print('⚠️ FCM Token error (non-critical): $tokenError');
           // Continue with app initialization even if token fails
         }
       } else {
-        print('❌ User denied notification permission');
       }
     } catch (e) {
-      print('⚠️ Push notification initialization failed (non-critical): $e');
       // Don't throw the error - let the app continue
     }
   }
@@ -66,26 +59,21 @@ class PushNotificationService {
   // Initialize push notifications after user authentication
   Future<void> initializeAfterAuth() async {
     if (_auth.currentUser == null) {
-      print('⚠️ No authenticated user, skipping push notification setup');
       return;
     }
 
     try {
-      print('🔔 Setting up push notifications for authenticated user...');
       
       // Get FCM token
       String? token = await _messaging.getToken();
       if (token != null) {
-        print('📱 FCM Token: $token');
         await _saveTokenToDatabase(token);
       }
       
       // Listen for token refresh
       _messaging.onTokenRefresh.listen(_saveTokenToDatabase);
       
-      print('✅ Push notifications setup completed for authenticated user');
     } catch (e) {
-      print('⚠️ Push notification setup failed: $e');
     }
   }
 
@@ -98,21 +86,17 @@ class PushNotificationService {
         'fcmToken': token,
         'lastSeen': FieldValue.serverTimestamp(),
       });
-      print('💾 FCM token saved to database');
     } catch (e) {
-      print('❌ Error saving FCM token: $e');
     }
   }
 
   // Handle foreground messages
   void _handleForegroundMessage(RemoteMessage message) {
-    print('📨 Received foreground message: ${message.notification?.title}');
     // You can show a local notification or update UI here
   }
 
   // Handle background messages (when app is opened from notification)
   void _handleBackgroundMessage(RemoteMessage message) {
-    print('📨 App opened from notification: ${message.notification?.title}');
     // Handle navigation based on notification data
   }
 
@@ -127,7 +111,6 @@ class PushNotificationService {
       // Get user's FCM token
       final userDoc = await _firestore.collection('users').doc(toUserId).get();
       if (!userDoc.exists) {
-        print('❌ User not found: $toUserId');
         return;
       }
 
@@ -135,7 +118,6 @@ class PushNotificationService {
       final fcmToken = userData['fcmToken'] as String?;
       
       if (fcmToken == null) {
-        print('❌ No FCM token found for user: $toUserId');
         return;
       }
 
@@ -147,9 +129,7 @@ class PushNotificationService {
         data: data,
       );
 
-      print('✅ Push notification sent to $toUserId');
     } catch (e) {
-      print('❌ Error sending push notification: $e');
     }
   }
 
@@ -162,11 +142,6 @@ class PushNotificationService {
   }) async {
     // Note: In production, you should use Firebase Admin SDK on your backend
     // For now, we'll just log the notification
-    print('📤 Would send push notification:');
-    print('  Title: $title');
-    print('  Body: $body');
-    print('  Token: $token');
-    print('  Data: $data');
   }
 
   // Send notification for different types

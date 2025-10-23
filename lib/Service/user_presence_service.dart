@@ -20,9 +20,8 @@ class UserPresenceService {
         'lastSeen': FieldValue.serverTimestamp(),
       });
 
-      print('✅ User status set to online');
     } catch (e) {
-      print('❌ Error setting user online: $e');
+      // Silently fail
     }
   }
 
@@ -37,9 +36,8 @@ class UserPresenceService {
         'lastSeen': FieldValue.serverTimestamp(),
       });
 
-      print('✅ User status set to offline');
     } catch (e) {
-      print('❌ Error setting user offline: $e');
+      // Silently fail
     }
   }
 
@@ -53,7 +51,7 @@ class UserPresenceService {
         'lastSeen': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      print('❌ Error updating last seen: $e');
+      // Silently fail
     }
   }
 
@@ -116,9 +114,8 @@ class UserPresenceService {
       // Set user online
       await setUserOnline();
 
-      print('✅ User presence initialized');
     } catch (e) {
-      print('❌ Error initializing user presence: $e');
+      // Silently fail
     }
   }
 

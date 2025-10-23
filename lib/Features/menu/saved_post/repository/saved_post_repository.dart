@@ -29,9 +29,7 @@ class SavedPostRepository {
           .doc(savedPostId)
           .set(savedPost.toMap());
 
-      print('✅ Post saved successfully: $postId');
     } catch (e) {
-      print('❌ Error saving post: $e');
       throw Exception('Failed to save post: $e');
     }
   }
@@ -51,9 +49,7 @@ class SavedPostRepository {
           .doc(savedPostId)
           .delete();
 
-      print('✅ Post unsaved successfully: $postId');
     } catch (e) {
-      print('❌ Error unsaving post: $e');
       throw Exception('Failed to unsave post: $e');
     }
   }
@@ -75,7 +71,6 @@ class SavedPostRepository {
 
       return doc.exists;
     } catch (e) {
-      print('❌ Error checking if post is saved: $e');
       return false;
     }
   }
@@ -99,7 +94,6 @@ class SavedPostRepository {
             .toList();
       });
     } catch (e) {
-      print('❌ Error getting saved posts: $e');
       return Stream.value([]);
     }
   }
@@ -142,7 +136,6 @@ class SavedPostRepository {
         'userProfilePhoto': userData['profilePhotoUrl'] ?? '',
       };
     } catch (e) {
-      print('❌ Error getting saved post details: $e');
       return null;
     }
   }

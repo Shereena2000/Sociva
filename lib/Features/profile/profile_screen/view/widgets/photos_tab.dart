@@ -91,7 +91,6 @@ class PhotoTabs extends StatelessWidget {
             return GestureDetector(
               onTap: () {
                 // Handle tap - can navigate to post detail
-                print('Tapped photo: ${post.postId}');
               },
               child: Container(
                 decoration: BoxDecoration(

@@ -678,10 +678,8 @@ class ForYouWidget extends StatelessWidget {
           fromUserName: actualUserName,
         );
 
-        print('✅ Like notification sent to $toUserId');
       }
     } catch (e) {
-      print('❌ Error sending like notification: $e');
     }
   }
 
@@ -725,10 +723,8 @@ class ForYouWidget extends StatelessWidget {
           fromUserName: actualUserName,
         );
 
-        print('✅ Retweet notification sent to $toUserId');
       }
     } catch (e) {
-      print('❌ Error sending retweet notification: $e');
     }
   }
 }

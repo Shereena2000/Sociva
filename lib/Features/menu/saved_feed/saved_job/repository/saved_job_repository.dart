@@ -87,7 +87,6 @@ class SavedJobRepository {
             }
           }
         } catch (e) {
-          print('Error fetching job details for jobId $jobId: $e');
         }
       }
 

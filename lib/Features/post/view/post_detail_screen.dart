@@ -114,11 +114,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final hasMultipleMedia = mediaUrls.length > 1;
     
     // Debug logging
-    print('🖼️ Building PostDetailScreen:');
-    print('   Media URLs count: ${mediaUrls.length}');
-    print('   Current page: $_currentPage');
     for (int i = 0; i < mediaUrls.length; i++) {
-      print('   Media $i: ${mediaUrls[i].substring(mediaUrls[i].length > 50 ? mediaUrls[i].length - 50 : 0)}');
     }
 
     return Scaffold(
@@ -131,7 +127,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             physics: const ClampingScrollPhysics(),
             scrollDirection: Axis.horizontal,
             onPageChanged: (index) {
-              print('📄 Page changed to: $index');
               setState(() {
                 _currentPage = index;
               });
@@ -154,8 +149,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               }
               
               // For images, use CachedNetworkImage with explicit cache control
-              print('   🏗️ Building image at index $index');
-              print('   📸 URL: $mediaUrl');
               return RepaintBoundary(
                 key: ValueKey('page_$index'),
                 child: Container(
@@ -172,7 +165,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     maxWidthDiskCache: 2000,
                     progressIndicatorBuilder: (context, url, downloadProgress) {
                       final progress = (downloadProgress.progress ?? 0) * 100;
-                      print('   ⏳ Image $index loading... ${progress.toStringAsFixed(0)}%');
                       return Container(
                         color: Colors.black,
                         child: Center(
@@ -194,9 +186,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       );
                     },
                     errorWidget: (context, url, error) {
-                      print('❌ Error loading image at index $index');
-                      print('   URL: $mediaUrl');
-                      print('   Error: $error');
                       return Container(
                         color: Colors.grey[900],
                         child: Center(
@@ -224,7 +213,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       );
                     },
                     imageBuilder: (context, imageProvider) {
-                      print('   ✅ Image $index loaded successfully');
                       return Image(
                         image: imageProvider,
                         fit: BoxFit.cover,

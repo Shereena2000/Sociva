@@ -20,18 +20,15 @@ class ChatRepository {
         throw Exception('Invalid user ID: otherUserId is empty');
       }
 
-      print('🔍 Creating chat room - Current: $currentUserId, Other: $otherUserId');
 
       final participants = [currentUserId, otherUserId]..sort();
       final chatRoomId = '${participants[0]}_${participants[1]}';
 
-      print('🔍 Chat room ID: $chatRoomId');
 
       final chatRoomDoc =
           await _firestore.collection('chatRooms').doc(chatRoomId).get();
 
       if (!chatRoomDoc.exists) {
-        print('🔍 Chat room does not exist, creating new one...');
         
         final chatRoom = ChatRoomModel(
           chatRoomId: chatRoomId,
@@ -43,21 +40,17 @@ class ChatRepository {
           createdAt: DateTime.now(),
         );
 
-        print('🔍 Chat room data: ${chatRoom.toMap()}');
 
         await _firestore
             .collection('chatRooms')
             .doc(chatRoomId)
             .set(chatRoom.toMap());
 
-        print('✅ Chat room created: $chatRoomId');
       } else {
-        print('✅ Chat room already exists: $chatRoomId');
       }
 
       return chatRoomId;
     } catch (e) {
-      print('❌ Error creating/getting chat room: $e');
       throw Exception('Failed to create chat room: $e');
     }
   }
@@ -81,7 +74,6 @@ class ChatRepository {
         }).toList();
       });
     } catch (e) {
-      print('❌ Error getting chat rooms: $e');
       return Stream.value([]);
     }
   }
@@ -100,10 +92,6 @@ class ChatRepository {
         throw Exception('User not authenticated');
       }
 
-      print('📤 ChatRepository: Sending message to chat room: $chatRoomId');
-      print('   Content: $content');
-      print('   Type: $messageType');
-      print('   Media URL: $mediaUrl');
 
       final messageId = _firestore.collection('chatRooms').doc().id;
       final message = MessageModel(
@@ -118,7 +106,6 @@ class ChatRepository {
         mediaUrl: mediaUrl,
       );
 
-      print('📤 ChatRepository: Storing message in Firestore...');
       await _firestore
           .collection('chatRooms')
           .doc(chatRoomId)
@@ -126,7 +113,6 @@ class ChatRepository {
           .doc(messageId)
           .set(message.toMap());
 
-      print('📤 ChatRepository: Updating chat room last message...');
       await _updateChatRoomLastMessage(
         chatRoomId: chatRoomId,
         lastMessage: content,
@@ -134,9 +120,7 @@ class ChatRepository {
         receiverId: receiverId,
       );
 
-      print('✅ ChatRepository: Message sent successfully: $messageId');
     } catch (e) {
-      print('❌ ChatRepository: Error sending message: $e');
       throw Exception('Failed to send message: $e');
     }
   }
@@ -166,14 +150,12 @@ class ChatRepository {
         });
       }
     } catch (e) {
-      print('❌ Error updating chat room: $e');
     }
   }
 
   /// Get messages
   Stream<List<MessageModel>> getMessages(String chatRoomId) {
     try {
-      print('🔍 ChatRepository: Getting messages for chat room: $chatRoomId');
       return _firestore
           .collection('chatRooms')
           .doc(chatRoomId)
@@ -181,15 +163,12 @@ class ChatRepository {
           .orderBy('timestamp', descending: true)
           .snapshots()
           .map((snapshot) {
-        print('📊 ChatRepository: Found ${snapshot.docs.length} messages');
         final messages = snapshot.docs.map((doc) {
-          print('   - Message: ${doc.data()['content']}');
           return MessageModel.fromMap(doc.data());
         }).toList();
         return messages;
       });
     } catch (e) {
-      print('❌ Error getting messages: $e');
       return Stream.value([]);
     }
   }
@@ -218,9 +197,7 @@ class ChatRepository {
         'unreadCount.$currentUserId': 0,
       });
 
-      print('✅ Messages marked as read');
     } catch (e) {
-      print('❌ Error marking messages as read: $e');
     }
   }
 
@@ -230,7 +207,6 @@ class ChatRepository {
       final userDoc = await _firestore.collection('users').doc(userId).get();
       return userDoc.data();
     } catch (e) {
-      print('❌ Error getting user details: $e');
       return null;
     }
   }
@@ -262,7 +238,6 @@ class ChatRepository {
         throw Exception('User not authenticated');
       }
 
-      print('🗑️ Deleting message: $messageId from chat: $chatRoomId');
 
       await _firestore
           .collection('chatRooms')
@@ -271,9 +246,7 @@ class ChatRepository {
           .doc(messageId)
           .delete();
 
-      print('✅ Message deleted successfully');
     } catch (e) {
-      print('❌ Error deleting message: $e');
       throw Exception('Failed to delete message: $e');
     }
   }
@@ -286,7 +259,6 @@ class ChatRepository {
         throw Exception('User not authenticated');
       }
 
-      print('🗑️ Deleting chat room: $chatRoomId');
 
       // Delete all messages in the chat room
       final messagesSnapshot = await _firestore
@@ -306,9 +278,7 @@ class ChatRepository {
 
       await batch.commit();
 
-      print('✅ Chat deleted successfully');
     } catch (e) {
-      print('❌ Error deleting chat: $e');
       throw Exception('Failed to delete chat: $e');
     }
   }

@@ -58,11 +58,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
   }
 
   void _toggleReplies(String commentId) {
-    print('🔄 Toggling replies for comment: $commentId');
     setState(() {
       _expandedReplies[commentId] = !(_expandedReplies[commentId] ?? false);
     });
-    print('   Expanded: ${_expandedReplies[commentId]}');
   }
 
   void _showDebugDialog() {
@@ -206,10 +204,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
     return StreamBuilder<List<CommentModel>>(
       stream: postRepository.getComments(widget.postId),
       builder: (context, snapshot) {
-        print('🔍 CommentsScreen StreamBuilder state: ${snapshot.connectionState}');
-        print('🔍 Has data: ${snapshot.hasData}');
-        print('🔍 Has error: ${snapshot.hasError}');
-        print('🔍 Data length: ${snapshot.data?.length ?? 0}');
         
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -218,8 +212,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
         }
 
         if (snapshot.hasError) {
-          print('❌ Error loading comments: ${snapshot.error}');
-          print('❌ Error type: ${snapshot.error.runtimeType}');
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(32.0),
@@ -245,7 +237,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
         }
 
         if (!snapshot.hasData) {
-          print('⚠️ Snapshot has no data');
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -289,7 +280,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
           );
         }
 
-        print('✅ Displaying ${comments.length} main comments');
         return ListView.separated(
           padding: const EdgeInsets.symmetric(vertical: 16),
           itemCount: comments.length,
@@ -344,8 +334,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
           StreamBuilder<List<CommentModel>>(
             stream: postRepository.getReplies(widget.postId, comment.commentId),
             builder: (context, snapshot) {
-              print('📡 Fetching replies for comment: ${comment.commentId}');
-              print('   Reply count: ${comment.replyCount}');
               
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Padding(
@@ -362,7 +350,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
               }
 
               if (snapshot.hasError) {
-                print('❌ Error loading replies: ${snapshot.error}');
                 return Padding(
                   padding: const EdgeInsets.only(left: 60, top: 4, bottom: 12),
                   child: Text(
@@ -373,14 +360,11 @@ class _CommentsScreenState extends State<CommentsScreen> {
               }
 
               final replies = snapshot.data ?? [];
-              print('📦 Received ${replies.length} replies');
               
               if (replies.isEmpty) {
-                print('⚠️ No replies found even though replyCount is ${comment.replyCount}');
                 return const SizedBox.shrink();
               }
 
-              print('✅ Displaying ${replies.length} replies');
 
               return Column(
                 children: [
@@ -594,10 +578,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
                 final text = _commentController.text.trim();
                 if (text.isEmpty) return;
 
-                print('💬 Attempting to add comment...');
-                print('   Post ID: ${widget.postId}');
-                print('   Text: $text');
-                print('   Reply to: $_replyToCommentId');
                 
                 try {
                   await homeViewModel.addComment(
@@ -607,7 +587,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
                     replyToUserName: _replyToUserName,
                   );
                   
-                  print('✅ Comment added successfully');
                   
                   // Send notification to post owner
                   await _sendCommentNotification();
@@ -634,9 +613,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
                     );
                   }
                 } catch (e) {
-                  print('❌ Error adding comment: $e');
-                  print('❌ Error type: ${e.runtimeType}');
-                  print('❌ Error details: ${e.toString()}');
                   
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -721,10 +697,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
           fromUserName: fromUserName,
         );
 
-        print('✅ Comment notification sent to ${widget.postOwnerId}');
       }
     } catch (e) {
-      print('❌ Error sending comment notification: $e');
     }
   }
 }

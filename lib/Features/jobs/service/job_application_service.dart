@@ -28,7 +28,6 @@ class JobApplicationService {
     required String resumeFileName,
   }) async {
     try {
-      print('📝 JobApplicationService: Starting application submission...');
       
       final currentUser = _auth.currentUser;
       if (currentUser == null) {
@@ -36,12 +35,9 @@ class JobApplicationService {
       }
 
       // 1. Upload resume to Cloudinary
-      print('☁️ Uploading resume to Cloudinary...');
       final resumeUrl = await _uploadResumeToCloudinary(resumePath, resumeFileName);
-      print('✅ Resume uploaded: $resumeUrl');
 
       // 2. Create job application document
-      print('📄 Creating job application document...');
       final applicationId = _uuid.v4();
       final application = JobApplicationModel(
         id: applicationId,
@@ -62,25 +58,20 @@ class JobApplicationService {
           .doc(applicationId)
           .set(application.toMap());
 
-      print('✅ Job application saved to Firestore');
 
       // 3. Get company owner's user ID (the actual person to notify)
-      print('🔍 Getting company owner user ID...');
       final companyOwnerUserId = await _getCompanyOwnerUserId(companyId);
       if (companyOwnerUserId == null) {
         throw Exception('Company owner not found');
       }
-      print('✅ Company owner user ID: $companyOwnerUserId');
 
       // 4. Create or get chat room between user and company owner
-      print('💬 Creating chat room with company owner...');
       final chatRoomId = await _createOrGetChatRoom(
         userId: currentUser.uid,
         companyOwnerUserId: companyOwnerUserId,
       );
 
       // 5. Send resume as chat message to company owner
-      print('📤 Sending resume as chat message...');
       await _sendResumeMessage(
         chatRoomId: chatRoomId,
         jobId: jobId,
@@ -92,7 +83,6 @@ class JobApplicationService {
       );
 
       // 6. Send notification to company owner
-      print('🔔 Sending notification to company owner...');
       await _notificationService.notifyJobApplication(
         fromUserId: currentUser.uid,
         toUserId: companyOwnerUserId,
@@ -100,11 +90,9 @@ class JobApplicationService {
         applicationId: applicationId,
       );
 
-      print('🎉 Job application submitted successfully!');
       return application;
 
     } catch (e) {
-      print('❌ JobApplicationService: Error submitting application: $e');
       throw Exception('Failed to submit job application: $e');
     }
   }
@@ -141,7 +129,6 @@ class JobApplicationService {
         throw Exception('Upload failed with status: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error uploading resume to Cloudinary: $e');
       throw Exception('Failed to upload resume: $e');
     }
   }
@@ -153,13 +140,10 @@ class JobApplicationService {
       if (companyDoc.exists) {
         final companyData = companyDoc.data()!;
         final userId = companyData['userId'] as String?;
-        print('🔍 Company owner user ID: $userId');
         return userId;
       }
-      print('❌ Company not found: $companyId');
       return null;
     } catch (e) {
-      print('❌ Error getting company owner: $e');
       return null;
     }
   }
@@ -170,27 +154,21 @@ class JobApplicationService {
     required String companyOwnerUserId,
   }) async {
     try {
-      print('🔍 Checking for existing chat room between $userId and $companyOwnerUserId');
       // Check if chat room already exists
       final existingRooms = await _firestore
           .collection('chatRooms')
           .where('participants', arrayContains: userId)
           .get();
 
-      print('🔍 Found ${existingRooms.docs.length} existing chat rooms');
       for (var room in existingRooms.docs) {
         final participants = List<String>.from(room.data()['participants'] ?? []);
-        print('   - Room ${room.id}: participants = $participants');
         if (participants.contains(companyOwnerUserId)) {
-          print('✅ Found existing chat room: ${room.id}');
           return room.id;
         }
       }
 
       // Create new chat room
       final chatRoomId = _uuid.v4();
-      print('🔨 Creating new chat room: $chatRoomId');
-      print('   Participants: [$userId, $companyOwnerUserId]');
       
       await _firestore.collection('chatRooms').doc(chatRoomId).set({
         'chatRoomId': chatRoomId,
@@ -203,11 +181,9 @@ class JobApplicationService {
         'type': 'jobApplication', // Special type for job application chats
       });
 
-      print('✅ Created new chat room: $chatRoomId');
       return chatRoomId;
 
     } catch (e) {
-      print('❌ Error creating chat room: $e');
       throw Exception('Failed to create chat room: $e');
     }
   }
@@ -255,10 +231,8 @@ class JobApplicationService {
         mediaUrl: message.mediaUrl,
       );
 
-      print('✅ Resume message sent to company');
 
     } catch (e) {
-      print('❌ Error sending resume message: $e');
       throw Exception('Failed to send resume message: $e');
     }
   }
@@ -281,7 +255,6 @@ class JobApplicationService {
           .toList();
 
     } catch (e) {
-      print('❌ Error fetching user applications: $e');
       return [];
     }
   }
@@ -300,7 +273,6 @@ class JobApplicationService {
           .toList();
 
     } catch (e) {
-      print('❌ Error fetching company applications: $e');
       return [];
     }
   }
@@ -311,7 +283,6 @@ class JobApplicationService {
       final currentUser = _auth.currentUser;
       if (currentUser == null) return false;
 
-      print('🔍 Checking if user has applied to job: $jobId');
 
       final snapshot = await _firestore
           .collection('jobApplications')
@@ -321,12 +292,10 @@ class JobApplicationService {
           .get();
 
       final hasApplied = snapshot.docs.isNotEmpty;
-      print(hasApplied ? '✅ User has already applied' : '❌ User has not applied');
       
       return hasApplied;
 
     } catch (e) {
-      print('❌ Error checking if user applied: $e');
       return false;
     }
   }
@@ -344,10 +313,8 @@ class JobApplicationService {
         if (notes != null) 'notes': notes,
       });
 
-      print('✅ Application status updated: $status');
 
     } catch (e) {
-      print('❌ Error updating application status: $e');
       throw Exception('Failed to update application status: $e');
     }
   }

@@ -18,18 +18,14 @@ class SearchRepository {
         throw Exception('User not authenticated');
       }
 
-      print('🔍 Searching for users with query: "$query"');
 
       // Convert query to lowercase for case-insensitive search
       final lowercaseQuery = query.toLowerCase().trim();
 
       // Try to get all users first to see what data structure we have
-      print('🔍 Fetching all users to understand data structure...');
       final allUsersSnapshot = await _firestore.collection('users').limit(50).get();
-      print('🔍 Found ${allUsersSnapshot.docs.length} total users in database');
 
       if (allUsersSnapshot.docs.isNotEmpty) {
-        print('📄 Sample user document: ${allUsersSnapshot.docs.first.data()}');
       }
 
       // Search by username (exact match or starts with)
@@ -50,19 +46,15 @@ class SearchRepository {
       final usernameResults = await usernameQuery.get();
       final nameResults = await nameQuery.get();
 
-      print('🔍 Username query results: ${usernameResults.docs.length}');
-      print('🔍 Name query results: ${nameResults.docs.length}');
 
       // If no results from queries, try a broader search
       if (usernameResults.docs.isEmpty && nameResults.docs.isEmpty) {
-        print('🔍 No results from specific queries, trying broader search...');
         final allResults = await _firestore.collection('users').get();
         final Map<String, UserProfileModel> uniqueUsers = {};
         
         for (var doc in allResults.docs) {
           try {
             final data = doc.data();
-            print('📄 Checking user doc: $data');
             
             final user = UserProfileModel.fromMap(data);
             if (user.uid != currentUserId) {
@@ -72,17 +64,13 @@ class SearchRepository {
               
               if (usernameMatch || nameMatch) {
                 uniqueUsers[user.uid] = user;
-                print('✅ Added user from broad search: ${user.username}');
               }
             }
           } catch (e) {
-            print('⚠️ Error parsing user profile: $e');
-            print('⚠️ Doc data: ${doc.data()}');
           }
         }
         
         final results = uniqueUsers.values.toList();
-        print('✅ Found ${results.length} users matching "$query" (broad search)');
         return results;
       }
 
@@ -92,30 +80,22 @@ class SearchRepository {
       // Process username results
       for (var doc in usernameResults.docs) {
         try {
-          print('📄 Username doc data: ${doc.data()}');
           final user = UserProfileModel.fromMap(doc.data());
           if (user.uid != currentUserId) { // Don't include current user
             uniqueUsers[user.uid] = user;
-            print('✅ Added user from username search: ${user.username}');
           }
         } catch (e) {
-          print('⚠️ Error parsing user profile from username search: $e');
-          print('⚠️ Doc data: ${doc.data()}');
         }
       }
 
       // Process name results
       for (var doc in nameResults.docs) {
         try {
-          print('📄 Name doc data: ${doc.data()}');
           final user = UserProfileModel.fromMap(doc.data());
           if (user.uid != currentUserId) { // Don't include current user
             uniqueUsers[user.uid] = user;
-            print('✅ Added user from name search: ${user.username}');
           }
         } catch (e) {
-          print('⚠️ Error parsing user profile from name search: $e');
-          print('⚠️ Doc data: ${doc.data()}');
         }
       }
 
@@ -144,28 +124,25 @@ class SearchRepository {
         return aUsername.compareTo(bUsername);
       });
 
-      print('✅ Found ${results.length} users matching "$query"');
       return results;
     } catch (e) {
-      print('❌ Error searching users: $e');
       throw Exception('Failed to search users: $e');
     }
   }
 
   /// Get recent searches (stored locally for now)
   Future<List<String>> getRecentSearches() async {
-    // TODO: Implement local storage for recent searches
     return [];
   }
 
   /// Save search query to recent searches
   Future<void> saveRecentSearch(String query) async {
-    // TODO: Implement local storage for recent searches
+    // No implementation yet
   }
 
   /// Clear recent searches
   Future<void> clearRecentSearches() async {
-    // TODO: Implement local storage for recent searches
+    // No implementation yet
   }
 
   /// Get suggested users (random users excluding current user and already followed users)
@@ -176,7 +153,6 @@ class SearchRepository {
         throw Exception('User not authenticated');
       }
 
-      print('🎯 Fetching suggested users...');
 
       // Get all users
       final usersSnapshot = await _firestore
@@ -194,7 +170,6 @@ class SearchRepository {
             users.add(user);
           }
         } catch (e) {
-          print('⚠️ Error parsing user profile: $e');
         }
       }
 
@@ -203,11 +178,9 @@ class SearchRepository {
 
       // Return limited number
       final suggestedUsers = users.take(limit).toList();
-      print('✅ Found ${suggestedUsers.length} suggested users');
 
       return suggestedUsers;
     } catch (e) {
-      print('❌ Error fetching suggested users: $e');
       throw Exception('Failed to fetch suggested users: $e');
     }
   }

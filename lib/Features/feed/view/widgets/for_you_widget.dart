@@ -8,6 +8,7 @@ import 'package:social_media_app/Features/feed/view/comments_screen.dart';
 import 'package:social_media_app/Features/notifications/service/notification_service.dart';
 import 'package:social_media_app/Features/notifications/service/push_notification_service.dart';
 import 'package:social_media_app/Features/post/view/widgets/share_bottom_sheet.dart';
+import 'package:social_media_app/Features/post/view/post_detail_screen.dart';
 import 'package:social_media_app/Settings/constants/sized_box.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 
@@ -232,48 +233,61 @@ class ForYouWidget extends StatelessWidget {
 
           // Post image/video - Grid if multiple, single if one
           if (postWithUser.mediaUrl.isNotEmpty)
-            postWithUser.post.hasMultipleMedia
-                ? _buildMediaGrid(postWithUser.post)
-                : Container(
-                    width: double.infinity,
-                    height: 300,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Colors.grey[800],
+            GestureDetector(
+              onTap: () {
+                // Navigate to full screen post detail
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PostDetailScreen(
+                      postId: postWithUser.postId,
                     ),
-                    child: postWithUser.mediaType == 'video'
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: VideoPlayerWidget(
-                              videoUrl: postWithUser.mediaUrl,
-                              height: 300,
-                              width: double.infinity,
-                              autoPlay: false,
-                              showControls: true,
-                            ),
-                          )
-                        : ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              postWithUser.mediaUrl,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey[800],
-                                  child: const Center(
-                                    child: Icon(
-                                      Icons.image_not_supported,
-                                      size: 64,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
                   ),
+                );
+              },
+              child: postWithUser.post.hasMultipleMedia
+                  ? _buildMediaGrid(postWithUser.post)
+                  : Container(
+                      width: double.infinity,
+                      height: 300,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.grey[800],
+                      ),
+                      child: postWithUser.mediaType == 'video'
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: VideoPlayerWidget(
+                                videoUrl: postWithUser.mediaUrl,
+                                height: 300,
+                                width: double.infinity,
+                                autoPlay: false,
+                                showControls: true,
+                              ),
+                            )
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                postWithUser.mediaUrl,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.grey[800],
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.image_not_supported,
+                                        size: 64,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                    ),
+            ),
 
           if (postWithUser.mediaUrl.isNotEmpty) const SizedBox(height: 12),
 

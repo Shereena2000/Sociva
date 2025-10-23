@@ -132,12 +132,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     backgroundImage: NetworkImage(profileImageUrl),
                     backgroundColor: Colors.grey[800],
                   ),
-                  SizeBoxV(5),
+                  SizeBoxV(12),
                   Text(
                     displayName,
                     style: PTextStyles.displayMedium.copyWith(
                       fontWeight: FontWeight.bold,
-                      fontSize: 20,
+                      fontSize: 25,
                     ),
                   ),
                 ],

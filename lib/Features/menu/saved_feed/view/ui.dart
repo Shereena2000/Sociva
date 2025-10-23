@@ -16,7 +16,9 @@ class SavedFeedScreen extends StatelessWidget {
         appBar: CustomAppBar(title: "Saved Feeds"),
         body: Consumer<SavedFeedViewModel>(
           builder: (context, viewModel, child) {
-            if (viewModel.isLoading) {
+            // Show loading if isLoading OR if we have no feeds and no error (initial state)
+            if (viewModel.isLoading || 
+                (!viewModel.hasSavedFeeds && viewModel.errorMessage == null && viewModel.savedFeeds.isEmpty)) {
               return const Center(
                 child: CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),

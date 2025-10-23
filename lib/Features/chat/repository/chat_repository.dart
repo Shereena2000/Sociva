@@ -254,6 +254,30 @@ class ChatRepository {
     });
   }
 
+  /// Delete a single message
+  Future<void> deleteMessage(String chatRoomId, String messageId) async {
+    try {
+      final currentUserId = _auth.currentUser?.uid;
+      if (currentUserId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      print('🗑️ Deleting message: $messageId from chat: $chatRoomId');
+
+      await _firestore
+          .collection('chatRooms')
+          .doc(chatRoomId)
+          .collection('messages')
+          .doc(messageId)
+          .delete();
+
+      print('✅ Message deleted successfully');
+    } catch (e) {
+      print('❌ Error deleting message: $e');
+      throw Exception('Failed to delete message: $e');
+    }
+  }
+
   /// Delete chat (all messages and chat room)
   Future<void> deleteChat(String chatRoomId) async {
     try {

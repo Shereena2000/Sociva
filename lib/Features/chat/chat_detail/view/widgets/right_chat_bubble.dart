@@ -10,6 +10,7 @@ class RightChatBubble extends StatelessWidget {
   final String? mediaUrl;
   final String? messageType;
   final bool isRead;
+  final VoidCallback? onLongPress;
 
   const RightChatBubble({
     super.key,
@@ -18,6 +19,7 @@ class RightChatBubble extends StatelessWidget {
     this.mediaUrl,
     this.messageType,
     this.isRead = false,
+    this.onLongPress,
   });
 
   @override
@@ -28,32 +30,35 @@ class RightChatBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.75, // Max 75% of screen width
-            ),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                 Color(0xFF1A1B4B),
-                  Color(0xFF4A148C), 
-                  Color(0xFF6A1B9A), 
-                 Color(0xFF3949AB), // Blue
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              stops: [0.0, 0.3, 0.6, 1.0],
-            ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.zero, // Sharp corner
+          GestureDetector(
+            onLongPress: onLongPress,
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75, // Max 75% of screen width
               ),
-          
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                   Color(0xFF1A1B4B),
+                    Color(0xFF4A148C), 
+                    Color(0xFF6A1B9A), 
+                   Color(0xFF3949AB), // Blue
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: [0.0, 0.3, 0.6, 1.0],
+              ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.zero, // Sharp corner
+                ),
+            
+              ),
+              child: _buildMessageContent(context),
             ),
-            child: _buildMessageContent(context),
           ),
           const SizedBox(height: 4),
           Padding(

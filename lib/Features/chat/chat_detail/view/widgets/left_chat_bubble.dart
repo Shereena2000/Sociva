@@ -9,6 +9,7 @@ class LeftChatBubble extends StatelessWidget {
   final String time;
   final String? mediaUrl;
   final String? messageType;
+  final VoidCallback? onLongPress;
 
   const LeftChatBubble({
     super.key, 
@@ -16,6 +17,7 @@ class LeftChatBubble extends StatelessWidget {
     required this.time,
     this.mediaUrl,
     this.messageType,
+    this.onLongPress,
   });
 
   @override
@@ -26,33 +28,36 @@ class LeftChatBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            constraints: BoxConstraints(
-              maxWidth:
-                  MediaQuery.of(context).size.width *
-                  0.75, // Max 75% of screen width
-            ),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF1A1B4B), // Deep Blue
-                  Color(0xFF4A148C), // Deep Purple
-                  Color(0xFF6A1B9A), // Purple
-                  Color(0xFF3949AB), // Blue
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                stops: [0.0, 0.3, 0.6, 1.0],
+          GestureDetector(
+            onLongPress: onLongPress,
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth:
+                    MediaQuery.of(context).size.width *
+                    0.75, // Max 75% of screen width
               ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-                bottomLeft: Radius.zero, // Sharp corner
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF1A1B4B), // Deep Blue
+                    Color(0xFF4A148C), // Deep Purple
+                    Color(0xFF6A1B9A), // Purple
+                    Color(0xFF3949AB), // Blue
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  stops: [0.0, 0.3, 0.6, 1.0],
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                  bottomLeft: Radius.zero, // Sharp corner
+                ),
               ),
+              child: _buildMessageContent(context),
             ),
-            child: _buildMessageContent(context),
           ),
           const SizedBox(height: 4),
           Padding(

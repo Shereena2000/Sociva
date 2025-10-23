@@ -39,7 +39,77 @@ class ChatDetailScreen extends StatelessWidget {
     return 'Chat User';
   }
 
-  // Show delete confirmation dialog
+  // Show delete message confirmation dialog (for individual messages)
+  void _showDeleteMessageDialog(BuildContext context, ChatDetailViewModel viewModel, String messageId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: Row(
+            children: [
+              Icon(Icons.delete_outline, color: Colors.red, size: 28),
+              SizedBox(width: 12),
+              Text('Delete Message', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: Text(
+            'Delete this message?',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop(); // Close dialog
+                
+                // Delete the message
+                final success = await viewModel.deleteMessage(messageId);
+
+                if (success && context.mounted) {
+                  // Show success message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.white, size: 20),
+                          SizedBox(width: 12),
+                          Text('Message deleted'),
+                        ],
+                      ),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                } else if (context.mounted) {
+                  // Show error message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.white, size: 20),
+                          SizedBox(width: 12),
+                          Text('Failed to delete message'),
+                        ],
+                      ),
+                      backgroundColor: Colors.red,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+              child: Text('Delete', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Show delete confirmation dialog (for entire chat)
   void _showDeleteConfirmationDialog(BuildContext context, ChatDetailViewModel viewModel) {
     showDialog(
       context: context,
@@ -275,6 +345,7 @@ class ChatDetailScreen extends StatelessWidget {
                                       mediaUrl: message.mediaUrl,
                                       messageType: message.messageType.toString().split('.').last,
                                       isRead: message.isRead,
+                                      onLongPress: () => _showDeleteMessageDialog(context, viewModel, message.messageId),
                                     )
                                   else
                                     LeftChatBubble(
@@ -282,6 +353,7 @@ class ChatDetailScreen extends StatelessWidget {
                                       time: viewModel.getFormattedTime(message.timestamp),
                                       mediaUrl: message.mediaUrl,
                                       messageType: message.messageType.toString().split('.').last,
+                                      onLongPress: () => _showDeleteMessageDialog(context, viewModel, message.messageId),
                                     ),
                                   const SizedBox(height: 12),
                                 ],

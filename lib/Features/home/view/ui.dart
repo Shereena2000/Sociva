@@ -17,9 +17,12 @@ import 'package:social_media_app/Features/notifications/service/notification_ser
 import 'package:social_media_app/Features/notifications/service/push_notification_service.dart';
 import 'package:social_media_app/Features/post/view/widgets/share_bottom_sheet.dart';
 import 'package:social_media_app/Features/post/view/test_share_debug.dart';
+import 'package:social_media_app/Settings/constants/sized_box.dart';
 import 'package:social_media_app/Settings/utils/p_pages.dart';
 import 'package:social_media_app/Settings/utils/svgs.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
+
+import '../../../Settings/utils/p_text_styles.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -79,6 +82,26 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Helper method to get display name with fallback hierarchy
+  String _getDisplayName(Map<String, dynamic>? userData) {
+    if (userData == null) return 'User';
+    
+    // 1. First try username (nickname)
+    final username = userData['username']?.toString();
+    if (username != null && username.isNotEmpty) {
+      return username;
+    }
+    
+    // 2. Fallback to name (real name)
+    final name = userData['name']?.toString();
+    if (name != null && name.isNotEmpty) {
+      return name;
+    }
+    
+    // 3. Final fallback
+    return 'User';
+  }
+
   Widget _buildHeader(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
     
@@ -94,16 +117,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 .get(),
             builder: (context, snapshot) {
               String profileImageUrl = 'https://i.pinimg.com/736x/8d/4e/22/8d4e220866ec920f1a57c3730ca8aa11.jpg';
+              String displayName = 'User';
               
               if (snapshot.hasData && snapshot.data?.data() != null) {
                 final userData = snapshot.data!.data() as Map<String, dynamic>;
                 profileImageUrl = userData['profilePhotoUrl'] ?? profileImageUrl;
+                displayName = _getDisplayName(userData);
               }
               
-              return CircleAvatar(
-                radius: 20,
-                backgroundImage: NetworkImage(profileImageUrl),
-                backgroundColor: Colors.grey[800],
+              return Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundImage: NetworkImage(profileImageUrl),
+                    backgroundColor: Colors.grey[800],
+                  ),
+                  SizeBoxV(5),
+                  Text(
+                    displayName,
+                    style: PTextStyles.displayMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
+                ],
               );
             },
           ),

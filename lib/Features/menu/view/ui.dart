@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../Settings/constants/sized_box.dart';
 import '../../../Settings/utils/p_pages.dart';
 import '../../../Settings/utils/p_text_styles.dart';
 import '../../../Settings/utils/p_colors.dart';
+import '../../profile/profile_screen/view_model/profile_view_model.dart';
 
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
@@ -75,15 +77,69 @@ class MenuScreen extends StatelessWidget {
               },
             ),
             SizeBoxH(8),
-            Text(
-              "Log out",
-              style: PTextStyles.headlineMedium.copyWith(
-                color: PColors.errorRed,
-              ),
+            Consumer<ProfileViewModel>(
+              builder: (context, viewModel, child) {
+                return ListTile(
+                  onTap: viewModel.isLoggingOut
+                      ? null
+                      : () => _showLogoutDialog(context, viewModel),
+                  leading: viewModel.isLoggingOut
+                      ? SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              PColors.errorRed,
+                            ),
+                          ),
+                        )
+                      : Icon(Icons.logout_outlined, color: PColors.errorRed),
+                  title: Text(
+                    "Log out",
+                    style: PTextStyles.headlineMedium.copyWith(
+                      color: PColors.errorRed,
+                    ),
+                  ),
+                  trailing: Icon(Icons.arrow_forward_ios, 
+                    color: PColors.errorRed, 
+                    size: 20,
+                  ),
+                );
+              },
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context, ProfileViewModel viewModel) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: Text('Logout', style: TextStyle(color: Colors.white)),
+          content: Text(
+            'Are you sure you want to logout?',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                viewModel.logout(context);
+              },
+              child: Text('Logout', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
     );
   }
 

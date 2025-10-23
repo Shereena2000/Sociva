@@ -14,6 +14,26 @@ import 'widgets/chat_tile.dart';
 class ChatListScreen extends StatelessWidget {
   const ChatListScreen({super.key});
 
+  // Helper method to get display name with fallback hierarchy
+  String _getDisplayName(Map<String, dynamic>? userDetails) {
+    if (userDetails == null) return 'Chat User';
+    
+    // 1. First try username (nickname)
+    final username = userDetails['username']?.toString();
+    if (username != null && username.isNotEmpty) {
+      return username;
+    }
+    
+    // 2. Fallback to name (real name)
+    final name = userDetails['name']?.toString();
+    if (name != null && name.isNotEmpty) {
+      return name;
+    }
+    
+    // 3. Final fallback
+    return 'Chat User';
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -152,7 +172,7 @@ class ChatListScreen extends StatelessWidget {
                           return ChatTile(
                             chatRoomId: chatRoom.chatRoomId,
                             otherUserId: otherUserId,
-                            name: userDetails?['username'] ?? 'Unknown User',
+                            name: _getDisplayName(userDetails),
                             message: chatRoom.lastMessage.isEmpty
                                 ? 'Start a conversation'
                                 : chatRoom.lastMessage,

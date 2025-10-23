@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:social_media_app/Settings/constants/sized_box.dart';
 
 import '../../../../../Settings/utils/p_colors.dart';
 
@@ -33,6 +34,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: Row(
           children: [
             CircleAvatar(backgroundImage: NetworkImage(userImage)),
+            SizeBoxV(8),
             Column(
               children: [
                 Text(
@@ -52,17 +54,17 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
           ],
         ),
       ),
-      actionsPadding: EdgeInsets.only(right: 10),
-      actions: [
-        IconButton(
-          onPressed: () {},
-          icon: Icon(Icons.phone, size: 20), //phone
-        ),
-        IconButton(
-          onPressed: () {},
-          icon: Icon(Icons.video_camera_back_rounded, size: 24), //videocall
-        ),
-      ],
+      // actionsPadding: EdgeInsets.only(right: 10),
+      // actions: [
+      //   IconButton(
+      //     onPressed: () {},
+      //     icon: Icon(Icons.phone, size: 20), //phone
+      //   ),
+      //   IconButton(
+      //     onPressed: () {},
+      //     icon: Icon(Icons.video_camera_back_rounded, size: 24), //videocall
+      //   ),
+      // ],
     );
   }
 

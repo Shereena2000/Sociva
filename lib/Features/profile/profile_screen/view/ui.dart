@@ -60,29 +60,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               leading: IconButton(
                 onPressed: () => Navigator.pop(context),
                 icon: Icon(Icons.arrow_back_ios_new_outlined, size: 18),
+
               ),
+              centerTitle: false,
+               titleSpacing: 0,
+              title: Text(viewModel.userProfile?.name ?? 'Profile', style: PTextStyles.displayMedium.copyWith(fontWeight: FontWeight.bold, fontSize: 20),),
               toolbarHeight: 30,
-              actions: [
-                // Only show logout for current user's profile
-                if (viewModel.isCurrentUser)
-                  IconButton(
-                    onPressed: viewModel.isLoggingOut
-                        ? null
-                        : () => _showLogoutDialog(context, viewModel),
-                    icon: viewModel.isLoggingOut
-                        ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
-                            ),
-                          )
-                        : Icon(Icons.logout_outlined),
-                  ),
-              ],
             ),
             body: NestedScrollView(
               headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -242,36 +225,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ],
-    );
-  }
-
-
-  void _showLogoutDialog(BuildContext context, ProfileViewModel viewModel) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.grey[900],
-          title: Text('Logout', style: TextStyle(color: Colors.white)),
-          content: Text(
-            'Are you sure you want to logout?',
-            style: TextStyle(color: Colors.white70),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel', style: TextStyle(color: Colors.grey)),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                viewModel.logout(context);
-              },
-              child: Text('Logout', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
     );
   }
 

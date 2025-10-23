@@ -19,6 +19,26 @@ class ChatDetailScreen extends StatelessWidget {
     this.chatRoomId,
   });
 
+  // Helper method to get display name with fallback hierarchy
+  String _getDisplayName(Map<String, dynamic>? userDetails) {
+    if (userDetails == null) return 'Chat User';
+    
+    // 1. First try username (nickname)
+    final username = userDetails['username']?.toString();
+    if (username != null && username.isNotEmpty) {
+      return username;
+    }
+    
+    // 2. Fallback to name (real name)
+    final name = userDetails['name']?.toString();
+    if (name != null && name.isNotEmpty) {
+      return name;
+    }
+    
+    // 3. Final fallback
+    return 'Chat User';
+  }
+
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
@@ -64,10 +84,9 @@ class ChatDetailScreen extends StatelessWidget {
 
           return Scaffold(
             appBar: ChatAppBar(
-              userName: viewModel.otherUserDetails?['username'] ?? 'Loading...',
+              userName: _getDisplayName(viewModel.otherUserDetails),
               userImage: viewModel.otherUserDetails?['profilePhotoUrl'] ??
-                  'https://i.pinimg.com/736x/bd/68/11/bd681155d2bd24325d2746b9c9ba690d.jpg',
-              isOnline: false,
+'https://i.pinimg.com/736x/9e/83/75/9e837528f01cf3f42119c5aeeed1b336.jpg',              isOnline: false,
             ),
             body: Column(
               children: [

@@ -10,21 +10,43 @@ class NotificationService {
   final NotificationRepository _repository = NotificationRepository();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Get user details for notifications
+  // Get user details for notifications with smart fallback
   Future<Map<String, String>> _getUserDetails(String userId) async {
     try {
       final userDoc = await _firestore.collection('users').doc(userId).get();
       if (userDoc.exists) {
         final data = userDoc.data()!;
+        
+        // Smart fallback: username -> name -> generic
+        String displayName = _getDisplayName(data);
+        
         return {
-          'username': data['username'] ?? 'Unknown User',
+          'username': displayName,
           'profilePhotoUrl': data['profilePhotoUrl'] ?? '',
         };
       }
-      return {'username': 'Unknown User', 'profilePhotoUrl': ''};
+      return {'username': 'Chat User', 'profilePhotoUrl': ''};
     } catch (e) {
-      return {'username': 'Unknown User', 'profilePhotoUrl': ''};
+      return {'username': 'Chat User', 'profilePhotoUrl': ''};
     }
+  }
+
+  // Helper method to get display name with fallback hierarchy
+  String _getDisplayName(Map<String, dynamic> userData) {
+    // 1. First try username (nickname)
+    final username = userData['username']?.toString();
+    if (username != null && username.isNotEmpty) {
+      return username;
+    }
+    
+    // 2. Fallback to name (real name)
+    final name = userData['name']?.toString();
+    if (name != null && name.isNotEmpty) {
+      return name;
+    }
+    
+    // 3. Final fallback
+    return 'Chat User';
   }
 
   // Create follow notification

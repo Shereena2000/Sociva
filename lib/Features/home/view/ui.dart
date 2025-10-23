@@ -264,12 +264,22 @@ class _HomeScreenState extends State<HomeScreen> {
     BuildContext context,
     HomeViewModel homeViewModel,
   ) {
-    final currentUserId = homeViewModel.currentUserProfile?.uid;
+    // Use Firebase Auth directly for more reliable user ID
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+    // Debug logging
+    debugPrint('📱 HOME SCREEN - Current User ID: $currentUserId');
+    debugPrint('📱 HOME SCREEN - Total Status Groups: ${homeViewModel.statusGroups.length}');
+    for (var group in homeViewModel.statusGroups) {
+      debugPrint('   - Group User: ${group.userId}, Statuses: ${group.statuses.length}');
+    }
 
     // Separate current user's status from others
     final currentUserStatus = homeViewModel.statusGroups
         .where((group) => group.userId == currentUserId)
         .firstOrNull;
+
+    debugPrint('📱 HOME SCREEN - Current User Status: ${currentUserStatus != null ? "FOUND" : "NOT FOUND"}');
 
     final otherUsersStatuses = homeViewModel.statusGroups
         .where((group) => group.userId != currentUserId)

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:extended_image/extended_image.dart';
 import 'package:social_media_app/Features/post/model/post_model.dart';
 import 'package:social_media_app/Features/profile/create_profile/model/user_profile_model.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
@@ -127,6 +126,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Widget _buildFullScreenPost(BuildContext context, PostModel post, String username, String userImage) {
     final mediaUrls = post.mediaUrls.isNotEmpty ? post.mediaUrls : [post.mediaUrl];
     final hasMultipleMedia = mediaUrls.length > 1;
+    
+    // Debug: Print all media URLs
+    debugPrint('🎬 Post ${post.postId} has ${mediaUrls.length} media items:');
+    for (int i = 0; i < mediaUrls.length; i++) {
+      debugPrint('   [$i]: ${mediaUrls[i]}');
+    }
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -162,80 +167,79 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 );
               }
               
-              // For images, use ExtendedImage for better caching control
+              // For images - Use simple Image.network with explicit unique key per URL
               return Container(
-                key: ValueKey('container_${post.postId}_$index'),
+                key: ValueKey('container_$index'),
                 color: Colors.black,
-                width: double.infinity,
-                height: double.infinity,
-                child: ExtendedImage.network(
-                  mediaUrl,
-                  fit: BoxFit.contain,
-                  cache: true,
-                  clearMemoryCacheWhenDispose: false,
-                  enableMemoryCache: true,
-                  loadStateChanged: (ExtendedImageState state) {
-                    switch (state.extendedImageLoadState) {
-                      case LoadState.loading:
-                        return Container(
-                          color: Colors.black,
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const CircularProgressIndicator(
-                                  color: Colors.white,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Loading image ${index + 1} of ${mediaUrls.length}',
-                                  style: const TextStyle(color: Colors.white70),
-                                ),
-                              ],
-                            ),
+                child: Center(
+                  child: Image.network(
+                    mediaUrl,
+                    key: ValueKey('img_$mediaUrl'), // Unique key per URL
+                    fit: BoxFit.contain,
+                    frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                      if (wasSynchronouslyLoaded) return child;
+                      return AnimatedOpacity(
+                        opacity: frame == null ? 0 : 1,
+                        duration: const Duration(milliseconds: 300),
+                        child: child,
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: Colors.black,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(
+                                color: Colors.white,
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Loading image ${index + 1} of ${mediaUrls.length}',
+                                style: const TextStyle(color: Colors.white70),
+                              ),
+                            ],
                           ),
-                        );
-                      case LoadState.completed:
-                        return ExtendedRawImage(
-                          image: state.extendedImageInfo?.image,
-                          fit: BoxFit.contain,
-                        );
-                      case LoadState.failed:
-                        return Container(
-                          color: Colors.grey[900],
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.broken_image,
-                                  color: Colors.white,
-                                  size: 50,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Failed to load image ${index + 1}',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'URL: $mediaUrl',
-                                  style: const TextStyle(color: Colors.white60, fontSize: 10),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 16),
-                                ElevatedButton(
-                                  onPressed: () => state.reLoadImage(),
-                                  child: const Text('Retry'),
-                                ),
-                              ],
-                            ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      debugPrint('❌ Failed to load image at index $index: $error');
+                      return Container(
+                        color: Colors.grey[900],
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.broken_image,
+                                color: Colors.white,
+                                size: 50,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Failed to load image ${index + 1}',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'URL: $mediaUrl',
+                                style: const TextStyle(color: Colors.white60, fontSize: 10),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                        );
-                    }
-                  },
+                        ),
+                      );
+                    },
+                  ),
                 ),
               );
             },

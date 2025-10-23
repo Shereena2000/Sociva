@@ -278,9 +278,18 @@ class HomeViewModel extends ChangeNotifier {
           final isFollowing = _followingUserIds.contains(userId);
           final isFollower = _followerUserIds.contains(userId);
           
+          debugPrint('🔍 Status User: $userId');
+          debugPrint('   - Is Current User: $isCurrentUser');
+          debugPrint('   - Is Following: $isFollowing');
+          debugPrint('   - Is Follower: $isFollower');
+          debugPrint('   - Following List Size: ${_followingUserIds.length}');
+          debugPrint('   - Followers List Size: ${_followerUserIds.length}');
+          
           if (!isCurrentUser && !isFollowing && !isFollower) {
+            debugPrint('   ❌ FILTERED OUT (not current user, following, or follower)');
             continue; // Skip this user's statuses
           }
+          debugPrint('   ✅ INCLUDED');
 
           // Skip if no statuses
           if (userStatuses.isEmpty) continue;

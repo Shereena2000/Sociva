@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:social_media_app/Features/post/repository/post_repository.dart';
 import 'package:social_media_app/Features/profile/create_profile/repository/profile_repository.dart';
 import 'package:social_media_app/Features/profile/status/repository/status_repository.dart';
+import 'package:social_media_app/Features/profile/follow/repository/follow_repository_optimized.dart';
 import 'package:social_media_app/Features/menu/saved_post/repository/saved_post_repository.dart';
 import 'package:social_media_app/Features/feed/model/post_with_user_model.dart';
 import 'package:social_media_app/Features/feed/model/user_status_group_model.dart';
@@ -13,6 +14,7 @@ class HomeViewModel extends ChangeNotifier {
   final PostRepository _postRepository = PostRepository();
   final ProfileRepository _profileRepository = ProfileRepository();
   final StatusRepository _statusRepository = StatusRepository();
+  final FollowRepositoryOptimized _followRepository = FollowRepositoryOptimized();
   final SavedPostRepository _savedPostRepository = SavedPostRepository();
 
   // Posts
@@ -25,6 +27,10 @@ class HomeViewModel extends ChangeNotifier {
   bool _isLoadingStatuses = false;
   Set<String> _viewedStatusIds = {};
   UserProfileModel? _currentUserProfile;
+  
+  // Followers/Following for Instagram-style filtering
+  Set<String> _followingUserIds = {};
+  Set<String> _followerUserIds = {};
 
   // Getters - Posts
   List<PostWithUserModel> get posts => _posts;
@@ -221,7 +227,20 @@ class HomeViewModel extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    // Temporarily show all statuses (filtering had issues)
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) return;
+
+    // Listen to following list for filtering
+    _followRepository.getFollowingList().listen((followingList) {
+      _followingUserIds = followingList.toSet();
+    });
+
+    // Listen to followers list for filtering
+    _followRepository.getFollowersList().listen((followersList) {
+      _followerUserIds = followersList.toSet();
+    });
+
+    // Get all statuses and filter client-side (Instagram-style)
     _statusRepository.getAllStatuses().listen(
       (statuses) async {
         
@@ -250,6 +269,18 @@ class HomeViewModel extends ChangeNotifier {
         for (var entry in statusesByUser.entries) {
           final userId = entry.key;
           final userStatuses = entry.value;
+
+          // INSTAGRAM-STYLE FILTER: Only show if user is:
+          // 1. Current user (you)
+          // 2. Someone you follow
+          // 3. Your follower
+          final isCurrentUser = userId == currentUserId;
+          final isFollowing = _followingUserIds.contains(userId);
+          final isFollower = _followerUserIds.contains(userId);
+          
+          if (!isCurrentUser && !isFollowing && !isFollower) {
+            continue; // Skip this user's statuses
+          }
 
           // Skip if no statuses
           if (userStatuses.isEmpty) continue;

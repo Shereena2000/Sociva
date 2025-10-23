@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:social_media_app/Settings/common/widgets/custom_app_bar.dart';
 import '../../job_listing_screen/model/job_with_company_model.dart';
 import '../../add_job_post/model/job_model.dart';
+import '../../../company_registration/view/company_detail_screen.dart';
 import '../view_model/job_detail_view_model.dart';
 import '../view/widgets/apply_job_popup.dart';
 import '../../../../Settings/common/widgets/custom_elevated_button.dart';
@@ -261,8 +262,8 @@ class JobDetailScreen extends StatelessWidget {
                   _buildJobDescriptionCard(job),
                   SizeBoxH(16),
 
-                  // Company Info Card
-                  _buildCompanyInfoCard(company),
+                  // Company Info Card (Tap to view full details)
+                  _buildCompanyInfoCard(company, context),
                   SizeBoxH(80), // Extra space for apply button
                 ],
               ),
@@ -639,36 +640,50 @@ class JobDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCompanyInfoCard(dynamic company) {
-    return Container(
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: PColors.darkGray,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: Offset(0, 2),
+  Widget _buildCompanyInfoCard(dynamic company, BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        // Navigate to full company detail screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CompanyDetailScreen(company: company),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.business, color: PColors.primaryColor, size: 24),
-              SizeBoxV(8),
-              Text(
-                'About Company',
-                style: PTextStyles.headlineLarge.copyWith(
-                  color: PColors.white,
-                  fontWeight: FontWeight.bold,
+        );
+      },
+      child: Container(
+        padding: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: PColors.darkGray,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: PColors.primaryColor.withOpacity(0.3), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.business, color: PColors.primaryColor, size: 24),
+                SizeBoxV(8),
+                Expanded(
+                  child: Text(
+                    'About this Company',
+                    style: PTextStyles.headlineLarge.copyWith(
+                      color: PColors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
-            ],
-          ),
+                Icon(Icons.arrow_forward_ios, color: PColors.primaryColor, size: 16),
+              ],
+            ),
           SizeBoxH(16),
 
           // Company Name
@@ -738,7 +753,34 @@ class JobDetailScreen extends StatelessWidget {
               ),
             ],
           ),
+          
+          SizeBoxH(16),
+          
+          // Tap to view more indicator
+          Container(
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: PColors.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: PColors.primaryColor.withOpacity(0.3)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.info_outline, color: PColors.primaryColor, size: 18),
+                SizedBox(width: 8),
+                Text(
+                  'Tap to view full company details',
+                  style: PTextStyles.labelMedium.copyWith(
+                    color: PColors.primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
+      ),
       ),
     );
   }

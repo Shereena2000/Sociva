@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import '../model/company_model.dart';
 import '../repository/company_repository.dart';
@@ -66,6 +67,7 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
   String _errorMessage = '';
   bool _isRegistrationComplete = false;
   bool _hasRegisteredCompany = false;
+  bool _isEditMode = false;
   CompanyModel? _userCompany;
 
   // Getters
@@ -98,6 +100,7 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
   String get errorMessage => _errorMessage;
   bool get isRegistrationComplete => _isRegistrationComplete;
   bool get hasRegisteredCompany => _hasRegisteredCompany;
+  bool get isEditMode => _isEditMode;
   CompanyModel? get userCompany => _userCompany;
 
   // Setters
@@ -335,53 +338,88 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
       _businessLicenseNumber = businessLicenseNumberController.text;
       _taxId = taxIdController.text;
 
-      // Create company model
-      final company = CompanyModel(
-        id: '', // Will be set by Firestore
-        companyName: _companyName,
-        website: _website,
-        industry: _industry,
-        companySize: _companySize,
-        foundedYear: _foundedYear,
-        companyType: _companyType,
-        contactPerson: _contactPerson,
-        contactTitle: _contactTitle,
-        email: _email,
-        phone: _phone,
-        address: _address,
-        city: _city,
-        state: _state,
-        country: _country,
-        postalCode: _postalCode,
-        aboutCompany: _aboutCompany,
-        missionStatement: _missionStatement,
-        companyCulture: _companyCulture,
-        businessLicenseNumber: _businessLicenseNumber,
-        businessLicenseUrl: _businessLicenseUrl,
-        taxId: _taxId,
-        companyLogoUrl: _companyLogoUrl,
-        userId: user.uid,
-        isVerified: true, // Auto-verify company (no admin required)
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+      if (_isEditMode && _userCompany != null) {
+        // UPDATE existing company
+        print('📝 Updating existing company: ${_userCompany!.id}');
+        
+        final updates = {
+          'companyName': _companyName,
+          'website': _website,
+          'industry': _industry,
+          'companySize': _companySize,
+          'foundedYear': _foundedYear,
+          'companyType': _companyType,
+          'contactPerson': _contactPerson,
+          'contactTitle': _contactTitle,
+          'email': _email,
+          'phone': _phone,
+          'address': _address,
+          'city': _city,
+          'state': _state,
+          'country': _country,
+          'postalCode': _postalCode,
+          'aboutCompany': _aboutCompany,
+          'missionStatement': _missionStatement,
+          'companyCulture': _companyCulture,
+          // Note: businessLicenseNumber and taxId are NOT updated (read-only)
+          if (_companyLogoUrl.isNotEmpty) 'companyLogoUrl': _companyLogoUrl,
+        };
+        
+        await _companyRepository.updateCompany(_userCompany!.id, updates);
+        print('✅ Company updated successfully');
+      } else {
+        // CREATE new company
+        print('📝 Creating new company...');
+        
+        final company = CompanyModel(
+          id: '', // Will be set by Firestore
+          companyName: _companyName,
+          website: _website,
+          industry: _industry,
+          companySize: _companySize,
+          foundedYear: _foundedYear,
+          companyType: _companyType,
+          contactPerson: _contactPerson,
+          contactTitle: _contactTitle,
+          email: _email,
+          phone: _phone,
+          address: _address,
+          city: _city,
+          state: _state,
+          country: _country,
+          postalCode: _postalCode,
+          aboutCompany: _aboutCompany,
+          missionStatement: _missionStatement,
+          companyCulture: _companyCulture,
+          businessLicenseNumber: _businessLicenseNumber,
+          businessLicenseUrl: _businessLicenseUrl,
+          taxId: _taxId,
+          companyLogoUrl: _companyLogoUrl,
+          userId: user.uid,
+          isVerified: true, // Auto-verify company (no admin required)
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
 
-      // Save to Firebase
-      final companyId = await _companyRepository.createCompany(company);
-      
-      print('✅ Company registered with ID: $companyId');
+        // Save to Firebase
+        final companyId = await _companyRepository.createCompany(company);
+        print('✅ Company registered with ID: $companyId');
+      }
 
-      // Load the company back to get the complete data with ID
+      // Load the company back to get the complete data
       await loadUserCompany();
       
       print('✅ Company loaded into ViewModel: ${_userCompany?.companyName} (ID: ${_userCompany?.id})');
 
       _isRegistrationComplete = true;
+      _isEditMode = false; // Reset edit mode
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = 'Registration failed: $e';
+      _errorMessage = _isEditMode 
+          ? 'Update failed: $e' 
+          : 'Registration failed: $e';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -418,19 +456,25 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
       _errorMessage = 'Address is required';
       return false;
     }
-    if (businessLicenseNumberController.text.isEmpty) {
-      _errorMessage = 'Business license number is required';
-      return false;
+    
+    // Only validate business license and tax ID for new registrations (not edits)
+    if (!_isEditMode) {
+      if (businessLicenseNumberController.text.isEmpty) {
+        _errorMessage = 'Business license number is required';
+        return false;
+      }
+      if (taxIdController.text.isEmpty) {
+        _errorMessage = 'Tax ID is required';
+        return false;
+      }
+      if (_businessLicenseFile == null && _businessLicenseUrl.isEmpty) {
+        _errorMessage = 'Business license document is required';
+        return false;
+      }
     }
-    if (taxIdController.text.isEmpty) {
-      _errorMessage = 'Tax ID is required';
-      return false;
-    }
-    if (_businessLicenseFile == null) {
-      _errorMessage = 'Business license document is required';
-      return false;
-    }
-    if (_companyLogoFile == null) {
+    
+    // Logo validation (only required for new registrations)
+    if (!_isEditMode && _companyLogoFile == null && _companyLogoUrl.isEmpty) {
       _errorMessage = 'Company logo is required';
       return false;
     }
@@ -439,6 +483,28 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
 
   // Clear form
   void clearForm() {
+    // Clear controllers
+    companyNameController.clear();
+    websiteController.clear();
+    industryController.clear();
+    companySizeController.clear();
+    foundedYearController.clear();
+    contactPersonController.clear();
+    contactTitleController.clear();
+    emailController.clear();
+    phoneController.clear();
+    addressController.clear();
+    cityController.clear();
+    stateController.clear();
+    countryController.clear();
+    postalCodeController.clear();
+    aboutCompanyController.clear();
+    missionStatementController.clear();
+    companyCultureController.clear();
+    businessLicenseNumberController.clear();
+    taxIdController.clear();
+    
+    // Clear private variables
     _companyName = '';
     _website = '';
     _industry = '';
@@ -463,6 +529,8 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
     _companyLogoFile = null;
     _businessLicenseUrl = '';
     _companyLogoUrl = '';
+    _errorMessage = '';
+    _isEditMode = false;
     _isLoading = false;
     _isUploading = false;
     _errorMessage = '';
@@ -523,6 +591,82 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
 
   // Check if company is verified
   bool get isCompanyVerified => _userCompany?.isVerified ?? false;
+
+  // Load company data into form for editing
+  void loadCompanyForEdit() {
+    if (_userCompany == null) return;
+    
+    print('📝 Loading company data for editing...');
+    
+    _isEditMode = true; // Set edit mode
+    
+    companyNameController.text = _userCompany!.companyName;
+    websiteController.text = _userCompany!.website;
+    industryController.text = _userCompany!.industry;
+    companySizeController.text = _userCompany!.companySize;
+    foundedYearController.text = _userCompany!.foundedYear.toString();
+    contactPersonController.text = _userCompany!.contactPerson;
+    contactTitleController.text = _userCompany!.contactTitle;
+    emailController.text = _userCompany!.email;
+    phoneController.text = _userCompany!.phone;
+    addressController.text = _userCompany!.address;
+    cityController.text = _userCompany!.city;
+    stateController.text = _userCompany!.state;
+    countryController.text = _userCompany!.country;
+    postalCodeController.text = _userCompany!.postalCode;
+    aboutCompanyController.text = _userCompany!.aboutCompany;
+    missionStatementController.text = _userCompany!.missionStatement;
+    companyCultureController.text = _userCompany!.companyCulture;
+    businessLicenseNumberController.text = _userCompany!.businessLicenseNumber;
+    taxIdController.text = _userCompany!.taxId;
+    
+    _companyType = _userCompany!.companyType;
+    _companyLogoUrl = _userCompany!.companyLogoUrl;
+    _businessLicenseUrl = _userCompany!.businessLicenseUrl;
+    
+    notifyListeners();
+    print('✅ Company data loaded for editing (Edit Mode: ON)');
+  }
+
+  // Delete company
+  Future<bool> deleteCompany() async {
+    if (_userCompany == null) return false;
+    
+    try {
+      print('🗑️ Deleting company: ${_userCompany!.companyName}');
+      _isLoading = true;
+      notifyListeners();
+      
+      await _companyRepository.deleteCompany(_userCompany!.id);
+      
+      // Update user document
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+          'isCompanyRegistered': false,
+          'companyId': FieldValue.delete(),
+          'companyName': FieldValue.delete(),
+        });
+      }
+      
+      // Clear local state
+      _hasRegisteredCompany = false;
+      _userCompany = null;
+      clearForm();
+      
+      print('✅ Company deleted successfully');
+      _isLoading = false;
+      notifyListeners();
+      
+      return true;
+    } catch (e) {
+      print('❌ Error deleting company: $e');
+      _errorMessage = 'Failed to delete company: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
 
   @override
   void dispose() {

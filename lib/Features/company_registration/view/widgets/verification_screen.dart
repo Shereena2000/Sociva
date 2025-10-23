@@ -26,45 +26,82 @@ class VerificationScreen extends StatelessWidget {
                 Text("Verification", style: PTextStyles.displayMedium),
                 SizeBoxH(16),
                 
-                // Business License Number
+                // Business License Number (Read-only in edit mode)
                 CustomTextFeild(
                   hintText: "Business License Number",
-                  textHead: "Business License Number",
+                  textHead: viewModel.isEditMode 
+                      ? "Business License Number (Cannot be changed)" 
+                      : "Business License Number",
                   controller: viewModel.businessLicenseNumberController,
+                  readOnly: viewModel.isEditMode, // Read-only when editing
+                  filColor: viewModel.isEditMode 
+                      ? Colors.grey[800] 
+                      : null,
                   onChanged: (value) {},
                 ),
                 SizeBoxH(8),
 
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Upload Business License",
-                    style: getTextStyle(
-                      fontSize: 14,
-                      color: PColors.white,
-                      fontWeight: FontWeight.w500,
+                if (!viewModel.isEditMode) ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "Upload Business License",
+                      style: getTextStyle(
+                        fontSize: 14,
+                        color: PColors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
-                ),
-                SizeBoxH(8),
+                  SizeBoxH(8),
+                  
+                  // Upload Business License Section (only in register mode)
+                  _buildUploadSection(
+                    title: "Upload Business License",
+                    subtitle: "PDF, JPG, PNG (Max 5MB)",
+                    icon: Icons.upload_file,
+                    isUploaded: viewModel.businessLicenseFile != null,
+                    onTap: () {
+                      viewModel.pickBusinessLicense();
+                    },
+                  ),
+                  SizeBoxH(8),
+                ] else ...[
+                  // Show info that license cannot be changed
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[800],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[700]!),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Business license cannot be changed after registration',
+                            style: TextStyle(color: Colors.grey[400], fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizeBoxH(8),
+                ],
                 
-                // Upload Business License Section
-                _buildUploadSection(
-                  title: "Upload Business License",
-                  subtitle: "PDF, JPG, PNG (Max 5MB)",
-                  icon: Icons.upload_file,
-                  isUploaded: viewModel.businessLicenseFile != null,
-                  onTap: () {
-                    viewModel.pickBusinessLicense();
-                  },
-                ),
-                SizeBoxH(8),
-                
-                // Tax ID
+                // Tax ID (Read-only in edit mode)
                 CustomTextFeild(
                   hintText: "Tax ID",
-                  textHead: "Tax ID",
+                  textHead: viewModel.isEditMode 
+                      ? "Tax ID (Cannot be changed)" 
+                      : "Tax ID",
                   controller: viewModel.taxIdController,
+                  readOnly: viewModel.isEditMode, // Read-only when editing
+                  filColor: viewModel.isEditMode 
+                      ? Colors.grey[800] 
+                      : null,
                   onChanged: (value) {},
                 ),
                 SizeBoxH(8),
@@ -115,9 +152,11 @@ class VerificationScreen extends StatelessWidget {
                 
                 SizeBoxH(25),
                 
-                // Register Button
+                // Register/Update Button
                 CustomElavatedTextButton(
-                  text: viewModel.isLoading ? "Registering..." : "Register",
+                  text: viewModel.isLoading 
+                      ? (viewModel.isEditMode ? "Updating..." : "Registering...") 
+                      : (viewModel.isEditMode ? "Update Company" : "Register Company"),
                   onPressed: viewModel.isLoading ? null : () async {
                     final success = await viewModel.registerCompany();
                     if (success && context.mounted) {
@@ -127,7 +166,11 @@ class VerificationScreen extends StatelessWidget {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Company registered successfully! You can now post jobs.'),
+                            content: Text(
+                              viewModel.isEditMode 
+                                  ? 'Company updated successfully!' 
+                                  : 'Company registered successfully! You can now post jobs.',
+                            ),
                             backgroundColor: Colors.green,
                             duration: Duration(seconds: 3),
                           ),

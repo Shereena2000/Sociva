@@ -174,14 +174,25 @@ class StatusRepository {
           allowedUserIds.addAll(followersList);
         }
 
+        debugPrint('🎯 Status Filter - Current User: ${user.uid}');
+        debugPrint('🎯 Allowed User IDs: $allowedUserIds');
+        debugPrint('🎯 Total statuses before filter: ${statusSnapshot.docs.length}');
+
         // Filter statuses to only show from allowed users
-        return statusSnapshot.docs
+        final filteredStatuses = statusSnapshot.docs
             .map((doc) => StatusModel.fromFirestore(doc))
             .where((status) => 
                 !status.isExpired && 
                 allowedUserIds.contains(status.userId) // Only from followers/following
             )
             .toList();
+        
+        debugPrint('🎯 Total statuses after filter: ${filteredStatuses.length}');
+        for (var status in filteredStatuses) {
+          debugPrint('   - User: ${status.userId}, Expired: ${status.isExpired}');
+        }
+        
+        return filteredStatuses;
       } catch (e) {
         return <StatusModel>[];
       }

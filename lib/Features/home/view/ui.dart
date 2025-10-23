@@ -10,6 +10,7 @@ import 'package:social_media_app/Features/feed/view/status_viewer_dialog.dart';
 import 'package:social_media_app/Features/profile/status/view/add_status_dialog.dart';
 import 'package:social_media_app/Features/feed/view/comments_screen.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
+import 'package:social_media_app/Features/post/view/post_detail_screen.dart';
 import 'package:social_media_app/Features/notifications/view/notification_screen.dart';
 import 'package:social_media_app/Features/notifications/view_model/notification_view_model.dart';
 import 'package:social_media_app/Features/notifications/service/notification_service.dart';
@@ -673,9 +674,22 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           // Post image/video - Carousel if multiple, single if one
-          postWithUser.post.hasMultipleMedia
-              ? _buildMediaCarousel(postWithUser.post)
-              : _buildSingleMediaContainer(postWithUser),
+          GestureDetector(
+            onTap: () {
+              // Navigate to full screen post detail
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PostDetailScreen(
+                    postId: postWithUser.postId,
+                  ),
+                ),
+              );
+            },
+            child: postWithUser.post.hasMultipleMedia
+                ? _buildMediaCarousel(postWithUser.post)
+                : _buildSingleMediaContainer(postWithUser),
+          ),
 
           // Actions row (like, comment, share, save)
           Padding(

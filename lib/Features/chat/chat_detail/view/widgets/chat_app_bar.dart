@@ -8,6 +8,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String userImage;
   final bool isOnline;
   final String statusText;
+  final VoidCallback? onDeleteChat;
 
   const ChatAppBar({
     super.key,
@@ -15,6 +16,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.userImage,
     this.isOnline = false,
     this.statusText = 'Offline',
+    this.onDeleteChat,
   });
 
   @override
@@ -58,17 +60,37 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
           ],
         ),
       ),
-      // actionsPadding: EdgeInsets.only(right: 10),
-      // actions: [
-      //   IconButton(
-      //     onPressed: () {},
-      //     icon: Icon(Icons.phone, size: 20), //phone
-      //   ),
-      //   IconButton(
-      //     onPressed: () {},
-      //     icon: Icon(Icons.video_camera_back_rounded, size: 24), //videocall
-      //   ),
-      // ],
+      actions: [
+        // More options menu
+        if (onDeleteChat != null)
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: Colors.white),
+            color: Colors.grey[900],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            onSelected: (value) {
+              if (value == 'delete') {
+                onDeleteChat?.call();
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem<String>(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                    SizedBox(width: 12),
+                    Text(
+                      'Delete Chat',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+      ],
     );
   }
 

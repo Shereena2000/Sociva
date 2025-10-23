@@ -253,5 +253,40 @@ class ChatRepository {
       };
     });
   }
+
+  /// Delete chat (all messages and chat room)
+  Future<void> deleteChat(String chatRoomId) async {
+    try {
+      final currentUserId = _auth.currentUser?.uid;
+      if (currentUserId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      print('🗑️ Deleting chat room: $chatRoomId');
+
+      // Delete all messages in the chat room
+      final messagesSnapshot = await _firestore
+          .collection('chatRooms')
+          .doc(chatRoomId)
+          .collection('messages')
+          .get();
+
+      // Use batch delete for better performance
+      final batch = _firestore.batch();
+      for (var doc in messagesSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // Delete the chat room itself
+      batch.delete(_firestore.collection('chatRooms').doc(chatRoomId));
+
+      await batch.commit();
+
+      print('✅ Chat deleted successfully');
+    } catch (e) {
+      print('❌ Error deleting chat: $e');
+      throw Exception('Failed to delete chat: $e');
+    }
+  }
 }
 

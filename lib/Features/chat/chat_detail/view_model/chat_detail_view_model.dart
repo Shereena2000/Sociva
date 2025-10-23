@@ -231,6 +231,26 @@ class ChatDetailViewModel extends ChangeNotifier {
     }
   }
 
+  /// Delete chat conversation
+  Future<bool> deleteChat() async {
+    if (_chatRoomId.isEmpty) {
+      print('❌ Cannot delete chat: chat room ID is empty');
+      return false;
+    }
+
+    try {
+      print('🗑️ Deleting chat...');
+      await _chatRepository.deleteChat(_chatRoomId);
+      print('✅ Chat deleted successfully');
+      return true;
+    } catch (e) {
+      print('❌ Error deleting chat: $e');
+      _errorMessage = 'Failed to delete chat';
+      notifyListeners();
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     _presenceSubscription?.cancel();

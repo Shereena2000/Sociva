@@ -39,6 +39,97 @@ class ChatDetailScreen extends StatelessWidget {
     return 'Chat User';
   }
 
+  // Show delete confirmation dialog
+  void _showDeleteConfirmationDialog(BuildContext context, ChatDetailViewModel viewModel) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+              SizedBox(width: 12),
+              Text('Delete Chat', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to delete this chat? This action cannot be undone.',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop(); // Close dialog
+                
+                // Show loading indicator
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (BuildContext loadingContext) {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    );
+                  },
+                );
+
+                // Delete the chat
+                final success = await viewModel.deleteChat();
+
+                // Close loading indicator
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
+
+                if (success && context.mounted) {
+                  // Show success message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.white),
+                          SizedBox(width: 12),
+                          Text('Chat deleted successfully'),
+                        ],
+                      ),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                  
+                  // Navigate back to chat list
+                  Navigator.of(context).pop();
+                } else if (context.mounted) {
+                  // Show error message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.white),
+                          SizedBox(width: 12),
+                          Text('Failed to delete chat'),
+                        ],
+                      ),
+                      backgroundColor: Colors.red,
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                }
+              },
+              child: Text('Delete', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
@@ -88,6 +179,7 @@ class ChatDetailScreen extends StatelessWidget {
               userImage: viewModel.otherUserDetails?['profilePhotoUrl'] ??
 'https://i.pinimg.com/736x/9e/83/75/9e837528f01cf3f42119c5aeeed1b336.jpg',              isOnline: viewModel.isOtherUserOnline,
               statusText: viewModel.getStatusText(),
+              onDeleteChat: () => _showDeleteConfirmationDialog(context, viewModel),
             ),
             body: Column(
               children: [

@@ -24,8 +24,9 @@ class _WrapperPageState extends State<WrapperPage> {
   @override
   void initState() {
     super.initState();
-    // Load user's company data when wrapper initializes
+    // Reset to home screen and load user's company data when wrapper initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<WrapperViewModel>().resetToHome();
       context.read<CompanyRegistrationViewModel>().loadUserCompany();
     });
   }

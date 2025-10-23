@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:social_media_app/Settings/utils/p_text_styles.dart';
 import '../../../../Settings/constants/text_styles.dart';
 import '../../../../Settings/utils/p_pages.dart';
+import '../../../wrapper/view_model/wrapper_view_model.dart';
 import '../view_model/sign_in_view_model.dart';
 
 class SignInScreen extends StatelessWidget {
@@ -127,6 +128,13 @@ class _SignInScreenContent extends StatelessWidget {
                             viewModel.clearError();
                             final success = await viewModel.signIn();
                             if (success && context.mounted) {
+                              // Reset wrapper to home screen before navigating
+                              try {
+                                context.read<WrapperViewModel>().resetToHome();
+                              } catch (e) {
+                                print('⚠️ WrapperViewModel not found in context, will reset on wrapper init');
+                              }
+                              
                               Navigator.pushNamedAndRemoveUntil(
                                 context,
                                 PPages.wrapperPageUi,

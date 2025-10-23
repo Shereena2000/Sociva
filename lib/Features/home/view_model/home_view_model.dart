@@ -221,8 +221,8 @@ class HomeViewModel extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    // Load all statuses for now (will add filtering later)
-    _statusRepository.getAllStatuses().listen(
+    // Load statuses only from followers and following (Instagram-style)
+    _statusRepository.getStatusesFromFollowersAndFollowing().listen(
       (statuses) async {
         
         final currentUserId = FirebaseAuth.instance.currentUser?.uid;
@@ -276,10 +276,19 @@ class HomeViewModel extends ChangeNotifier {
           ));
         }
 
-        // Sort: unseen statuses first, then by latest status time
+        // Sort: Current user FIRST (Instagram-style), then unseen, then by time
         groups.sort((a, b) {
+          // 1. Current user always first
+          final aIsCurrentUser = a.userId == currentUserId;
+          final bIsCurrentUser = b.userId == currentUserId;
+          if (aIsCurrentUser && !bIsCurrentUser) return -1;
+          if (!aIsCurrentUser && bIsCurrentUser) return 1;
+          
+          // 2. Then unseen statuses
           if (a.hasUnseenStatus && !b.hasUnseenStatus) return -1;
           if (!a.hasUnseenStatus && b.hasUnseenStatus) return 1;
+          
+          // 3. Finally by latest status time
           return b.latestStatusTime!.compareTo(a.latestStatusTime!);
         });
 

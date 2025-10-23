@@ -5,6 +5,8 @@ import '../../../Settings/utils/p_pages.dart';
 import '../../../Settings/utils/p_text_styles.dart';
 import '../../../Settings/utils/p_colors.dart';
 import '../../profile/profile_screen/view_model/profile_view_model.dart';
+import 'privacy_policy_screen.dart';
+import 'about_us_screen.dart';
 
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
@@ -66,14 +68,24 @@ class MenuScreen extends StatelessWidget {
               icon: Icons.info_outline,
               text: "About",
               onTap: () {
-                // Navigate or perform any action
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AboutUsScreen(),
+                  ),
+                );
               },
             ),
             buildProfileTile(
               icon: Icons.privacy_tip_outlined,
               text: "Privacy Policy",
               onTap: () {
-                // Navigate or perform any action
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PrivacyPolicyScreen(),
+                  ),
+                );
               },
             ),
             SizeBoxH(8),

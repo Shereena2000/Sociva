@@ -305,6 +305,32 @@ class JobApplicationService {
     }
   }
 
+  // Check if user has already applied to a job
+  Future<bool> hasUserAppliedToJob(String jobId) async {
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) return false;
+
+      print('🔍 Checking if user has applied to job: $jobId');
+
+      final snapshot = await _firestore
+          .collection('jobApplications')
+          .where('jobId', isEqualTo: jobId)
+          .where('applicantId', isEqualTo: currentUser.uid)
+          .limit(1)
+          .get();
+
+      final hasApplied = snapshot.docs.isNotEmpty;
+      print(hasApplied ? '✅ User has already applied' : '❌ User has not applied');
+      
+      return hasApplied;
+
+    } catch (e) {
+      print('❌ Error checking if user applied: $e');
+      return false;
+    }
+  }
+
   // Update application status
   Future<void> updateApplicationStatus({
     required String applicationId,

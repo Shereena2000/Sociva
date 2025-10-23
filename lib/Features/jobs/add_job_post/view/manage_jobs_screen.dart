@@ -107,11 +107,14 @@ class _ManageJobsScreenState extends State<ManageJobsScreen> {
                 return JobCardWithMenu(
                   job: job,
                   onTap: () {
-                    // Navigate to job detail screen
+                    // Navigate to job detail screen (employer viewing own job - no Apply button)
                     Navigator.pushNamed(
                       context,
                       PPages.jobDetailScreen,
-                      arguments: job,
+                      arguments: {
+                        'job': job,
+                        'showApplyButton': false, // Employer viewing own job
+                      },
                     );
                   },
                   onEdit: () {

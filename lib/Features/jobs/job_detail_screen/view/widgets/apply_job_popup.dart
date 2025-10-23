@@ -446,6 +446,9 @@ class _ApplyJobPopupState extends State<ApplyJobPopup> {
         resumeFileName: _resumeFileName!,
       );
 
+      // Mark as applied in view model
+      viewModel.markAsApplied();
+
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

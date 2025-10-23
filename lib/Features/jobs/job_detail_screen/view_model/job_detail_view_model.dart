@@ -26,6 +26,8 @@ class JobDetailViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String _errorMessage = '';
   bool _isSaved = false;
+  bool _hasApplied = false;
+  bool _isCheckingApplication = false;
 
   // Getters
   JobWithCompanyModel? get jobWithCompany => _jobWithCompany;
@@ -35,6 +37,8 @@ class JobDetailViewModel extends ChangeNotifier {
   String get errorMessage => _errorMessage;
   bool get isSaved => _isSaved;
   bool get hasData => _jobWithCompany != null;
+  bool get hasApplied => _hasApplied;
+  bool get isCheckingApplication => _isCheckingApplication;
 
   // Initialize with JobWithCompanyModel (from navigation)
   void initializeWithJobData(JobWithCompanyModel jobWithCompany) {
@@ -45,6 +49,9 @@ class JobDetailViewModel extends ChangeNotifier {
     _jobWithCompany = jobWithCompany;
     _errorMessage = '';
     notifyListeners();
+    
+    // Check if user has already applied
+    checkIfUserHasApplied(jobWithCompany.job.id);
   }
 
   // Fetch job details by ID (if navigating with just job ID)
@@ -78,6 +85,9 @@ class JobDetailViewModel extends ChangeNotifier {
       );
 
       print('🎉 JobDetailViewModel: Job details loaded successfully');
+      
+      // Check if user has already applied
+      checkIfUserHasApplied(job.id);
     } catch (e) {
       print('❌ JobDetailViewModel: Error fetching job details: $e');
       _errorMessage = 'Failed to load job details: $e';
@@ -166,6 +176,34 @@ class JobDetailViewModel extends ChangeNotifier {
     
     // TODO: Implement share functionality
     // This would use share_plus package to share job details
+  }
+
+  // Check if user has already applied to this job
+  Future<void> checkIfUserHasApplied(String jobId) async {
+    try {
+      _isCheckingApplication = true;
+      notifyListeners();
+
+      _hasApplied = await _jobApplicationService.hasUserAppliedToJob(jobId);
+      
+      print(_hasApplied 
+          ? '✅ User has already applied to this job' 
+          : '❌ User has not applied to this job');
+      
+    } catch (e) {
+      print('❌ Error checking application status: $e');
+      _hasApplied = false;
+    } finally {
+      _isCheckingApplication = false;
+      notifyListeners();
+    }
+  }
+
+  // Mark as applied after successful application
+  void markAsApplied() {
+    _hasApplied = true;
+    notifyListeners();
+    print('✅ Job marked as applied');
   }
 
   @override

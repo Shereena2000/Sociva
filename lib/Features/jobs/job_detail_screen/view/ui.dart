@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:social_media_app/Settings/common/widgets/custom_app_bar.dart';
 import '../../job_listing_screen/model/job_with_company_model.dart';
 import '../../add_job_post/model/job_model.dart';
 import '../view_model/job_detail_view_model.dart';
@@ -14,7 +15,7 @@ class JobDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get arguments from navigation - could be JobWithCompanyModel or JobModel
+    // Get arguments from navigation - could be JobWithCompanyModel, JobModel, or Map
     final arguments = ModalRoute.of(context)!.settings.arguments;
     
     // Debug: Print what we received
@@ -24,8 +25,23 @@ class JobDetailScreen extends StatelessWidget {
     
     JobWithCompanyModel? jobWithCompany;
     bool needsCompanyData = false;
+    bool showApplyButton = true; // Default: show Apply button
     
-    if (arguments is JobWithCompanyModel) {
+    // Handle Map arguments (with showApplyButton control)
+    if (arguments is Map<String, dynamic>) {
+      showApplyButton = arguments['showApplyButton'] ?? true;
+      final jobData = arguments['job'];
+      
+      if (jobData is JobWithCompanyModel) {
+        jobWithCompany = jobData;
+        print('   Job (from Map): ${jobWithCompany.job.jobTitle}');
+        print('   Show Apply Button: $showApplyButton');
+      } else if (jobData is JobModel) {
+        print('   Job (from Map): ${jobData.jobTitle}');
+        print('   Show Apply Button: $showApplyButton');
+        needsCompanyData = true;
+      }
+    } else if (arguments is JobWithCompanyModel) {
       // Full data already available
       jobWithCompany = arguments;
       print('   Job: ${jobWithCompany.job.jobTitle}');
@@ -80,46 +96,46 @@ class JobDetailScreen extends StatelessWidget {
 
     // We have data, proceed with normal flow
     return Scaffold(
-      backgroundColor: PColors.scaffoldColor,
-      appBar: AppBar(
-        backgroundColor: PColors.scaffoldColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, size: 20, color: PColors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Job Details',
-          style: PTextStyles.headlineMedium.copyWith(
-            color: PColors.white,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          Consumer<JobDetailViewModel>(
-            builder: (context, viewModel, child) {
-              return IconButton(
-                icon: Icon(
-                  viewModel.isSaved ? Icons.bookmark : Icons.bookmark_border,
-                  color: viewModel.isSaved ? PColors.primaryColor : PColors.white,
-                ),
-                onPressed: () => viewModel.toggleSaveJob(),
-                tooltip: 'Save Job',
-              );
-            },
-          ),
-          Consumer<JobDetailViewModel>(
-            builder: (context, viewModel, child) {
-              return IconButton(
-                icon: Icon(Icons.share, color: PColors.white),
-                onPressed: () => viewModel.shareJob(),
-                tooltip: 'Share Job',
-              );
-            },
-          ),
-        ],
-      ),
+      appBar: CustomAppBar(title: "Job Details"),
+      // appBar: AppBar(
+      //   backgroundColor: PColors.scaffoldColor,
+      //   elevation: 0,
+      //   leading: IconButton(
+      //     icon: Icon(Icons.arrow_back_ios, size: 20, color: PColors.white),
+      //     onPressed: () => Navigator.pop(context),
+      //   ),
+      //   title: Text(
+      //     'Job Details',
+      //     style: PTextStyles.headlineMedium.copyWith(
+      //       color: PColors.white,
+      //       fontWeight: FontWeight.w600,
+      //     ),
+      //   ),
+      //   centerTitle: true,
+      //   actions: [
+      //     Consumer<JobDetailViewModel>(
+      //       builder: (context, viewModel, child) {
+      //         return IconButton(
+      //           icon: Icon(
+      //             viewModel.isSaved ? Icons.bookmark : Icons.bookmark_border,
+      //             color: viewModel.isSaved ? PColors.primaryColor : PColors.white,
+      //           ),
+      //           onPressed: () => viewModel.toggleSaveJob(),
+      //           tooltip: 'Save Job',
+      //         );
+      //       },
+      //     ),
+      //     Consumer<JobDetailViewModel>(
+      //       builder: (context, viewModel, child) {
+      //         return IconButton(
+      //           icon: Icon(Icons.share, color: PColors.white),
+      //           onPressed: () => viewModel.shareJob(),
+      //           tooltip: 'Share Job',
+      //         );
+      //       },
+      //     ),
+      //   ],
+      // ),
       body: Consumer<JobDetailViewModel>(
         builder: (context, viewModel, child) {
           print('🔄 JobDetailScreen Consumer: Building...');
@@ -259,6 +275,12 @@ class JobDetailScreen extends StatelessWidget {
         builder: (context, viewModel, child) {
           if (!viewModel.hasData) return SizedBox.shrink();
           
+          // Hide Apply button if showApplyButton is false (employer viewing own job)
+          if (!showApplyButton) {
+            print('🔍 Apply button hidden - showApplyButton: $showApplyButton');
+            return SizedBox.shrink();
+          }
+          
           return Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -273,8 +295,10 @@ class JobDetailScreen extends StatelessWidget {
             ),
             child: SafeArea(
               child: CustomElavatedTextButton(
-                onPressed: () => _showApplyJobPopup(context, viewModel),
-                text: 'Apply Now',
+                onPressed: viewModel.hasApplied 
+                    ? null 
+                    : () => _showApplyJobPopup(context, viewModel),
+                text: viewModel.hasApplied ? 'Applied' : 'Apply Now',
                 height: 50,
               ),
             ),

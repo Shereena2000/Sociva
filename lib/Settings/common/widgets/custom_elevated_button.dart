@@ -31,23 +31,33 @@ class CustomElavatedTextButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var size = MediaQuery.sizeOf(context);
+    final isDisabled = onPressed == null;
 
     return Container(
       width: width ?? size.width - 40,
       height: height ?? 50,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: gradientColors ??
-              [PColors.blueColor, PColors.purpleColor],
-        ),
+        gradient: isDisabled 
+            ? LinearGradient(
+                colors: [
+                  PColors.blueColor.withOpacity(0.3),
+                  PColors.purpleColor.withOpacity(0.3),
+                ],
+              )
+            : LinearGradient(
+                colors: gradientColors ??
+                    [PColors.blueColor, PColors.purpleColor],
+              ),
         borderRadius: BorderRadius.circular(borderRadius ?? 12),
-        boxShadow: [
-          BoxShadow(
-            color: PColors.primaryColor.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        boxShadow: isDisabled 
+            ? []
+            : [
+                BoxShadow(
+                  color: PColors.primaryColor.withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -68,7 +78,9 @@ class CustomElavatedTextButton extends StatelessWidget {
                   style: getTextStyle(
                     fontSize: fontSize ?? 14,
                     fontWeight: FontWeight.w600,
-                    color: textColor ?? Colors.white,
+                    color: isDisabled 
+                        ? Colors.white.withOpacity(0.6)
+                        : (textColor ?? Colors.white),
                     letterSpacing: 0.5,
                   ),
                 ),

@@ -124,13 +124,9 @@ class StatusViewModel extends ChangeNotifier {
         return false;
       }
 
-      if (captionController.text.trim().isEmpty) {
-        _errorMessage = 'Please add a caption';
-        notifyListeners();
-        return false;
-      }
-
-      if (captionController.text.trim().length > 8) {
+      // Caption is optional - only validate length if provided
+      if (captionController.text.trim().isNotEmpty && 
+          captionController.text.trim().length > 8) {
         _errorMessage = 'Caption cannot exceed 8 characters';
         notifyListeners();
         return false;
@@ -148,11 +144,11 @@ class StatusViewModel extends ChangeNotifier {
         return false;
       }
 
-      // Create status in Firebase
+      // Create status in Firebase (caption can be empty)
       await _statusRepository.createStatus(
         mediaUrl: mediaUrl,
         mediaType: _selectedMediaType!,
-        caption: captionController.text.trim(),
+        caption: captionController.text.trim(), // Can be empty string
         userName: userName,
         userProfilePhoto: userProfilePhoto,
       );

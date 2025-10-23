@@ -45,7 +45,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => NotificationViewModel()..initializeNotifications()),
+        ChangeNotifierProvider(
+          create: (_) => NotificationViewModel()..initializeNotifications(),
+        ),
         ChangeNotifierProvider(create: (_) => ChatListViewModel()),
       ],
       child: Scaffold(
@@ -78,7 +80,6 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
         ),
-       
       ),
     );
   }
@@ -86,26 +87,26 @@ class _HomeScreenState extends State<HomeScreen> {
   // Helper method to get display name with fallback hierarchy
   String _getDisplayName(Map<String, dynamic>? userData) {
     if (userData == null) return 'User';
-    
+
     // 1. First try username (nickname)
     final username = userData['username']?.toString();
     if (username != null && username.isNotEmpty) {
       return username;
     }
-    
+
     // 2. Fallback to name (real name)
     final name = userData['name']?.toString();
     if (name != null && name.isNotEmpty) {
       return name;
     }
-    
+
     // 3. Final fallback
     return 'User';
   }
 
   Widget _buildHeader(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
-    
+
     return Row(
       children: [
         // Circle Avatar with current user's profile image
@@ -117,15 +118,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 .doc(currentUser?.uid)
                 .get(),
             builder: (context, snapshot) {
-              String profileImageUrl = 'https://i.pinimg.com/736x/8d/4e/22/8d4e220866ec920f1a57c3730ca8aa11.jpg';
+              String profileImageUrl =
+                  'https://i.pinimg.com/736x/8d/4e/22/8d4e220866ec920f1a57c3730ca8aa11.jpg';
               String displayName = 'User';
-              
+
               if (snapshot.hasData && snapshot.data?.data() != null) {
                 final userData = snapshot.data!.data() as Map<String, dynamic>;
-                profileImageUrl = userData['profilePhotoUrl'] ?? profileImageUrl;
+                profileImageUrl =
+                    userData['profilePhotoUrl'] ?? profileImageUrl;
                 displayName = _getDisplayName(userData);
               }
-              
+
               return Row(
                 children: [
                   CircleAvatar(
@@ -151,10 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
         IconButton(
           icon: SvgPicture.asset(
             Svgs.searchIcon,
-            colorFilter: const ColorFilter.mode(
-              Colors.white,
-              BlendMode.srcIn,
-            ),
+            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
           ),
           onPressed: () {
             Navigator.pushNamed(context, PPages.searchScreen);
@@ -187,22 +187,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     right: 2,
                     top: 4,
                     child: Container(
-                      padding: EdgeInsets.all(1.5),  
+                      padding: EdgeInsets.all(1.5),
                       decoration: BoxDecoration(
                         color: Colors.red,
-                       
+
                         borderRadius: BorderRadius.circular(200),
                       ),
-                      constraints: BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
-                        child: Text(
-                          notificationViewModel.unreadCount > 99 
-                              ? '99+' 
-                              : notificationViewModel.unreadCount.toString(),
-                          style: TextStyle(
-                            color: Colors.white,
+                      constraints: BoxConstraints(minWidth: 16, minHeight: 16),
+                      child: Text(
+                        notificationViewModel.unreadCount > 99
+                            ? '99+'
+                            : notificationViewModel.unreadCount.toString(),
+                        style: TextStyle(
+                          color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
@@ -241,10 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(200),
                       ),
-                      constraints: BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
+                      constraints: BoxConstraints(minWidth: 16, minHeight: 16),
                       child: Text(
                         chatViewModel.totalUnreadCount > 99
                             ? '99+'
@@ -266,14 +260,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildStatusSection(BuildContext context, HomeViewModel homeViewModel) {
+  Widget _buildStatusSection(
+    BuildContext context,
+    HomeViewModel homeViewModel,
+  ) {
     final currentUserId = homeViewModel.currentUserProfile?.uid;
-    
+
     // Separate current user's status from others
     final currentUserStatus = homeViewModel.statusGroups
         .where((group) => group.userId == currentUserId)
         .firstOrNull;
-    
+
     final otherUsersStatuses = homeViewModel.statusGroups
         .where((group) => group.userId != currentUserId)
         .toList();
@@ -286,11 +283,15 @@ class _HomeScreenState extends State<HomeScreen> {
           // Current user status or Add Status Card
           if (currentUserStatus != null)
             // User has status - show status card with add button
-            _buildCurrentUserStatusCard(context, homeViewModel, currentUserStatus)
+            _buildCurrentUserStatusCard(
+              context,
+              homeViewModel,
+              currentUserStatus,
+            )
           else
             // User has no status - show add status card
             _buildAddStatusCard(context, homeViewModel),
-          
+
           // Show statuses from other users
           ...otherUsersStatuses.map((statusGroup) {
             return _buildStatusCard(
@@ -299,7 +300,8 @@ class _HomeScreenState extends State<HomeScreen> {
               profileImage: statusGroup.userProfilePhoto,
               statusImage: statusGroup.latestStatus?.mediaUrl ?? '',
               hasUnseenStatus: statusGroup.hasUnseenStatus,
-              onTap: () => _showStatusViewer(context, homeViewModel, statusGroup),
+              onTap: () =>
+                  _showStatusViewer(context, homeViewModel, statusGroup),
             );
           }).toList(),
         ],
@@ -326,10 +328,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   // Green border for current user's status
-                  border: Border.all(
-                    color: Colors.green,
-                    width: 3,
-                  ),
+                  border: Border.all(color: Colors.green, width: 3),
                 ),
                 child: Stack(
                   children: [
@@ -340,7 +339,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(10),
                         image: currentUserStatus.latestStatus?.mediaUrl != null
                             ? DecorationImage(
-                                image: NetworkImage(currentUserStatus.latestStatus!.mediaUrl),
+                                image: NetworkImage(
+                                  currentUserStatus.latestStatus!.mediaUrl,
+                                ),
                                 fit: BoxFit.cover,
                               )
                             : null,
@@ -360,7 +361,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       bottom: 4,
                       right: 4,
                       child: GestureDetector(
-                        onTap: () => _showAddStatusDialog(context, homeViewModel),
+                        onTap: () =>
+                            _showAddStatusDialog(context, homeViewModel),
                         child: Container(
                           width: 24,
                           height: 24,
@@ -395,7 +397,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildAddStatusCard(BuildContext context, HomeViewModel homeViewModel) {
+  Widget _buildAddStatusCard(
+    BuildContext context,
+    HomeViewModel homeViewModel,
+  ) {
     final currentUser = homeViewModel.currentUserProfile;
 
     return GestureDetector(
@@ -420,10 +425,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 80,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
-                        image: currentUser?.profilePhotoUrl != null && 
-                               currentUser!.profilePhotoUrl.isNotEmpty
+                        image:
+                            currentUser?.profilePhotoUrl != null &&
+                                currentUser!.profilePhotoUrl.isNotEmpty
                             ? DecorationImage(
-                                image: NetworkImage(currentUser.profilePhotoUrl),
+                                image: NetworkImage(
+                                  currentUser.profilePhotoUrl,
+                                ),
                                 fit: BoxFit.cover,
                               )
                             : const DecorationImage(
@@ -459,10 +467,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 8),
             const Text(
               'Add status',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
         ),
@@ -470,7 +475,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _showAddStatusDialog(BuildContext context, HomeViewModel homeViewModel) async {
+  Future<void> _showAddStatusDialog(
+    BuildContext context,
+    HomeViewModel homeViewModel,
+  ) async {
     final currentUser = homeViewModel.currentUserProfile;
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -533,7 +541,10 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 16),
               Text(
                 'Error loading posts',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -573,15 +584,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Column(
       children: homeViewModel.posts
-          .map((postWithUser) => Padding(
-                padding: const EdgeInsets.only(bottom: 24),
-                child: _buildPostCard(context, postWithUser, homeViewModel),
-              ))
+          .map(
+            (postWithUser) => Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: _buildPostCard(context, postWithUser, homeViewModel),
+            ),
+          )
           .toList(),
     );
   }
 
-  Widget _buildPostCard(BuildContext context, dynamic postWithUser, HomeViewModel homeViewModel) {
+  Widget _buildPostCard(
+    BuildContext context,
+    dynamic postWithUser,
+    HomeViewModel homeViewModel,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -610,7 +627,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ProfileScreen(userId: postWithUser.userId),
+                        builder: (context) =>
+                            ProfileScreen(userId: postWithUser.userId),
                       ),
                     );
                   },
@@ -631,7 +649,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ProfileScreen(userId: postWithUser.userId),
+                          builder: (context) =>
+                              ProfileScreen(userId: postWithUser.userId),
                         ),
                       );
                     },
@@ -650,14 +669,20 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            const Icon(Icons.verified,
-                                size: 16, color: Colors.blue),
+                            const Icon(
+                              Icons.verified,
+                              size: 16,
+                              color: Colors.blue,
+                            ),
                           ],
                         ),
                         const SizedBox(height: 2),
                         Text(
                           postWithUser.timeAgo,
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
                         ),
                       ],
                     ),
@@ -675,14 +700,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // Post image/video - Carousel if multiple, single if one
           GestureDetector(
-            onTap: () {
+            onLongPress: () {
               // Navigate to full screen post detail
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => PostDetailScreen(
-                    postId: postWithUser.postId,
-                  ),
+                  builder: (context) =>
+                      PostDetailScreen(postId: postWithUser.postId),
                 ),
               );
             },
@@ -699,27 +723,34 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Like button
                 IconButton(
                   icon: Icon(
-                    postWithUser.post.isLikedBy(FirebaseAuth.instance.currentUser?.uid ?? '')
+                    postWithUser.post.isLikedBy(
+                          FirebaseAuth.instance.currentUser?.uid ?? '',
+                        )
                         ? Icons.favorite
                         : Icons.favorite_border,
-                    color: postWithUser.post.isLikedBy(FirebaseAuth.instance.currentUser?.uid ?? '')
+                    color:
+                        postWithUser.post.isLikedBy(
+                          FirebaseAuth.instance.currentUser?.uid ?? '',
+                        )
                         ? Colors.red
                         : Colors.black,
                   ),
                   onPressed: () async {
-                    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+                    final currentUserId =
+                        FirebaseAuth.instance.currentUser?.uid ?? '';
                     final isLiked = postWithUser.post.isLikedBy(currentUserId);
-                    
+
                     // Toggle like in the UI
                     homeViewModel.toggleLike(postWithUser.postId, isLiked);
-                    
+
                     // Send notification if liking (not unliking)
                     if (!isLiked) {
                       await _sendLikeNotification(
                         fromUserId: currentUserId,
                         toUserId: postWithUser.userId,
                         postId: postWithUser.postId,
-                        fromUserName: 'You', // This should be the actual current user's name
+                        fromUserName:
+                            'You', // This should be the actual current user's name
                         postImage: postWithUser.mediaUrl,
                       );
                     }
@@ -734,7 +765,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                
+
                 // Comment button
                 IconButton(
                   icon: const Icon(
@@ -763,7 +794,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                
+
                 // Share button
                 IconButton(
                   icon: const Icon(Icons.send_outlined, color: Colors.black),
@@ -775,14 +806,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       builder: (context) => ShareBottomSheet(
                         postId: postWithUser.postId,
                         postCaption: postWithUser.post.caption,
-                        postImage: postWithUser.mediaUrl.isNotEmpty ? postWithUser.mediaUrl : null,
+                        postImage: postWithUser.mediaUrl.isNotEmpty
+                            ? postWithUser.mediaUrl
+                            : null,
                         postOwnerName: postWithUser.username,
                       ),
                     );
                   },
                 ),
                 const Spacer(),
-                
+
                 // Save button with saved state
                 FutureBuilder<bool>(
                   future: homeViewModel.isPostSaved(postWithUser.postId),
@@ -817,9 +850,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       text: postWithUser.username,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    TextSpan(
-                      text: ' ${postWithUser.caption}',
-                    ),
+                    TextSpan(text: ' ${postWithUser.caption}'),
                   ],
                 ),
               ),
@@ -853,10 +884,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(12),
                   // Blue border for unseen status (like WhatsApp)
                   border: hasUnseenStatus
-                      ? Border.all(
-                          color: Colors.blue,
-                          width: 3,
-                        )
+                      ? Border.all(color: Colors.blue, width: 3)
                       : null,
                 ),
                 child: Stack(
@@ -951,7 +979,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSingleMediaContainer(dynamic postWithUser) {
     // Use a fixed height for now to avoid loading issues
     const double height = 400.0;
-    
+
     return Container(
       height: height,
       width: double.infinity,
@@ -993,16 +1021,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   return Container(
                     height: height,
                     color: Colors.grey[300],
-                    child: const Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    child: const Center(child: CircularProgressIndicator()),
                   );
                 },
               ),
       ),
     );
   }
-
 
   Widget _buildMediaCarousel(PostModel post) {
     final PageController pageController = PageController();
@@ -1034,7 +1059,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemBuilder: (context, index) {
                     final mediaUrl = post.mediaUrls[index];
                     final isVideo = _isVideoUrl(mediaUrl);
-                    
+
                     return isVideo
                         ? VideoPlayerWidget(
                             videoUrl: mediaUrl,
@@ -1073,7 +1098,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
-              
+
               // Dot indicators (Instagram-style)
               if (post.mediaUrls.length > 1)
                 Positioned(
@@ -1107,7 +1132,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Helper method to check if URL is a video
   bool _isVideoUrl(String url) {
-    final videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.webm', '.3gp', '.m4v'];
+    final videoExtensions = [
+      '.mp4',
+      '.mov',
+      '.avi',
+      '.mkv',
+      '.flv',
+      '.wmv',
+      '.webm',
+      '.3gp',
+      '.m4v',
+    ];
     return videoExtensions.any((ext) => url.toLowerCase().contains(ext));
   }
 
@@ -1132,10 +1167,11 @@ class _HomeScreenState extends State<HomeScreen> {
           .collection('users')
           .doc(currentUser.uid)
           .get();
-      
+
       if (userDoc.exists) {
         final userData = userDoc.data()!;
-        final actualUserName = userData['username'] ?? userData['name'] ?? 'Someone';
+        final actualUserName =
+            userData['username'] ?? userData['name'] ?? 'Someone';
 
         // Send in-app notification
         await NotificationService().notifyLike(
@@ -1152,11 +1188,7 @@ class _HomeScreenState extends State<HomeScreen> {
           postId: postId,
           fromUserName: actualUserName,
         );
-
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
-
 }
-

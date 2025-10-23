@@ -92,8 +92,8 @@ class _AddStatusDialogContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CustomTextFeild(
-                    textHead: 'Caption',
-                    hintText: 'Write a caption (max 8 characters)...',
+                    textHead: 'Caption (Optional)',
+                    hintText: 'Add a caption (max 8 characters)...',
                     filColor: PColors.darkGray,
                     textColor: PColors.white,
                     hintColor: PColors.lightGray,

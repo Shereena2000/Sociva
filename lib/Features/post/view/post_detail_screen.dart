@@ -24,9 +24,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // Clear image cache to ensure fresh images
-    imageCache.clear();
-    imageCache.clearLiveImages();
+    // Don't clear cache - let CachedNetworkImage handle caching properly
   }
 
   @override
@@ -129,10 +127,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Widget _buildFullScreenPost(BuildContext context, PostModel post, String username, String userImage) {
     final mediaUrls = post.mediaUrls.isNotEmpty ? post.mediaUrls : [post.mediaUrl];
     final hasMultipleMedia = mediaUrls.length > 1;
-    
-    // Debug logging
-    for (int i = 0; i < mediaUrls.length; i++) {
-    }
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -155,7 +149,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               
               if (isVideo) {
                 return VideoPlayerWidget(
-                  key: ValueKey('video_${index}_$mediaUrl'),
+                  key: ValueKey('video_${post.postId}_${index}_$mediaUrl'),
                   videoUrl: mediaUrl,
                   height: double.infinity,
                   width: double.infinity,
@@ -165,23 +159,21 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 );
               }
               
-              // For images, use CachedNetworkImage with explicit cache control
-              return RepaintBoundary(
-                key: ValueKey('page_$index'),
+              // For images, use InteractiveViewer for zoom and CachedNetworkImage
+              return InteractiveViewer(
+                key: ValueKey('interactive_${post.postId}_$index'),
+                minScale: 1.0,
+                maxScale: 4.0,
                 child: Container(
                   color: Colors.black,
                   width: double.infinity,
                   height: double.infinity,
                   child: CachedNetworkImage(
                     imageUrl: mediaUrl,
-                    key: ValueKey('cached_${index}_$mediaUrl'),
-                    fit: BoxFit.cover,
-                    memCacheWidth: null,
-                    memCacheHeight: null,
-                    maxHeightDiskCache: 2000,
-                    maxWidthDiskCache: 2000,
+                    key: ValueKey('image_${post.postId}_${index}_${mediaUrl.hashCode}'),
+                    fit: BoxFit.contain,
+                    cacheKey: '${post.postId}_$index',
                     progressIndicatorBuilder: (context, url, downloadProgress) {
-                      final progress = (downloadProgress.progress ?? 0) * 100;
                       return Container(
                         color: Colors.black,
                         child: Center(
@@ -221,20 +213,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Tap to retry',
-                                style: const TextStyle(color: Colors.white60, fontSize: 12),
+                                'URL: $mediaUrl',
+                                style: const TextStyle(color: Colors.white60, fontSize: 10),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
                         ),
-                      );
-                    },
-                    imageBuilder: (context, imageProvider) {
-                      return Image(
-                        image: imageProvider,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
                       );
                     },
                   ),

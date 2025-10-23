@@ -221,8 +221,8 @@ class HomeViewModel extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    // Load statuses only from followers and following (Instagram-style)
-    _statusRepository.getStatusesFromFollowersAndFollowing().listen(
+    // Temporarily show all statuses (filtering had issues)
+    _statusRepository.getAllStatuses().listen(
       (statuses) async {
         
         final currentUserId = FirebaseAuth.instance.currentUser?.uid;

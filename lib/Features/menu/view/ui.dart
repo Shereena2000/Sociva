@@ -42,6 +42,7 @@ class MenuScreen extends StatelessWidget {
               text: "Saved Feeds",
               onTap: () {
                 // Navigate or perform any action
+                Navigator.pushNamed(context, PPages.savedFeedScreen);
               },
             ),
 
@@ -49,7 +50,7 @@ class MenuScreen extends StatelessWidget {
               icon: Icons.work_outline,
               text: "Saved Jobs",
               onTap: () {
-                // Navigate or perform any action
+                Navigator.pushNamed(context, PPages.savedJobScreen);
               },
             ),
             buildProfileTile(

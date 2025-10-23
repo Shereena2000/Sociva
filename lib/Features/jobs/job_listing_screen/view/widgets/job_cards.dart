@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../model/job_with_company_model.dart';
 import '../../../../../Settings/constants/sized_box.dart';
 import '../../../../../Settings/utils/p_text_styles.dart';
 import '../../../../../Settings/utils/p_colors.dart';
 import '../../../../../Settings/utils/p_pages.dart';
+import '../../../../../Features/menu/saved_feed/saved_job/view_model/saved_job_view_model.dart';
 
 class JobCard extends StatelessWidget {
   final JobWithCompanyModel jobWithCompany;
@@ -123,21 +125,28 @@ class JobCard extends StatelessWidget {
                   ),
                 ),
                 
-                // View Button
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: PColors.primaryColor,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    "View",
-                    style: TextStyle(
-                      color: PColors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                // Save and View Buttons
+                Row(
+                  children: [
+                    // Save Button
+                    
+                    // View Button
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: PColors.primaryColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        "View",
+                        style: TextStyle(
+                          color: PColors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -182,11 +191,54 @@ class JobCard extends StatelessWidget {
                   ),
                 ),
                 SizeBoxV(8),
-                Icon(
-                  Icons.bookmark_border_outlined,
-                  size: 24,
-                  color: PColors.lightGray,
-                ),
+               Consumer<SavedJobViewModel>(
+                      builder: (context, savedJobViewModel, child) {
+                        return FutureBuilder<bool>(
+                          future: savedJobViewModel.isJobSaved(job.id),
+                          builder: (context, snapshot) {
+                            final isSaved = snapshot.data ?? false;
+                            return GestureDetector(
+                              onTap: () async {
+                                if (isSaved) {
+                                  await savedJobViewModel.unsaveJob(job.id);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Job removed from saved'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                } else {
+                                  await savedJobViewModel.saveJob(job.id);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Job saved'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Container(
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: isSaved ? PColors.primaryColor : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isSaved ? PColors.primaryColor : PColors.lightGray,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Icon(
+                                  isSaved ? Icons.bookmark : Icons.bookmark_border,
+                                  color: isSaved ? PColors.white : PColors.lightGray,
+                                  size: 20,
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                    
               ],
             ),
             

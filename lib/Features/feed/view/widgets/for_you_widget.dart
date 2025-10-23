@@ -379,15 +379,23 @@ class ForYouWidget extends StatelessWidget {
 
               const Spacer(),
 
-              // Save button
-              IconButton(
-                icon: const Icon(
-                  Icons.bookmark_border,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                onPressed: () {
-                  feedViewModel.toggleSave(postWithUser.postId);
+              // Save button with saved state
+              FutureBuilder<bool>(
+                future: feedViewModel.isFeedSaved(postWithUser.postId),
+                builder: (context, snapshot) {
+                  final isSaved = snapshot.data ?? false;
+                  return IconButton(
+                    icon: Icon(
+                      isSaved ? Icons.bookmark : Icons.bookmark_border,
+                      color: isSaved ? Colors.blue : Colors.white,
+                      size: 20,
+                    ),
+                    onPressed: () async {
+                      await feedViewModel.toggleSave(postWithUser.postId);
+                      // Trigger rebuild to update icon
+                      (context as Element).markNeedsBuild();
+                    },
+                  );
                 },
               ),
 

@@ -277,5 +277,36 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && 
         resource.data.userId == request.auth.uid;
     }
+
+    // Saved Feeds collection
+    match /savedFeeds/{savedFeedId} {
+      // Anyone can read saved feeds (for checking if feed is saved)
+      allow read: if isAuthenticated();
+      
+      // Users can save feeds (create saved feed record)
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can unsave their own saved feeds
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+
+    // ========================================
+    // SAVED JOBS COLLECTION
+    // ========================================
+    match /savedJobs/{savedJobId} {
+      // Users can read their own saved jobs
+      allow read: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+      
+      // Users can save jobs (create saved job record)
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can unsave their own saved jobs
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
   }
 }

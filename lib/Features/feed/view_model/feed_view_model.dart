@@ -5,11 +5,13 @@ import 'package:social_media_app/Features/profile/create_profile/repository/prof
 import 'package:social_media_app/Features/profile/follow/repository/follow_repository.dart';
 import 'package:social_media_app/Features/feed/model/post_with_user_model.dart';
 import 'package:social_media_app/Features/profile/create_profile/model/user_profile_model.dart';
+import 'package:social_media_app/Features/menu/saved_feed/repository/saved_feed_repository.dart';
 
 class FeedViewModel extends ChangeNotifier {
   final PostRepository _postRepository = PostRepository();
   final ProfileRepository _profileRepository = ProfileRepository();
   final FollowRepository _followRepository = FollowRepository();
+  final SavedFeedRepository _savedFeedRepository = SavedFeedRepository();
 
   // For You tab data
   List<PostWithUserModel> _forYouPosts = [];
@@ -256,10 +258,42 @@ class FeedViewModel extends ChangeNotifier {
     }
   }
 
-  /// Toggle save on a post (placeholder)
-  Future<void> toggleSave(String postId) async {
-    // TODO: Implement save functionality
-    print('🔖 Toggle save for post: $postId');
+  /// Check if a feed item is saved by the current user
+  Future<bool> isFeedSaved(String feedId) async {
+    try {
+      return await _savedFeedRepository.isFeedSaved(feedId);
+    } catch (e) {
+      print('❌ Error checking if feed is saved: $e');
+      return false;
+    }
+  }
+
+  /// Toggle save on a feed item
+  Future<void> toggleSave(String feedId) async {
+    try {
+      print('🔖 Toggle save for feed: $feedId');
+      
+      // Check if feed is currently saved
+      final isSaved = await _savedFeedRepository.isFeedSaved(feedId);
+      
+      if (isSaved) {
+        // Unsave the feed
+        print('📤 Unsaving feed...');
+        await _savedFeedRepository.unsaveFeed(feedId);
+        print('✅ Feed unsaved successfully');
+      } else {
+        // Save the feed
+        print('📥 Saving feed...');
+        await _savedFeedRepository.saveFeed(feedId);
+        print('✅ Feed saved successfully');
+      }
+      
+      // Notify listeners to update UI
+      notifyListeners();
+      
+    } catch (e) {
+      print('❌ Error toggling save: $e');
+    }
   }
 
   /// Delete a post

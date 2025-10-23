@@ -10,7 +10,9 @@ import 'package:social_media_app/Features/post/view/create_post/ui.dart';
 import 'package:social_media_app/Features/auth/sign_in/view/ui.dart';
 import 'package:social_media_app/Features/auth/sign_up/view/ui.dart';
 
+import '../../Features/menu/saved_feed/view/ui.dart';
 import '../../Features/menu/saved_post/view/ui.dart';
+import '../../Features/menu/saved_feed/saved_job/view/ui.dart';
 import '../../Features/splash/view/ui.dart';
 import '../../Features/company_registration/view/ui.dart';
 import '../../Features/company_registration/view/widgets/bussiness_address.dart';
@@ -85,7 +87,14 @@ class Routes {
         return MaterialPageRoute(
           builder: (context) => const SavedPostScreen(),
         );
-
+  case PPages.savedFeedScreen:
+        return MaterialPageRoute(
+          builder: (context) => const SavedFeedScreen(),
+        );
+  case PPages.savedJobScreen:
+        return MaterialPageRoute(
+          builder: (context) => const SavedJobScreen(),
+        );
 
 
 

@@ -12,7 +12,7 @@ import 'package:social_media_app/Features/auth/sign_up/view/ui.dart';
 
 import '../../Features/menu/saved_feed/view/ui.dart';
 import '../../Features/menu/saved_post/view/ui.dart';
-import '../../Features/menu/saved_feed/saved_job/view/ui.dart';
+import '../../Features/menu/saved_job/view/ui.dart';
 import '../../Features/splash/view/ui.dart';
 import '../../Features/company_registration/view/ui.dart';
 import '../../Features/company_registration/view/widgets/bussiness_address.dart';

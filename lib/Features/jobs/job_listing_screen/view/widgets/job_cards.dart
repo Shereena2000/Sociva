@@ -6,7 +6,7 @@ import '../../../../../Settings/constants/sized_box.dart';
 import '../../../../../Settings/utils/p_text_styles.dart';
 import '../../../../../Settings/utils/p_colors.dart';
 import '../../../../../Settings/utils/p_pages.dart';
-import '../../../../../Features/menu/saved_feed/saved_job/view_model/saved_job_view_model.dart';
+import '../../../../menu/saved_job/view_model/saved_job_view_model.dart';
 
 class JobCard extends StatelessWidget {
   final JobWithCompanyModel jobWithCompany;

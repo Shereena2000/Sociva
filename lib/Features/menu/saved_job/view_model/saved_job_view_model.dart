@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:social_media_app/Features/menu/saved_feed/saved_job/repository/saved_job_repository.dart';
+import 'package:social_media_app/Features/menu/saved_job/repository/saved_job_repository.dart';
 
 class SavedJobViewModel extends ChangeNotifier {
   final SavedJobRepository _savedJobRepository = SavedJobRepository();

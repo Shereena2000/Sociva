@@ -16,7 +16,6 @@ class SavedFeedScreen extends StatelessWidget {
         appBar: CustomAppBar(title: "Saved Feeds"),
         body: Consumer<SavedFeedViewModel>(
           builder: (context, viewModel, child) {
-            // Show loading if isLoading OR if we have no feeds and no error (initial state)
             if (viewModel.isLoading || 
                 (!viewModel.hasSavedFeeds && viewModel.errorMessage == null && viewModel.savedFeeds.isEmpty)) {
               return const Center(
@@ -92,20 +91,28 @@ class SavedFeedScreen extends StatelessWidget {
                   final feed = savedFeedData['feed'];
                   
                   return GestureDetector(
-                    onTap: () {
-                      // Navigate to post detail
-                      Navigator.push(
+                    onTap: () async {
+                      debugPrint('🎯 Opening post: ${feed.postId}');
+                      debugPrint('   Media count: ${feed.mediaUrls.length}');
+                      debugPrint('   First URL: ${feed.mediaUrls.isNotEmpty ? feed.mediaUrls[0] : "none"}');
+                      
+                      // Navigate with await to ensure proper cleanup
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => PostDetailScreen(postId: feed.postId),
+                          builder: (context) => PostDetailScreen(
+                            key: ValueKey('post_${feed.postId}'), // Unique key
+                            postId: feed.postId,
+                          ),
                         ),
                       );
+                      
+                      debugPrint('🔙 Returned from post detail');
                     },
                     onLongPress: () {
-                      // Show option to unsave
                       _showUnsaveDialog(context, viewModel, feed.postId);
                     },
-                    child: _buildFeedThumbnail(feed),
+                    child: _buildFeedThumbnail(feed, index),
                   );
                 },
               ),
@@ -116,43 +123,102 @@ class SavedFeedScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFeedThumbnail(dynamic feed) {
+  Widget _buildFeedThumbnail(dynamic feed, int index) {
+    // Use first media URL from mediaUrls array if available
+    String thumbnailUrl = '';
+    if (feed.mediaUrls != null && feed.mediaUrls.isNotEmpty) {
+      thumbnailUrl = feed.mediaUrls[0]; // Use first image as thumbnail
+    } else if (feed.mediaUrl != null && feed.mediaUrl.isNotEmpty) {
+      thumbnailUrl = feed.mediaUrl;
+    }
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         color: Colors.grey[900],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: feed.mediaUrl.isNotEmpty
-            ? Image.network(
-                feed.mediaUrl,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: thumbnailUrl.isNotEmpty
+                ? Image.network(
+                    thumbnailUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[800],
+                        child: const Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: Colors.grey[900],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      );
+                    },
+                  )
+                : Container(
                     color: Colors.grey[800],
                     child: const Center(
                       child: Icon(
-                        Icons.broken_image,
+                        Icons.text_fields,
                         color: Colors.white,
                         size: 24,
                       ),
                     ),
-                  );
-                },
-              )
-            : Container(
-                color: Colors.grey[800],
-                child: const Center(
-                  child: Icon(
-                    Icons.text_fields,
-                    color: Colors.white,
-                    size: 24,
                   ),
+          ),
+          // Show indicator if multiple media
+          if (feed.mediaUrls != null && feed.mediaUrls.length > 1)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.collections,
+                      color: Colors.white,
+                      size: 12,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${feed.mediaUrls.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
+            ),
+        ],
       ),
     );
   }

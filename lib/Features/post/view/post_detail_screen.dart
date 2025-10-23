@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:social_media_app/Features/post/model/post_model.dart';
-import 'package:social_media_app/Features/profile/create_profile/model/user_profile_model.dart';
+import 'package:provider/provider.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
-class PostDetailScreen extends StatefulWidget {
+import '../view_model/post_detail_view_model.dart';
+
+class PostDetailScreen extends StatelessWidget {
   final String postId;
 
   const PostDetailScreen({
@@ -13,36 +14,25 @@ class PostDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<PostDetailScreen> createState() => _PostDetailScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => PostDetailViewModel(postId),
+      child: const _PostDetailContent(),
+    );
+  }
 }
 
-class _PostDetailScreenState extends State<PostDetailScreen> {
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    // Don't clear cache - let CachedNetworkImage handle caching properly
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
+class _PostDetailContent extends StatelessWidget {
+  const _PostDetailContent();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance
-            .collection('posts')
-            .doc(widget.postId)
-            .get(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      body: Consumer<PostDetailViewModel>(
+        builder: (context, viewModel, child) {
+          // Loading state
+          if (viewModel.isLoading) {
             return const Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -50,7 +40,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             );
           }
 
-          if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.exists) {
+          // Error state
+          if (viewModel.errorMessage != null) {
             return Scaffold(
               backgroundColor: Colors.black,
               appBar: AppBar(
@@ -60,236 +51,252 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   onPressed: () => Navigator.pop(context),
                 ),
                 title: const Text(
-                  'Post Not Found',
+                  'Error',
                   style: TextStyle(color: Colors.white),
+                ),
+              ),
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                    const SizedBox(height: 16),
+                    Text(
+                      viewModel.errorMessage!,
+                      style: const TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          // Empty media state
+          if (viewModel.mediaUrls.isEmpty) {
+            return Scaffold(
+              backgroundColor: Colors.black,
+              appBar: AppBar(
+                backgroundColor: Colors.black,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
                 ),
               ),
               body: const Center(
                 child: Text(
-                  'This post could not be found.',
+                  'No media available',
                   style: TextStyle(color: Colors.white),
                 ),
               ),
             );
           }
 
-          final postData = snapshot.data!.data() as Map<String, dynamic>;
-          postData['postId'] = snapshot.data!.id;
-          final post = PostModel.fromMap(postData);
-
-          // Get user info using UserProfileModel for proper field handling
-          return FutureBuilder<DocumentSnapshot>(
-            future: FirebaseFirestore.instance
-                .collection('users')
-                .doc(post.userId)
-                .get(),
-            builder: (context, userSnapshot) {
-              if (userSnapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                );
-              }
-
-              // Use UserProfileModel to handle field variations automatically
-              String username = 'Unknown User';
-              String userImage = '';
-              
-              if (userSnapshot.hasData && userSnapshot.data!.exists) {
-                try {
-                  final userProfile = UserProfileModel.fromMap(
-                    userSnapshot.data!.data() as Map<String, dynamic>
+          // Main content
+          return Stack(
+            children: [
+              // PageView with media
+              PageView.builder(
+                controller: viewModel.pageController,
+                physics: const BouncingScrollPhysics(),
+                onPageChanged: viewModel.onPageChanged,
+                itemCount: viewModel.mediaUrls.length,
+                itemBuilder: (context, index) {
+                  return _MediaItem(
+                    key: ValueKey('media_${viewModel.postId}_$index'),
+                    mediaUrl: viewModel.mediaUrls[index],
+                    index: index,
+                    totalCount: viewModel.mediaUrls.length,
+                    isVideo: viewModel.isVideoUrl(
+                      viewModel.mediaUrls[index],
+                      viewModel.post?.mediaType,
+                    ),
                   );
-                  username = userProfile.username.isNotEmpty 
-                      ? userProfile.username 
-                      : userProfile.name;
-                  userImage = userProfile.profilePhotoUrl;
-                } catch (e) {
-                  // If model parsing fails, fallback to direct field access
-                  final data = userSnapshot.data!.data() as Map<String, dynamic>?;
-                  if (data != null) {
-                    username = data['username'] ?? data['name'] ?? 'Unknown User';
-                    userImage = data['profilePhotoUrl'] ?? data['photoUrl'] ?? '';
-                  }
-                }
-              }
+                },
+              ),
 
-              return _buildFullScreenPost(context, post, username, userImage);
-            },
+              // Back button
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 10,
+                left: 20,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Page counter
+              if (viewModel.hasMultipleMedia)
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 10,
+                  right: 20,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${viewModel.currentPage + 1} / ${viewModel.mediaUrls.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Page indicator dots
+              if (viewModel.hasMultipleMedia)
+                Positioned(
+                  bottom: 30,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(viewModel.mediaUrls.length, (index) {
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: viewModel.currentPage == index ? 24 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: viewModel.currentPage == index 
+                              ? Colors.white 
+                              : Colors.white.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+            ],
           );
         },
       ),
     );
   }
+}
+class _MediaItem extends StatefulWidget {
+  final String mediaUrl;
+  final int index;
+  final int totalCount;
+  final bool isVideo;
 
-  Widget _buildFullScreenPost(BuildContext context, PostModel post, String username, String userImage) {
-    final mediaUrls = post.mediaUrls.isNotEmpty ? post.mediaUrls : [post.mediaUrl];
-    final hasMultipleMedia = mediaUrls.length > 1;
+  const _MediaItem({
+    super.key,
+    required this.mediaUrl,
+    required this.index,
+    required this.totalCount,
+    required this.isVideo,
+  });
+
+  @override
+  State<_MediaItem> createState() => _MediaItemState();
+}
+
+class _MediaItemState extends State<_MediaItem> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
     
-    // Debug: Print all media URLs
-    debugPrint('🎬 Post ${post.postId} has ${mediaUrls.length} media items:');
-    for (int i = 0; i < mediaUrls.length; i++) {
-      debugPrint('   [$i]: ${mediaUrls[i]}');
-    }
-
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Full screen media carousel - NO OVERLAYS BLOCKING IT
-          PageView.builder(
-            controller: _pageController,
-            physics: const BouncingScrollPhysics(), // Better for smooth swiping
-            scrollDirection: Axis.horizontal,
-            pageSnapping: true, // Ensure pages snap correctly
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
-            },
-            itemCount: mediaUrls.length,
-            itemBuilder: (context, index) {
-              final mediaUrl = mediaUrls[index];
-              // Debug: Print current index and URL
-              debugPrint('📸 Loading image at index $index: ${mediaUrl.substring(0, mediaUrl.length > 50 ? 50 : mediaUrl.length)}...');
-              final isVideo = post.mediaType == 'video' || mediaUrl.contains('.mp4') || mediaUrl.contains('.mov');
-              
-              if (isVideo) {
-                return VideoPlayerWidget(
-                  key: ValueKey('video_${post.postId}_${index}_$mediaUrl'),
-                  videoUrl: mediaUrl,
-                  height: double.infinity,
+    return Container(
+      color: Colors.black,
+      child: widget.isVideo
+          ? VideoPlayerWidget(
+              videoUrl: widget.mediaUrl,
+              height: double.infinity,
+              width: double.infinity,
+              autoPlay: false,
+              showControls: true,
+              fit: BoxFit.contain,
+            )
+          : InteractiveViewer(
+              minScale: 1.0,
+              maxScale: 4.0,
+              child: Center(
+                child: CachedNetworkImage(
+                  imageUrl: widget.mediaUrl,
+                  fit: BoxFit.contain,
                   width: double.infinity,
-                  autoPlay: false,
-                  showControls: true,
-                  fit: BoxFit.cover,
-                );
-              }
-              
-              // For images - Use simple Image.network with explicit unique key per URL
-              return Container(
-                key: ValueKey('container_$index'),
-                color: Colors.black,
-                child: Center(
-                  child: Image.network(
-                    mediaUrl,
-                    key: ValueKey('img_$mediaUrl'), // Unique key per URL
-                    fit: BoxFit.contain,
-                    frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                      if (wasSynchronouslyLoaded) return child;
-                      return AnimatedOpacity(
-                        opacity: frame == null ? 0 : 1,
-                        duration: const Duration(milliseconds: 300),
-                        child: child,
-                      );
-                    },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        color: Colors.black,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              CircularProgressIndicator(
-                                color: Colors.white,
-                                value: loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                    : null,
+                  height: double.infinity,
+                  cacheKey: widget.mediaUrl, // IMPORTANT: Explicit cache key
+                  memCacheWidth: 1080, // Optimize memory
+                  placeholder: (context, url) {
+                    return Container(
+                      color: Colors.black,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Loading ${widget.index + 1} of ${widget.totalCount}',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
                               ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Loading image ${index + 1} of ${mediaUrls.length}',
-                                style: const TextStyle(color: Colors.white70),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      debugPrint('❌ Failed to load image at index $index: $error');
-                      return Container(
-                        color: Colors.grey[900],
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.broken_image,
-                                color: Colors.white,
-                                size: 50,
+                      ),
+                    );
+                  },
+                  errorWidget: (context, url, error) {
+                    debugPrint('❌ Image ${widget.index} failed: $error');
+                    return Container(
+                      color: Colors.grey[900],
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.broken_image,
+                              color: Colors.white,
+                              size: 50,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Failed to load image ${widget.index + 1}',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            const SizedBox(height: 8),
+                            ElevatedButton.icon(
+                              onPressed: () => setState(() {}),
+                              icon: const Icon(Icons.refresh, size: 16),
+                              label: const Text('Retry'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white24,
+                                foregroundColor: Colors.white,
                               ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Failed to load image ${index + 1}',
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'URL: $mediaUrl',
-                                style: const TextStyle(color: Colors.white60, fontSize: 10),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      );
-                    },
-                  ),
-                ),
-              );
-            },
-          ),
-
-          // Simple back button (top left corner only)
-          Positioned(
-            top: 50,
-            left: 20,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.arrow_back,
-                  color: Colors.white,
-                  size: 24,
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
-          ),
-
-          // Page indicators (top right corner only, only if multiple media)
-          if (hasMultipleMedia)
-            Positioned(
-              top: 50,
-              right: 20,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${_currentPage + 1} / ${mediaUrls.length}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
     );
   }
-
 }

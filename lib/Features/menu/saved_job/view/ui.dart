@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:social_media_app/Features/menu/saved_feed/saved_job/view_model/saved_job_view_model.dart';
+import 'package:social_media_app/Features/menu/saved_job/view_model/saved_job_view_model.dart';
 import 'package:social_media_app/Features/jobs/job_listing_screen/view/widgets/job_cards.dart';
 import 'package:social_media_app/Features/jobs/job_listing_screen/model/job_with_company_model.dart';
 import 'package:social_media_app/Features/jobs/add_job_post/model/job_model.dart';

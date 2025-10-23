@@ -135,7 +135,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           // Full screen media carousel - NO OVERLAYS BLOCKING IT
           PageView.builder(
             controller: _pageController,
-            physics: const ClampingScrollPhysics(),
+            physics: const BouncingScrollPhysics(), // Better for smooth swiping
             scrollDirection: Axis.horizontal,
             onPageChanged: (index) {
               setState(() {
@@ -159,15 +159,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 );
               }
               
-              // For images, use InteractiveViewer for zoom and CachedNetworkImage
-              return InteractiveViewer(
-                key: ValueKey('interactive_${post.postId}_$index'),
-                minScale: 1.0,
-                maxScale: 4.0,
-                child: Container(
-                  color: Colors.black,
-                  width: double.infinity,
-                  height: double.infinity,
+              // For images, use simple Container with CachedNetworkImage
+              return Container(
+                key: ValueKey('container_${post.postId}_$index'),
+                color: Colors.black,
+                width: double.infinity,
+                height: double.infinity,
+                child: Center(
                   child: CachedNetworkImage(
                     imageUrl: mediaUrl,
                     key: ValueKey('image_${post.postId}_${index}_${mediaUrl.hashCode}'),

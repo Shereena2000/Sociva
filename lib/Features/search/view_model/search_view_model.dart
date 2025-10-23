@@ -14,6 +14,10 @@ class SearchViewModel extends ChangeNotifier {
   String _currentQuery = '';
   List<String> _recentSearches = [];
 
+  // Suggested users state
+  List<UserProfileModel> _suggestedUsers = [];
+  bool _isLoadingSuggested = false;
+
   // Follow state for each user
   final Map<String, bool> _followingStatus = {};
   final Map<String, bool> _followActionLoading = {};
@@ -26,6 +30,9 @@ class SearchViewModel extends ChangeNotifier {
   List<String> get recentSearches => _recentSearches;
   bool get hasSearchResults => _searchResults.isNotEmpty;
   bool get hasSearchError => _searchError != null;
+  List<UserProfileModel> get suggestedUsers => _suggestedUsers;
+  bool get isLoadingSuggested => _isLoadingSuggested;
+  bool get hasSuggestedUsers => _suggestedUsers.isNotEmpty;
 
   // Check if a user is being followed
   bool isFollowing(String userId) {
@@ -183,6 +190,45 @@ class SearchViewModel extends ChangeNotifier {
     } catch (e) {
       print('❌ Error clearing recent searches: $e');
     }
+  }
+
+  /// Load suggested users
+  Future<void> loadSuggestedUsers() async {
+    if (_isLoadingSuggested) return;
+
+    _isLoadingSuggested = true;
+    notifyListeners();
+
+    try {
+      print('🎯 Loading suggested users...');
+      final users = await _searchRepository.getSuggestedUsers(limit: 15);
+      _suggestedUsers = users;
+
+      // Load follow status for suggested users
+      await _loadFollowStatusForSuggestedUsers();
+
+      print('✅ Loaded ${users.length} suggested users');
+    } catch (e) {
+      print('❌ Error loading suggested users: $e');
+      _suggestedUsers = [];
+    } finally {
+      _isLoadingSuggested = false;
+      notifyListeners();
+    }
+  }
+
+  /// Load follow status for all suggested users
+  Future<void> _loadFollowStatusForSuggestedUsers() async {
+    for (var user in _suggestedUsers) {
+      try {
+        final isFollowing = await _followRepository.isFollowing(user.uid);
+        _followingStatus[user.uid] = isFollowing;
+      } catch (e) {
+        print('⚠️ Error loading follow status for ${user.username}: $e');
+        _followingStatus[user.uid] = false;
+      }
+    }
+    notifyListeners();
   }
 
   @override

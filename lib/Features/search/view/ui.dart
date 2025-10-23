@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/search/view_model/search_view_model.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
-import 'package:social_media_app/Features/chat/chat_detail/view/ui.dart';
 import 'package:social_media_app/Settings/common/widgets/custom_elevated_button.dart';
 import 'package:social_media_app/Settings/utils/p_colors.dart';
 
@@ -22,6 +21,7 @@ class _SearchScreenState extends State<SearchScreen> {
     super.initState();
     _searchViewModel = SearchViewModel();
     _searchViewModel.loadRecentSearches();
+    _searchViewModel.loadSuggestedUsers(); // Load suggested users on init
   }
 
   @override
@@ -249,8 +249,7 @@ class _SearchScreenState extends State<SearchScreen> {
               backgroundImage: user.profilePhotoUrl.isNotEmpty
                   ? NetworkImage(user.profilePhotoUrl)
                   : const NetworkImage(
-                      'https://i.pinimg.com/736x/bd/68/11/bd681155d2bd24325d2746b9c9ba690d.jpg',
-                    ),
+'https://i.pinimg.com/736x/9e/83/75/9e837528f01cf3f42119c5aeeed1b336.jpg'                    ),
             ),
           ),
           const SizedBox(width: 16),
@@ -306,53 +305,53 @@ class _SearchScreenState extends State<SearchScreen> {
                   
                   const SizedBox(height: 4),
                   
-                  // Follower count
-                  Text(
-                    '${user.followersCount} followers',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                  ),
+                  // // Follower count
+                  // Text(
+                  //   '${user.followersCount} followers',
+                  //   style: TextStyle(
+                  //     color: Colors.grey[600],
+                  //     fontSize: 12,
+                  //   ),
+                  // ),
                 ],
               ),
             ),
           ),
           
-          // Message icon button
-          IconButton(
-            onPressed: () {
-              print('🔍 Search - User data: ${user.toString()}');
-              print('🔍 Search - User uid: ${user.uid}');
-              print('🔍 Search - User displayName: ${user.displayName}');
-              print('🔍 Search - User email: ${user.email}');
+          // // Message icon button
+          // IconButton(
+          //   onPressed: () {
+          //     print('🔍 Search - User data: ${user.toString()}');
+          //     print('🔍 Search - User uid: ${user.uid}');
+          //     print('🔍 Search - User displayName: ${user.displayName}');
+          //     print('🔍 Search - User email: ${user.email}');
               
-              if (user.uid == null || user.uid.isEmpty) {
-                print('❌ Search - Cannot navigate to chat - user.uid is null or empty');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Cannot start chat - user ID is missing'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
+          //     if (user.uid == null || user.uid.isEmpty) {
+          //       print('❌ Search - Cannot navigate to chat - user.uid is null or empty');
+          //       ScaffoldMessenger.of(context).showSnackBar(
+          //         SnackBar(
+          //           content: Text('Cannot start chat - user ID is missing'),
+          //           backgroundColor: Colors.red,
+          //         ),
+          //       );
+          //       return;
+          //     }
               
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChatDetailScreen(otherUserId: user.uid),
-                ),
-              );
-            },
-            icon: Icon(
-              Icons.message_outlined,
-              color: PColors.primaryColor,
-              size: 24,
-            ),
-          ),
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(
+          //         builder: (context) => ChatDetailScreen(otherUserId: user.uid),
+          //       ),
+          //     );
+          //   },
+          //   icon: Icon(
+          //     Icons.message_outlined,
+          //     color: PColors.primaryColor,
+          //     size: 24,
+          //   ),
+          // ),
           
-          const SizedBox(width: 4),
+          // const SizedBox(width: 4),
           
           // Follow/Unfollow button
           _buildFollowButton(user, searchViewModel),
@@ -410,41 +409,40 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildRecentSearches(SearchViewModel searchViewModel) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Recent searches header
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Recent Searches',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (searchViewModel.recentSearches.isNotEmpty)
-                TextButton(
-                  onPressed: () {
-                    searchViewModel.clearRecentSearches();
-                  },
-                  child: Text(
-                    'Clear',
-                    style: TextStyle(color: Colors.blue),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Recent searches section
+          if (searchViewModel.recentSearches.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Recent Searches',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-            ],
-          ),
-        ),
-        
-        // Recent searches list
-        if (searchViewModel.recentSearches.isNotEmpty)
-          Expanded(
-            child: ListView.builder(
+                  TextButton(
+                    onPressed: () {
+                      searchViewModel.clearRecentSearches();
+                    },
+                    child: Text(
+                      'Clear',
+                      style: TextStyle(color: Colors.blue),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: searchViewModel.recentSearches.length,
               itemBuilder: (context, index) {
@@ -468,38 +466,70 @@ class _SearchScreenState extends State<SearchScreen> {
                 );
               },
             ),
-          )
-        else
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.search,
-                    color: Colors.grey[600],
-                    size: 64,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Search for users',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Find friends and discover new people',
-                    style: TextStyle(color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+            const SizedBox(height: 16),
+          ],
+          
+          // Suggested users section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'Suggested for You',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
-      ],
+          
+          // Show loading state
+          if (searchViewModel.isLoadingSuggested)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(40.0),
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+            )
+          // Show suggested users
+          else if (searchViewModel.hasSuggestedUsers)
+            ListView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: searchViewModel.suggestedUsers.length,
+              itemBuilder: (context, index) {
+                final user = searchViewModel.suggestedUsers[index];
+                return _buildUserResult(user, searchViewModel);
+              },
+            )
+          // Empty state
+          else
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(40.0),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.people_outline,
+                      color: Colors.grey[600],
+                      size: 64,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No suggestions available',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

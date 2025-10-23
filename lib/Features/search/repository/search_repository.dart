@@ -167,4 +167,48 @@ class SearchRepository {
   Future<void> clearRecentSearches() async {
     // TODO: Implement local storage for recent searches
   }
+
+  /// Get suggested users (random users excluding current user and already followed users)
+  Future<List<UserProfileModel>> getSuggestedUsers({int limit = 15}) async {
+    try {
+      final currentUserId = _auth.currentUser?.uid;
+      if (currentUserId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      print('🎯 Fetching suggested users...');
+
+      // Get all users
+      final usersSnapshot = await _firestore
+          .collection('users')
+          .limit(50) // Get more users to have better randomization
+          .get();
+
+      final List<UserProfileModel> users = [];
+
+      for (var doc in usersSnapshot.docs) {
+        try {
+          final user = UserProfileModel.fromMap(doc.data());
+          // Exclude current user
+          if (user.uid != currentUserId) {
+            users.add(user);
+          }
+        } catch (e) {
+          print('⚠️ Error parsing user profile: $e');
+        }
+      }
+
+      // Shuffle to get random users
+      users.shuffle();
+
+      // Return limited number
+      final suggestedUsers = users.take(limit).toList();
+      print('✅ Found ${suggestedUsers.length} suggested users');
+
+      return suggestedUsers;
+    } catch (e) {
+      print('❌ Error fetching suggested users: $e');
+      throw Exception('Failed to fetch suggested users: $e');
+    }
+  }
 }

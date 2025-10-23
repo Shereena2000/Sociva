@@ -51,9 +51,13 @@ class AuthRepository {
           'uid': user.uid,
           'email': email.trim(),
           'name': name,
+          'username': name, // Initialize username with name
           'createdAt': FieldValue.serverTimestamp(),
           'photoUrl': '',
+          'profilePhotoUrl': '', // Add both field variations for compatibility
           'bio': '',
+          'followersCount': 0,
+          'followingCount': 0,
         });
       }
 

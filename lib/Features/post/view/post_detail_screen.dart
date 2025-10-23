@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:social_media_app/Features/post/model/post_model.dart';
+import 'package:social_media_app/Features/profile/create_profile/model/user_profile_model.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 
 class PostDetailScreen extends StatefulWidget {
@@ -79,7 +80,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           postData['postId'] = snapshot.data!.id;
           final post = PostModel.fromMap(postData);
 
-          // Get user info
+          // Get user info using UserProfileModel for proper field handling
           return FutureBuilder<DocumentSnapshot>(
             future: FirebaseFirestore.instance
                 .collection('users')
@@ -94,12 +95,28 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 );
               }
 
-              final username = userSnapshot.hasData && userSnapshot.data!.exists
-                  ? (userSnapshot.data!['username'] ?? userSnapshot.data!['name'] ?? 'Unknown User')
-                  : 'Unknown User';
-              final userImage = userSnapshot.hasData && userSnapshot.data!.exists
-                  ? (userSnapshot.data!['profilePhotoUrl'] ?? userSnapshot.data!['photoUrl'] ?? '')
-                  : '';
+              // Use UserProfileModel to handle field variations automatically
+              String username = 'Unknown User';
+              String userImage = '';
+              
+              if (userSnapshot.hasData && userSnapshot.data!.exists) {
+                try {
+                  final userProfile = UserProfileModel.fromMap(
+                    userSnapshot.data!.data() as Map<String, dynamic>
+                  );
+                  username = userProfile.username.isNotEmpty 
+                      ? userProfile.username 
+                      : userProfile.name;
+                  userImage = userProfile.profilePhotoUrl;
+                } catch (e) {
+                  // If model parsing fails, fallback to direct field access
+                  final data = userSnapshot.data!.data() as Map<String, dynamic>?;
+                  if (data != null) {
+                    username = data['username'] ?? data['name'] ?? 'Unknown User';
+                    userImage = data['profilePhotoUrl'] ?? data['photoUrl'] ?? '';
+                  }
+                }
+              }
 
               return _buildFullScreenPost(context, post, username, userImage);
             },

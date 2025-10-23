@@ -8,6 +8,7 @@ import 'package:social_media_app/Features/profile/create_profile/model/user_prof
 import 'package:social_media_app/Features/profile/status/repository/status_repository.dart';
 import 'package:social_media_app/Features/profile/status/model/status_model.dart';
 import 'package:social_media_app/Features/profile/follow/repository/follow_repository.dart';
+import 'package:social_media_app/Features/notifications/service/notification_service.dart';
 import 'package:social_media_app/Settings/utils/p_pages.dart';
 
 class ProfileViewModel extends ChangeNotifier {
@@ -16,6 +17,7 @@ class ProfileViewModel extends ChangeNotifier {
   final ProfileRepository _profileRepository = ProfileRepository();
   final StatusRepository _statusRepository = StatusRepository();
   final FollowRepository _followRepository = FollowRepository();
+  final NotificationService _notificationService = NotificationService();
   
   List<PostModel> _allPosts = [];
   List<PostModel> _photoPosts = [];
@@ -321,6 +323,22 @@ class ProfileViewModel extends ChangeNotifier {
         await _followRepository.followUser(_viewingUserId!);
         _isFollowing = true;
         print('✅ Followed user successfully');
+        
+        // Send follow notification
+        try {
+          final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+          if (currentUserId != null) {
+            print('📱 Sending follow notification to user: $_viewingUserId');
+            await _notificationService.notifyFollow(
+              fromUserId: currentUserId,
+              toUserId: _viewingUserId!,
+            );
+            print('✅ Follow notification sent successfully');
+          }
+        } catch (e) {
+          print('⚠️ Failed to send follow notification: $e');
+          // Don't throw error here - follow was successful, notification is secondary
+        }
       }
 
       // Refresh the profile to get updated follower counts

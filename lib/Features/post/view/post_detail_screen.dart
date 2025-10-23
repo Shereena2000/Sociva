@@ -95,10 +95,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               }
 
               final username = userSnapshot.hasData && userSnapshot.data!.exists
-                  ? userSnapshot.data!['username'] ?? 'Unknown User'
+                  ? (userSnapshot.data!['username'] ?? userSnapshot.data!['name'] ?? 'Unknown User')
                   : 'Unknown User';
               final userImage = userSnapshot.hasData && userSnapshot.data!.exists
-                  ? userSnapshot.data!['profilePhotoUrl'] ?? ''
+                  ? (userSnapshot.data!['profilePhotoUrl'] ?? userSnapshot.data!['photoUrl'] ?? '')
                   : '';
 
               return _buildFullScreenPost(context, post, username, userImage);

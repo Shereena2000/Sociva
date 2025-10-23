@@ -51,6 +51,15 @@ class SignInViewModel extends ChangeNotifier {
     }
   }
 
+  Future<bool> resetPassword(String email) async {
+    try {
+      await _authRepository.resetPassword(email: email);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     emailController.dispose();

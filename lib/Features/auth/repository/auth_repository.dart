@@ -78,6 +78,17 @@ class AuthRepository {
     }
   }
 
+  // Reset password
+  Future<void> resetPassword({required String email}) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      throw 'Failed to send password reset email. Please try again.';
+    }
+  }
+
   // Check if user is signed in
   bool isUserSignedIn() {
     return _auth.currentUser != null;

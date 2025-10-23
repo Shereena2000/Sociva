@@ -85,7 +85,25 @@ class _SignInScreenContent extends StatelessWidget {
                   obscureText: true,
                 ),
                 
-                SizedBox(height: 12),
+                SizedBox(height: 8),
+                
+                // Forgot Password
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => _showForgotPasswordDialog(context),
+                    child: Text(
+                      'Forgot Password?',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                
+                SizedBox(height: 4),
                 
                 // Error message
                 if (viewModel.errorMessage != null)
@@ -207,6 +225,116 @@ class _SignInScreenContent extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  void _showForgotPasswordDialog(BuildContext context) {
+    final emailController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: Color(0xFF2A2A4B),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Reset Password',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Enter your email address and we\'ll send you a link to reset your password.',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.8),
+                  fontSize: 14,
+                ),
+              ),
+              SizedBox(height: 20),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                  ),
+                ),
+                child: TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  style: TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Email',
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                    prefixIcon: Icon(Icons.email_outlined, color: Colors.white.withOpacity(0.7)),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white.withOpacity(0.6)),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final email = emailController.text.trim();
+                if (email.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Please enter your email'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                
+                // Close dialog first
+                Navigator.pop(dialogContext);
+                
+                // Call reset password
+                final viewModel = context.read<SignInViewModel>();
+                final success = await viewModel.resetPassword(email);
+                
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        success
+                            ? 'Password reset email sent! Check your inbox.'
+                            : 'Failed to send reset email. Please try again.',
+                      ),
+                      backgroundColor: success ? Colors.green : Colors.red,
+                      duration: Duration(seconds: 4),
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Color(0xFF4A148C),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text('Send Reset Link'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

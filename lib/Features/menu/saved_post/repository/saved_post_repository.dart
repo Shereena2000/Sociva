@@ -132,8 +132,8 @@ class SavedPostRepository {
 
       return {
         'post': post,
-        'username': userData['username'] ?? 'Unknown',
-        'userProfilePhoto': userData['profilePhotoUrl'] ?? '',
+        'username': userData['name'] ?? 'Unknown',
+        'userProfilePhoto': userData['photoUrl'] ?? '',
       };
     } catch (e) {
       return null;

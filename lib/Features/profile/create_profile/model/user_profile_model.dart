@@ -41,9 +41,9 @@ class UserProfileModel {
     return UserProfileModel(
       uid: map['uid'] ?? '',
       name: map['name'] ?? '',
-      username: map['username'] ?? '',
+      username: map['username'] ?? map['name'] ?? '',
       bio: map['bio'] ?? '',
-      profilePhotoUrl: map['profilePhotoUrl'] ?? '',
+      profilePhotoUrl: map['profilePhotoUrl'] ?? map['photoUrl'] ?? '',
       createdAt: map['createdAt']?.toDate() ?? DateTime.now(),
       updatedAt: map['updatedAt']?.toDate() ?? DateTime.now(),
       followersCount: map['followersCount'] ?? 0,

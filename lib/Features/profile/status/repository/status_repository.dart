@@ -135,7 +135,61 @@ class StatusRepository {
     }
   }
 
+  // Get statuses only from followers and following (Instagram-style)
+  Stream<List<StatusModel>> getStatusesFromFollowersAndFollowing() async* {
+    try {
+      final user = currentUser;
+      if (user == null) {
+        yield [];
+        return;
+      }
+
+      // Get user's following list
+      final followingDoc = await _firestore
+          .collection('following')
+          .doc(user.uid)
+          .get();
+      
+      // Get user's followers list
+      final followersDoc = await _firestore
+          .collection('followers')
+          .doc(user.uid)
+          .get();
+
+      // Combine both lists and add current user
+      Set<String> allowedUserIds = {user.uid}; // Include current user
+      
+      if (followingDoc.exists) {
+        final followingList = List<String>.from(followingDoc.data()?['userIds'] ?? []);
+        allowedUserIds.addAll(followingList);
+      }
+      
+      if (followersDoc.exists) {
+        final followersList = List<String>.from(followersDoc.data()?['userIds'] ?? []);
+        allowedUserIds.addAll(followersList);
+      }
+
+      // Now stream statuses only from allowed users
+      yield* _firestore
+          .collection('statuses')
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((snapshot) {
+        return snapshot.docs
+            .map((doc) => StatusModel.fromFirestore(doc))
+            .where((status) => 
+                !status.isExpired && 
+                allowedUserIds.contains(status.userId) // Only from followers/following
+            )
+            .toList();
+      });
+    } catch (e) {
+      yield [];
+    }
+  }
+
   // Get all statuses from all users (for home feed) - Simple top-level query
+  // DEPRECATED: Use getStatusesFromFollowersAndFollowing() instead for Instagram-style
   Stream<List<StatusModel>> getAllStatuses() {
     return _firestore
         .collection('statuses')

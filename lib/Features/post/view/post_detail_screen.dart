@@ -137,6 +137,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             controller: _pageController,
             physics: const BouncingScrollPhysics(), // Better for smooth swiping
             scrollDirection: Axis.horizontal,
+            pageSnapping: true, // Ensure pages snap correctly
             onPageChanged: (index) {
               setState(() {
                 _currentPage = index;
@@ -145,6 +146,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             itemCount: mediaUrls.length,
             itemBuilder: (context, index) {
               final mediaUrl = mediaUrls[index];
+              // Debug: Print current index and URL
+              debugPrint('📸 Loading image at index $index: ${mediaUrl.substring(0, mediaUrl.length > 50 ? 50 : mediaUrl.length)}...');
               final isVideo = post.mediaType == 'video' || mediaUrl.contains('.mp4') || mediaUrl.contains('.mov');
               
               if (isVideo) {
@@ -159,18 +162,18 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 );
               }
               
-              // For images, use simple Container with CachedNetworkImage
-              return Container(
-                key: ValueKey('container_${post.postId}_$index'),
-                color: Colors.black,
-                width: double.infinity,
-                height: double.infinity,
-                child: Center(
-                  child: CachedNetworkImage(
-                    imageUrl: mediaUrl,
-                    key: ValueKey('image_${post.postId}_${index}_${mediaUrl.hashCode}'),
-                    fit: BoxFit.contain,
-                    cacheKey: '${post.postId}_$index',
+              // For images, use RepaintBoundary + Container with CachedNetworkImage
+              return RepaintBoundary(
+                child: Container(
+                  key: ValueKey('container_${post.postId}_$index'),
+                  color: Colors.black,
+                  width: double.infinity,
+                  height: double.infinity,
+                  child: Center(
+                    child: CachedNetworkImage(
+                      imageUrl: mediaUrl,
+                      fit: BoxFit.contain,
+                      cacheKey: mediaUrl, // Use actual URL as cache key for uniqueness
                     progressIndicatorBuilder: (context, url, downloadProgress) {
                       return Container(
                         color: Colors.black,

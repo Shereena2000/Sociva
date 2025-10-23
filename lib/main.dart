@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:social_media_app/firebase_options.dart';
 
 import 'Settings/helper/providers.dart';
@@ -9,6 +10,7 @@ import 'Settings/utils/p_colors.dart';
 import 'Settings/utils/p_pages.dart';
 import 'Settings/utils/p_routes.dart';
 import 'Service/cloudinary_service.dart';
+import 'Service/user_presence_service.dart';
 import 'Features/notifications/service/push_notification_service.dart';
 
 void main() async {
@@ -75,8 +77,71 @@ void main() async {
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  final UserPresenceService _presenceService = UserPresenceService();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    
+    // Initialize user presence if user is logged in
+    _initializePresence();
+    
+    // Listen to auth state changes
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null) {
+        _presenceService.setUserOnline();
+      } else {
+        _presenceService.setUserOffline();
+      }
+    });
+  }
+
+  void _initializePresence() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await _presenceService.initialize();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _presenceService.setUserOffline();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // App is in foreground
+        print('🟢 App resumed - setting user online');
+        _presenceService.setUserOnline();
+        break;
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        // App is in background or closing
+        print('🔴 App paused - setting user offline');
+        _presenceService.setUserOffline();
+        break;
+    }
+  }
 
   // This widget is the root of your application.
   @override

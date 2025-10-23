@@ -20,6 +20,17 @@ class ChatListViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
   bool get isSearching => _searchQuery.isNotEmpty;
+  
+  // Get total unread messages count across all chat rooms
+  int get totalUnreadCount {
+    if (_currentUserId == null) return 0;
+    
+    int total = 0;
+    for (var chatRoom in _chatRooms) {
+      total += chatRoom.getUnreadCountForUser(_currentUserId);
+    }
+    return total;
+  }
 
   ChatListViewModel() {
     _loadChatRooms();

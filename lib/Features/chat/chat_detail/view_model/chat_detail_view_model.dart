@@ -1,10 +1,14 @@
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:social_media_app/Features/chat/model/message_model.dart';
 import 'package:social_media_app/Features/chat/repository/chat_repository.dart';
+import 'package:social_media_app/Service/user_presence_service.dart';
 
 class ChatDetailViewModel extends ChangeNotifier {
   final ChatRepository _chatRepository = ChatRepository();
+  final UserPresenceService _presenceService = UserPresenceService();
   final String? _currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
   String _chatRoomId = '';
@@ -14,6 +18,11 @@ class ChatDetailViewModel extends ChangeNotifier {
   bool _isLoading = false;
   bool _isSending = false;
   String? _errorMessage;
+  
+  // User presence fields
+  bool _isOtherUserOnline = false;
+  Timestamp? _otherUserLastSeen;
+  StreamSubscription? _presenceSubscription;
 
   String get chatRoomId => _chatRoomId;
   String get otherUserId => _otherUserId;
@@ -23,6 +32,8 @@ class ChatDetailViewModel extends ChangeNotifier {
   bool get isSending => _isSending;
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
+  bool get isOtherUserOnline => _isOtherUserOnline;
+  Timestamp? get otherUserLastSeen => _otherUserLastSeen;
 
   Future<void> initializeChat(String otherUserId, [String? chatRoomId]) async {
     print('🔍 ChatDetailViewModel - Current user ID: $_currentUserId');
@@ -64,6 +75,7 @@ class ChatDetailViewModel extends ChangeNotifier {
       print('✅ User details loaded: ${_otherUserDetails?['username']}');
 
       _loadMessages();
+      _listenToUserPresence();
 
       await _chatRepository.markMessagesAsRead(_chatRoomId, otherUserId);
 
@@ -190,8 +202,38 @@ class ChatDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Listen to other user's presence
+  void _listenToUserPresence() {
+    if (_otherUserId.isEmpty) return;
+
+    _presenceSubscription?.cancel();
+    _presenceSubscription = _chatRepository.getUserPresence(_otherUserId).listen(
+      (presence) {
+        _isOtherUserOnline = presence['isOnline'] ?? false;
+        _otherUserLastSeen = presence['lastSeen'];
+        print('👤 User presence updated: Online: $_isOtherUserOnline, Last seen: $_otherUserLastSeen');
+        notifyListeners();
+      },
+      onError: (error) {
+        print('❌ Error listening to user presence: $error');
+      },
+    );
+  }
+
+  /// Get status text for display
+  String getStatusText() {
+    if (_isOtherUserOnline) {
+      return 'Online';
+    } else if (_otherUserLastSeen != null) {
+      return _presenceService.getLastSeenText(_otherUserLastSeen);
+    } else {
+      return 'Offline';
+    }
+  }
+
   @override
   void dispose() {
+    _presenceSubscription?.cancel();
     super.dispose();
   }
 }

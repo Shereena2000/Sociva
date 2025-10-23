@@ -15,6 +15,7 @@ import 'package:social_media_app/Features/notifications/view/notification_screen
 import 'package:social_media_app/Features/notifications/view_model/notification_view_model.dart';
 import 'package:social_media_app/Features/notifications/service/notification_service.dart';
 import 'package:social_media_app/Features/notifications/service/push_notification_service.dart';
+import 'package:social_media_app/Features/chat/chat_list/view_model/chat_list_view_model.dart';
 import 'package:social_media_app/Features/post/view/widgets/share_bottom_sheet.dart';
 import 'package:social_media_app/Features/post/view/test_share_debug.dart';
 import 'package:social_media_app/Settings/constants/sized_box.dart';
@@ -46,6 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => NotificationViewModel()..initializeNotifications()),
+        ChangeNotifierProvider(create: (_) => ChatListViewModel()),
       ],
       child: Scaffold(
         body: SafeArea(
@@ -232,17 +234,52 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
         ),
-        // Chat icon
-        IconButton(
-          icon: SvgPicture.asset(
-            Svgs.chatIcon,
-            colorFilter: const ColorFilter.mode(
-              Colors.white,
-              BlendMode.srcIn,
-            ),
-          ),
-          onPressed: () {
-               Navigator.pushNamed(context, PPages.chatListScreen);
+        // Chat icon with unread message badge
+        Consumer<ChatListViewModel>(
+          builder: (context, chatViewModel, child) {
+            return Stack(
+              children: [
+                IconButton(
+                  icon: SvgPicture.asset(
+                    Svgs.chatIcon,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pushNamed(context, PPages.chatListScreen);
+                  },
+                ),
+                if (chatViewModel.totalUnreadCount > 0)
+                  Positioned(
+                    right: 2,
+                    top: 4,
+                    child: Container(
+                      padding: EdgeInsets.all(1.5),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(200),
+                      ),
+                      constraints: BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        chatViewModel.totalUnreadCount > 99
+                            ? '99+'
+                            : chatViewModel.totalUnreadCount.toString(),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            );
           },
         ),
       ],

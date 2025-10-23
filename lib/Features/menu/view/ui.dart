@@ -101,10 +101,7 @@ class MenuScreen extends StatelessWidget {
                       color: PColors.errorRed,
                     ),
                   ),
-                  trailing: Icon(Icons.arrow_forward_ios, 
-                    color: PColors.errorRed, 
-                    size: 20,
-                  ),
+                 
                 );
               },
             ),

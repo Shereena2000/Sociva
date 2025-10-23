@@ -7,12 +7,14 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String userName;
   final String userImage;
   final bool isOnline;
+  final String statusText;
 
   const ChatAppBar({
     super.key,
     required this.userName,
     required this.userImage,
     this.isOnline = false,
+    this.statusText = 'Offline',
   });
 
   @override
@@ -36,6 +38,8 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
             CircleAvatar(backgroundImage: NetworkImage(userImage)),
             SizeBoxV(8),
             Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   userName,
@@ -43,9 +47,9 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  isOnline ? 'Online' : 'Offline',
+                  statusText,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     color: isOnline ? PColors.primaryColor : Colors.grey,
                   ),
                 ),

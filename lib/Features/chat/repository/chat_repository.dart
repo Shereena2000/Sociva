@@ -234,5 +234,24 @@ class ChatRepository {
       return null;
     }
   }
+
+  /// Listen to user's online status
+  Stream<Map<String, dynamic>> getUserPresence(String userId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .map((snapshot) {
+      if (!snapshot.exists) {
+        return {'isOnline': false, 'lastSeen': null};
+      }
+
+      final data = snapshot.data();
+      return {
+        'isOnline': data?['isOnline'] ?? false,
+        'lastSeen': data?['lastSeen'],
+      };
+    });
+  }
 }
 

@@ -9,6 +9,7 @@ class RightChatBubble extends StatelessWidget {
   final String time;
   final String? mediaUrl;
   final String? messageType;
+  final bool isRead;
 
   const RightChatBubble({
     super.key,
@@ -16,6 +17,7 @@ class RightChatBubble extends StatelessWidget {
     required this.time,
     this.mediaUrl,
     this.messageType,
+    this.isRead = false,
   });
 
   @override
@@ -64,7 +66,11 @@ class RightChatBubble extends StatelessWidget {
                   style: TextStyle(color: PColors.lightGray, fontSize: 11),
                 ),
                 const SizedBox(width: 4),
-                Icon(Icons.done_all, size: 16, color: PColors.primaryColor),
+                Icon(
+                  Icons.done_all,
+                  size: 16,
+                  color: isRead ? PColors.primaryColor : Colors.grey,
+                ),
               ],
             ),
           ),

@@ -86,7 +86,8 @@ class ChatDetailScreen extends StatelessWidget {
             appBar: ChatAppBar(
               userName: _getDisplayName(viewModel.otherUserDetails),
               userImage: viewModel.otherUserDetails?['profilePhotoUrl'] ??
-'https://i.pinimg.com/736x/9e/83/75/9e837528f01cf3f42119c5aeeed1b336.jpg',              isOnline: false,
+'https://i.pinimg.com/736x/9e/83/75/9e837528f01cf3f42119c5aeeed1b336.jpg',              isOnline: viewModel.isOtherUserOnline,
+              statusText: viewModel.getStatusText(),
             ),
             body: Column(
               children: [
@@ -181,6 +182,7 @@ class ChatDetailScreen extends StatelessWidget {
                                       time: viewModel.getFormattedTime(message.timestamp),
                                       mediaUrl: message.mediaUrl,
                                       messageType: message.messageType.toString().split('.').last,
+                                      isRead: message.isRead,
                                     )
                                   else
                                     LeftChatBubble(

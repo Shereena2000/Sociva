@@ -9,6 +9,7 @@ import 'package:social_media_app/Features/profile/status/repository/status_repos
 import 'package:social_media_app/Features/profile/status/model/status_model.dart';
 import 'package:social_media_app/Features/profile/follow/repository/follow_repository.dart';
 import 'package:social_media_app/Features/notifications/service/notification_service.dart';
+import 'package:social_media_app/Service/user_presence_service.dart';
 import 'package:social_media_app/Settings/utils/p_pages.dart';
 
 class ProfileViewModel extends ChangeNotifier {
@@ -18,6 +19,7 @@ class ProfileViewModel extends ChangeNotifier {
   final StatusRepository _statusRepository = StatusRepository();
   final FollowRepository _followRepository = FollowRepository();
   final NotificationService _notificationService = NotificationService();
+  final UserPresenceService _presenceService = UserPresenceService();
   
   List<PostModel> _allPosts = [];
   List<PostModel> _photoPosts = [];
@@ -364,21 +366,47 @@ class ProfileViewModel extends ChangeNotifier {
 
   // Logout functionality
   Future<void> logout(BuildContext context) async {
+    print('🔄 Starting logout process...');
     _isLoggingOut = true;
     notifyListeners();
 
     try {
-      await _authRepository.signOut();
+      // Set user offline before signing out with timeout
+      print('🔴 Setting user offline...');
+      await _presenceService.setUserOffline().timeout(
+        Duration(seconds: 3),
+        onTimeout: () {
+          print('⚠️ Setting user offline timed out, continuing with logout');
+        },
+      );
+      print('✅ User set to offline');
+      
+      // Sign out from Firebase with timeout
+      print('👋 Signing out from Firebase...');
+      await _authRepository.signOut().timeout(
+        Duration(seconds: 5),
+        onTimeout: () {
+          print('⚠️ Firebase signOut timed out');
+          throw 'Logout is taking too long. Please check your connection.';
+        },
+      );
+      print('✅ Firebase sign out successful');
+      
+      _isLoggingOut = false;
+      notifyListeners();
       
       if (context.mounted) {
+        print('🔄 Navigating to login screen...');
         // Navigate to login screen and clear all previous routes
         Navigator.pushNamedAndRemoveUntil(
           context,
           PPages.login,
           (route) => false,
         );
+        print('✅ Logout complete!');
       }
     } catch (e) {
+      print('❌ Logout error: $e');
       _isLoggingOut = false;
       notifyListeners();
       
@@ -387,6 +415,7 @@ class ProfileViewModel extends ChangeNotifier {
           SnackBar(
             content: Text('Failed to logout: $e'),
             backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
           ),
         );
       }

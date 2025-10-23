@@ -76,7 +76,7 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
         
         // Add Add Job Post only for verified companies
         if (companyVm.hasRegisteredCompany && companyVm.isCompanyVerified) {
-          navItems.add({'icon': Svgs.addIcon, 'index': 4}); // Add Job Post
+          navItems.add({'icon': Svgs.addJobIcon, 'index': 4}); // Add Job Post
         }
         
         // Always add Menu as last item

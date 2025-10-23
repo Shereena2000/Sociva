@@ -6,6 +6,6 @@ class Svgs {
   static String get moreIcon => "assets/icons/menuicon.svg";
   static String get addIcon => "assets/icons/add_icon.svg";
   static String get jobIcon => "assets/icons/job-svgrepo-com.svg";
-
+  static String get addJobIcon => "assets/icons/add_job.svg";
   static String get searchIcon=>"assets/icons/search.svg";
 }

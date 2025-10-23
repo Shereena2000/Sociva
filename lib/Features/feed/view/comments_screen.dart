@@ -664,7 +664,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
       
       if (userDoc.exists) {
         final userData = userDoc.data()!;
-        final fromUserName = userData['username'] ?? 'Someone';
+        final fromUserName = userData['username'] ?? userData['name'] ?? 'Someone';
 
         // Get post image for notification
         final postDoc = await FirebaseFirestore.instance

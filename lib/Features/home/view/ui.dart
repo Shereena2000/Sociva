@@ -1121,7 +1121,7 @@ class _HomeScreenState extends State<HomeScreen> {
       
       if (userDoc.exists) {
         final userData = userDoc.data()!;
-        final actualUserName = userData['username'] ?? 'Someone';
+        final actualUserName = userData['username'] ?? userData['name'] ?? 'Someone';
 
         // Send in-app notification
         await NotificationService().notifyLike(

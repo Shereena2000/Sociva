@@ -21,6 +21,7 @@ class CompanyModel {
   final String businessLicenseNumber;
   final String businessLicenseUrl;
   final String taxId;
+  final String gstNumber;
   final String companyLogoUrl;
   final String userId; // Firebase Auth user ID
   final bool isVerified;
@@ -51,6 +52,7 @@ class CompanyModel {
     required this.businessLicenseNumber,
     required this.businessLicenseUrl,
     required this.taxId,
+    required this.gstNumber,
     required this.companyLogoUrl,
     required this.userId,
     this.isVerified = false,
@@ -84,6 +86,7 @@ class CompanyModel {
       'businessLicenseNumber': businessLicenseNumber,
       'businessLicenseUrl': businessLicenseUrl,
       'taxId': taxId,
+      'gstNumber': gstNumber,
       'companyLogoUrl': companyLogoUrl,
       'userId': userId,
       'isVerified': isVerified,
@@ -136,6 +139,7 @@ class CompanyModel {
       businessLicenseNumber: map['businessLicenseNumber'] ?? '',
       businessLicenseUrl: map['businessLicenseUrl'] ?? '',
       taxId: map['taxId'] ?? '',
+      gstNumber: map['gstNumber'] ?? '',
       companyLogoUrl: map['companyLogoUrl'] ?? '',
       userId: map['userId'] ?? '',
       isVerified: map['isVerified'] ?? false,
@@ -169,6 +173,7 @@ class CompanyModel {
     String? businessLicenseNumber,
     String? businessLicenseUrl,
     String? taxId,
+    String? gstNumber,
     String? companyLogoUrl,
     String? userId,
     bool? isVerified,
@@ -199,6 +204,7 @@ class CompanyModel {
       businessLicenseNumber: businessLicenseNumber ?? this.businessLicenseNumber,
       businessLicenseUrl: businessLicenseUrl ?? this.businessLicenseUrl,
       taxId: taxId ?? this.taxId,
+      gstNumber: gstNumber ?? this.gstNumber,
       companyLogoUrl: companyLogoUrl ?? this.companyLogoUrl,
       userId: userId ?? this.userId,
       isVerified: isVerified ?? this.isVerified,

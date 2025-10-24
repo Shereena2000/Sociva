@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:social_media_app/Settings/utils/p_colors.dart';
 import '../../../Settings/utils/p_pages.dart';
+import '../../../Settings/constants/text_styles.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,15 +14,15 @@ class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late AnimationController _scaleController;
-  late AnimationController _pulseController;
+  late AnimationController _slideController;
   late AnimationController _rotateController;
-  late AnimationController _waveController;
+  late AnimationController _pulseController;
 
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _pulseAnimation;
+  late Animation<Offset> _slideAnimation;
   late Animation<double> _rotateAnimation;
-  late Animation<double> _waveAnimation;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
@@ -35,54 +35,58 @@ class _SplashScreenState extends State<SplashScreen>
   void _initializeAnimations() {
     // Fade animation
     _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
     );
 
     // Scale animation with bounce
     _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
     _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
     );
 
-    // Pulse animation
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+    // Slide animation
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
-    )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
 
     // Rotate animation for loading
     _rotateController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 2000),
       vsync: this,
     )..repeat();
     _rotateAnimation = Tween<double>(begin: 0, end: 1).animate(_rotateController);
 
-    // Wave animation
-    _waveController = AnimationController(
-      duration: const Duration(milliseconds: 3000),
+    // Pulse animation
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
       vsync: this,
-    )..repeat();
-    _waveAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _waveController, curve: Curves.linear),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
   }
 
   void _startAnimations() {
-    Future.delayed(const Duration(milliseconds: 100), () {
+    Future.delayed(const Duration(milliseconds: 200), () {
       if (mounted) _fadeController.forward();
     });
-    Future.delayed(const Duration(milliseconds: 300), () {
+    Future.delayed(const Duration(milliseconds: 400), () {
       if (mounted) _scaleController.forward();
+    });
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) _slideController.forward();
     });
   }
 
@@ -115,120 +119,100 @@ class _SplashScreenState extends State<SplashScreen>
   void dispose() {
     _fadeController.dispose();
     _scaleController.dispose();
-    _pulseController.dispose();
+    _slideController.dispose();
     _rotateController.dispose();
-    _waveController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
+    final size = MediaQuery.of(context).size;
+    
+    return WillPopScope(
+      onWillPop: () async {
+        // Prevent going back from splash screen
+        return false;
+      },
+      child: Scaffold(
+        body: Container(
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Color(0xFF1A1B4B), // Deep Blue
-              Color(0xFF4A148C), // Deep Purple
-              Color(0xFF6A1B9A), // Purple
-              Color(0xFF3949AB), // Blue
+              const Color(0xFF0F0F23),
+              const Color(0xFF1A1B4B),
+              const Color(0xFF2D1B69),
+              const Color(0xFF6366F1),
             ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            stops: [0.0, 0.3, 0.6, 1.0],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: const [0.0, 0.4, 0.7, 1.0],
           ),
         ),
         child: Stack(
           children: [
-            // Animated wave patterns
-            _buildWavePattern(),
-            
-            // Floating particles
-            _buildFloatingParticles(),
+            // Animated background elements
+            _buildAnimatedBackground(),
             
             // Main content
             Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Logo with animations
-                  // FadeTransition(
-                  //   opacity: _fadeAnimation,
-                  //   child: ScaleTransition(
-                  //     scale: _scaleAnimation,
-                  //     child: ScaleTransition(
-                  //       scale: _pulseAnimation,
-                  //       child: _buildLogo(),
-                  //     ),
-                  //   ),
-                  // ),
-
-                  const SizedBox(height: 40),
-
-                  // App name
-                  FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: ShaderMask(
-                      shaderCallback: (bounds) {
-                        return LinearGradient(
-                          colors: [
-                            Color(0xFF64B5F6),
-                            Color(0xFF9C27B0),
-                            Color(0xFFE1BEE7),
-                          ],
-                        ).createShader(bounds);
-                      },
-                      child: Text(
-                        "Sociva",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 58,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 3.0,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.4),
-                              offset: Offset(0, 8),
-                              blurRadius: 20,
-                            ),
-                          ],
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // App Logo with modern design
+                      ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: ScaleTransition(
+                          scale: _pulseAnimation,
+                          child: _buildAssetLogo(),
                         ),
                       ),
-                    ),
-                  ),
 
-                  const SizedBox(height: 12),
+                      SizedBox(height: size.height * 0.04),
 
-                  // Tagline
-                  FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: Text(
-                      "Connect. Share. Inspire.",
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 17,
-                        fontWeight: FontWeight.w400,
-                        letterSpacing: 1.8,
+                      // App name with beautiful typography
+                      Text(
+                        "Sociva",
+                        style: getTextisLandMonents(
+                          fontSize: 64,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 2.0,
+                        ),
                       ),
-                    ),
-                  ),
 
-                  const SizedBox(height: 70),
+                      const SizedBox(height: 16),
 
-                  // Circular loading indicator
-                  FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: _buildLoadingIndicator(),
+                      // Tagline with modern styling
+                      Text(
+                        "Connect • Share • Inspire",
+                        style: getTextisLandMonents(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withOpacity(0.9),
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+
+                      SizedBox(height: size.height * 0.08),
+
+                      // Modern loading indicator
+                      _buildModernLoadingIndicator(),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
 
-            // Bottom section
+            // Bottom section with app info
             Positioned(
-              bottom: 50,
+              bottom: 60,
               left: 0,
               right: 0,
               child: FadeTransition(
@@ -237,22 +221,32 @@ class _SplashScreenState extends State<SplashScreen>
                   children: [
                     Text(
                       "Made with ❤️ for creators",
-                      style: TextStyle(
+                      style: getTextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
                         color: Colors.white.withOpacity(0.7),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: 0.8,
+                        letterSpacing: 0.5,
                       ),
                     ),
                     
                     const SizedBox(height: 8),
                     
-                    Text(
-                      "v1.0.0",
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w300,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Text(
+                        "v1.0.0",
+                        style: getTextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withOpacity(0.8),
+                        ),
                       ),
                     ),
                   ],
@@ -262,74 +256,53 @@ class _SplashScreenState extends State<SplashScreen>
           ],
         ),
       ),
+      ),
     );
   }
 
-  Widget _buildWavePattern() {
-    return AnimatedBuilder(
-      animation: _waveAnimation,
-      builder: (context, child) {
-        return Stack(
-          children: [
-            Positioned(
-              top: -100 + (_waveAnimation.value * 50),
-              right: -150,
-              child: Container(
-                width: 400,
-                height: 400,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      Color(0xFF7E57C2).withOpacity(0.15),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: -200 + (_waveAnimation.value * -30),
-              left: -100,
-              child: Container(
-                width: 500,
-                height: 500,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      Color(0xFF42A5F5).withOpacity(0.12),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildFloatingParticles() {
+  Widget _buildAnimatedBackground() {
     return Stack(
       children: [
-        _buildParticle(top: 120, left: 40, size: 8, delay: 0),
-        _buildParticle(top: 250, right: 60, size: 6, delay: 500),
-        _buildParticle(bottom: 200, left: 50, size: 10, delay: 1000),
-        _buildParticle(bottom: 350, right: 40, size: 7, delay: 1500),
-        _buildParticle(top: 450, left: 120, size: 5, delay: 800),
-        _buildParticle(top: 180, right: 100, size: 9, delay: 1200),
+        // Floating geometric shapes
+        _buildFloatingShape(
+          top: 100,
+          right: 50,
+          size: 120,
+          color: const Color(0xFF6366F1).withOpacity(0.1),
+          delay: 0,
+        ),
+        _buildFloatingShape(
+          bottom: 200,
+          left: 30,
+          size: 80,
+          color: const Color(0xFF8B5CF6).withOpacity(0.08),
+          delay: 1000,
+        ),
+        _buildFloatingShape(
+          top: 300,
+          left: 20,
+          size: 60,
+          color: const Color(0xFF06B6D4).withOpacity(0.06),
+          delay: 2000,
+        ),
+        _buildFloatingShape(
+          bottom: 150,
+          right: 80,
+          size: 100,
+          color: const Color(0xFF10B981).withOpacity(0.05),
+          delay: 1500,
+        ),
       ],
     );
   }
 
-  Widget _buildParticle({
+  Widget _buildFloatingShape({
     double? top,
     double? bottom,
     double? left,
     double? right,
     required double size,
+    required Color color,
     required int delay,
   }) {
     return Positioned(
@@ -339,29 +312,27 @@ class _SplashScreenState extends State<SplashScreen>
       right: right,
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.0, end: 1.0),
-        duration: Duration(milliseconds: 2000 + delay),
-        curve: Curves.easeOut,
+        duration: Duration(milliseconds: 3000 + delay),
+        curve: Curves.easeInOut,
         builder: (context, value, child) {
           return Transform.translate(
-            offset: Offset(0, -value * 100),
-            child: Opacity(
-              opacity: (1 - value) * 0.8,
+            offset: Offset(
+              (value - 0.5) * 20,
+              (value - 0.5) * 30,
+            ),
+            child: Transform.rotate(
+              angle: value * 2 * 3.14159,
               child: Container(
                 width: size,
                 height: size,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                   PColors.blueColor,
-                 PColors.purpleColor,
-                    ],
-                  ),
+                  color: color,
                   boxShadow: [
                     BoxShadow(
-                      color: Color(0xFF64B5F6).withOpacity(0.5),
-                      blurRadius: 10,
-                      spreadRadius: 2,
+                      color: color.withOpacity(0.3),
+                      blurRadius: 20,
+                      spreadRadius: 5,
                     ),
                   ],
                 ),
@@ -373,80 +344,99 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  // Widget _buildLogo() {
-  //   return Container(
-  //     width: 160,
-  //     height: 160,
-  //     decoration: BoxDecoration(
-  //       shape: BoxShape.circle,
-  //       gradient: LinearGradient(
-  //         colors: [
-  //           Color(0xFF9C27B0),
-  //           Color(0xFF673AB7),
-  //           Color(0xFF3F51B5),
-  //         ],
-  //         begin: Alignment.topLeft,
-  //         end: Alignment.bottomRight,
-  //       ),
-  //       boxShadow: [
-  //         BoxShadow(
-  //           color: Color(0xFF9C27B0).withOpacity(0.6),
-  //           blurRadius: 50,
-  //           offset: Offset(0, 20),
-  //           spreadRadius: 5,
-  //         ),
-  //         BoxShadow(
-  //           color: Color(0xFF3F51B5).withOpacity(0.4),
-  //           blurRadius: 80,
-  //           offset: Offset(0, 30),
-  //         ),
-  //       ],
-  //     ),
-  //     child: Center(
-  //       child: Container(
-  //         width: 140,
-  //         height: 140,
-  //         decoration: BoxDecoration(
-  //           shape: BoxShape.circle,
-  //           color: Colors.white.withOpacity(0.1),
-  //         ),
-  //         child: Center(
-  //           child: Icon(
-  //             Icons.people_alt_rounded,
-  //             size: 70,
-  //             color: Colors.white,
-  //           ),
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  Widget _buildLoadingIndicator() {
-    return RotationTransition(
-      turns: _rotateAnimation,
+  Widget _buildAssetLogo() {
+    return Container(
+      width: 120,
+      height: 120,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF6366F1),
+            Color(0xFF8B5CF6),
+            Color(0xFF06B6D4),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6366F1).withOpacity(0.4),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
+            spreadRadius: 5,
+          ),
+          BoxShadow(
+            color: const Color(0xFF8B5CF6).withOpacity(0.3),
+            blurRadius: 50,
+            offset: const Offset(0, 25),
+          ),
+        ],
+      ),
       child: Container(
-        width: 55,
-        height: 55,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white.withOpacity(0.2),
-            width: 3,
+          color: Colors.white.withOpacity(0.1),
+        ),
+        child: ClipOval(
+          child: Image.asset(
+            'assets/icons/logo.png',
+            width: 100,
+            height: 100,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              // Fallback to a simple icon if image fails to load
+              return const Icon(
+                Icons.people_alt_rounded,
+                size: 50,
+                color: Colors.white,
+              );
+            },
           ),
         ),
-        child: Stack(
-          children: [
-            Positioned.fill(
+      ),
+    );
+  }
+
+  Widget _buildModernLoadingIndicator() {
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 2,
+        ),
+      ),
+      child: Stack(
+        children: [
+          RotationTransition(
+            turns: _rotateAnimation,
+            child: Container(
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+              ),
               child: CircularProgressIndicator(
-                strokeWidth: 3.5,
+                strokeWidth: 3,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  Color(0xFF64B5F6),
+                  const Color(0xFF6366F1),
                 ),
+                backgroundColor: Colors.transparent,
               ),
             ),
-          ],
-        ),
+          ),
+          Center(
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFF6366F1),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

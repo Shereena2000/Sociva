@@ -32,12 +32,13 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
   final TextEditingController companyCultureController = TextEditingController();
   final TextEditingController businessLicenseNumberController = TextEditingController();
   final TextEditingController taxIdController = TextEditingController();
+  final TextEditingController gstNumberController = TextEditingController();
 
   // Form data
   String _companyName = '';
   String _website = '';
   String _industry = '';
-  String _companySize = '';
+  String? _companySize;
   int _foundedYear = DateTime.now().year;
   String _companyType = '';
   String _contactPerson = '';
@@ -54,6 +55,7 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
   String _companyCulture = '';
   String _businessLicenseNumber = '';
   String _taxId = '';
+  String _gstNumber = '';
 
   // File uploads
   File? _businessLicenseFile;
@@ -74,7 +76,7 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
   String get companyName => _companyName;
   String get website => _website;
   String get industry => _industry;
-  String get companySize => _companySize;
+  String? get companySize => _companySize;
   int get foundedYear => _foundedYear;
   String get companyType => _companyType;
   String get contactPerson => _contactPerson;
@@ -91,6 +93,7 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
   String get companyCulture => _companyCulture;
   String get businessLicenseNumber => _businessLicenseNumber;
   String get taxId => _taxId;
+  String get gstNumber => _gstNumber;
   File? get businessLicenseFile => _businessLicenseFile;
   File? get companyLogoFile => _companyLogoFile;
   String get businessLicenseUrl => _businessLicenseUrl;
@@ -120,7 +123,7 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
   }
 
   void setCompanySize(String? value) {
-    _companySize = value ?? '';
+    _companySize = value;
     notifyListeners();
   }
 
@@ -201,6 +204,11 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
 
   void setTaxId(String? value) {
     _taxId = value ?? '';
+    notifyListeners();
+  }
+
+  void setGstNumber(String? value) {
+    _gstNumber = value ?? '';
     notifyListeners();
   }
 
@@ -321,7 +329,7 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
       _companyName = companyNameController.text;
       _website = websiteController.text;
       _industry = industryController.text;
-      _companySize = companySizeController.text;
+      _companySize = _companySize; // Keep the dropdown value
       _foundedYear = int.tryParse(foundedYearController.text) ?? DateTime.now().year;
       _contactPerson = contactPersonController.text;
       _contactTitle = contactTitleController.text;
@@ -337,6 +345,7 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
       _companyCulture = companyCultureController.text;
       _businessLicenseNumber = businessLicenseNumberController.text;
       _taxId = taxIdController.text;
+      _gstNumber = gstNumberController.text;
 
       if (_isEditMode && _userCompany != null) {
         // UPDATE existing company
@@ -373,7 +382,7 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
           companyName: _companyName,
           website: _website,
           industry: _industry,
-          companySize: _companySize,
+          companySize: _companySize ?? '',
           foundedYear: _foundedYear,
           companyType: _companyType,
           contactPerson: _contactPerson,
@@ -391,6 +400,7 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
           businessLicenseNumber: _businessLicenseNumber,
           businessLicenseUrl: _businessLicenseUrl,
           taxId: _taxId,
+          gstNumber: _gstNumber,
           companyLogoUrl: _companyLogoUrl,
           userId: user.uid,
           isVerified: true, // Auto-verify company (no admin required)
@@ -399,7 +409,7 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
         );
 
         // Save to Firebase
-        final companyId = await _companyRepository.createCompany(company);
+        await _companyRepository.createCompany(company);
       }
 
       // Load the company back to get the complete data
@@ -439,6 +449,10 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
       _errorMessage = 'Contact person is required';
       return false;
     }
+    if (_companySize == null || _companySize!.isEmpty) {
+      _errorMessage = 'Company size is required';
+      return false;
+    }
     if (emailController.text.isEmpty) {
       _errorMessage = 'Email is required';
       return false;
@@ -452,7 +466,7 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
       return false;
     }
     
-    // Only validate business license and tax ID for new registrations (not edits)
+    // Only validate business license, tax ID, and GST for new registrations (not edits)
     if (!_isEditMode) {
       if (businessLicenseNumberController.text.isEmpty) {
         _errorMessage = 'Business license number is required';
@@ -460,6 +474,10 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
       }
       if (taxIdController.text.isEmpty) {
         _errorMessage = 'Tax ID is required';
+        return false;
+      }
+      if (gstNumberController.text.isEmpty) {
+        _errorMessage = 'GST number is required';
         return false;
       }
       if (_businessLicenseFile == null && _businessLicenseUrl.isEmpty) {
@@ -498,12 +516,13 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
     companyCultureController.clear();
     businessLicenseNumberController.clear();
     taxIdController.clear();
+    gstNumberController.clear();
     
     // Clear private variables
     _companyName = '';
     _website = '';
     _industry = '';
-    _companySize = '';
+    _companySize = null;
     _foundedYear = DateTime.now().year;
     _companyType = '';
     _contactPerson = '';
@@ -520,6 +539,7 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
     _companyCulture = '';
     _businessLicenseNumber = '';
     _taxId = '';
+    _gstNumber = '';
     _businessLicenseFile = null;
     _companyLogoFile = null;
     _businessLicenseUrl = '';
@@ -592,7 +612,7 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
     companyNameController.text = _userCompany!.companyName;
     websiteController.text = _userCompany!.website;
     industryController.text = _userCompany!.industry;
-    companySizeController.text = _userCompany!.companySize;
+    _companySize = _userCompany!.companySize;
     foundedYearController.text = _userCompany!.foundedYear.toString();
     contactPersonController.text = _userCompany!.contactPerson;
     contactTitleController.text = _userCompany!.contactTitle;
@@ -608,6 +628,7 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
     companyCultureController.text = _userCompany!.companyCulture;
     businessLicenseNumberController.text = _userCompany!.businessLicenseNumber;
     taxIdController.text = _userCompany!.taxId;
+    gstNumberController.text = _userCompany!.gstNumber;
     
     _companyType = _userCompany!.companyType;
     _companyLogoUrl = _userCompany!.companyLogoUrl;
@@ -675,6 +696,7 @@ class CompanyRegistrationViewModel extends ChangeNotifier {
     companyCultureController.dispose();
     businessLicenseNumberController.dispose();
     taxIdController.dispose();
+    gstNumberController.dispose();
     super.dispose();
   }
 }

@@ -5,6 +5,7 @@ import 'package:social_media_app/Settings/utils/p_text_styles.dart';
 
 import '../../../Settings/common/widgets/custom_app_bar.dart';
 import '../../../Settings/common/widgets/custom_text_feild.dart';
+import '../../../Settings/common/widgets/company_size_dropdown.dart';
 import '../../../Settings/constants/sized_box.dart';
 import '../../../Settings/utils/p_pages.dart';
 import '../../../Settings/utils/p_colors.dart';
@@ -103,12 +104,13 @@ class _RegisterCompanyScreenState extends State<RegisterCompanyScreen> {
           ),
           SizeBoxH(8),
 
-          // Company Size
-          CustomTextFeild(
-            hintText: "Company Size",
+          // Company Size Dropdown
+          CompanySizeDropdown(
             textHead: "Company Size",
-            controller: viewModel.companySizeController,
-            onChanged: (value) {},
+            value: viewModel.companySize,
+            onChanged: (value) {
+              viewModel.setCompanySize(value);
+            },
           ),
           SizeBoxH(8),
 
@@ -281,7 +283,7 @@ class _RegisterCompanyScreenState extends State<RegisterCompanyScreen> {
       ).showSnackBar(SnackBar(content: Text('Industry is required')));
       return false;
     }
-    if (viewModel.companySizeController.text.isEmpty) {
+    if (viewModel.companySize == null || viewModel.companySize!.isEmpty) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Company size is required')));

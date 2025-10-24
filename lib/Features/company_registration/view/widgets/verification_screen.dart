@@ -105,6 +105,21 @@ class VerificationScreen extends StatelessWidget {
                   onChanged: (value) {},
                 ),
                 SizeBoxH(8),
+
+                // GST Number (Read-only in edit mode)
+                CustomTextFeild(
+                  hintText: "GST Number",
+                  textHead: viewModel.isEditMode 
+                      ? "GST Number (Cannot be changed)" 
+                      : "GST Number",
+                  controller: viewModel.gstNumberController,
+                  readOnly: viewModel.isEditMode, // Read-only when editing
+                  filColor: viewModel.isEditMode 
+                      ? Colors.grey[800] 
+                      : null,
+                  onChanged: (value) {},
+                ),
+                SizeBoxH(8),
                 
                 Align(
                   alignment: Alignment.centerLeft,

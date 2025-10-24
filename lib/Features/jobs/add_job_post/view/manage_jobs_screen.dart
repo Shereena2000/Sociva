@@ -4,6 +4,8 @@ import '../../../../Settings/utils/p_text_styles.dart';
 import '../../../../Settings/utils/p_colors.dart';
 import '../../../../Settings/utils/p_pages.dart';
 import '../view_model/add_job_view_model.dart';
+import '../../../company_registration/repository/company_repository.dart';
+import '../../job_listing_screen/model/job_with_company_model.dart';
 import 'widgets/empty_jobs_state.dart';
 import 'widgets/job_card_with_menu.dart';
 import 'widgets/add_job_form.dart';
@@ -16,10 +18,11 @@ class ManageJobsScreen extends StatefulWidget {
 }
 
 class _ManageJobsScreenState extends State<ManageJobsScreen> {
+  final CompanyRepository _companyRepository = CompanyRepository();
+
   @override
   void initState() {
     super.initState();
-    // Fetch jobs when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AddJobViewModel>().fetchUserJobs();
     });
@@ -35,7 +38,6 @@ class _ManageJobsScreenState extends State<ManageJobsScreen> {
         backgroundColor: PColors.black,
         foregroundColor: PColors.white,
         actions: [
-          // Add button in app bar
           Consumer<AddJobViewModel>(
             builder: (context, viewModel, child) {
               if (viewModel.hasJobs) {
@@ -53,7 +55,6 @@ class _ManageJobsScreenState extends State<ManageJobsScreen> {
       backgroundColor: PColors.black,
       body: Consumer<AddJobViewModel>(
         builder: (context, viewModel, child) {
-          // Loading state
           if (viewModel.isFetchingJobs) {
             return Center(
               child: CircularProgressIndicator(
@@ -62,23 +63,20 @@ class _ManageJobsScreenState extends State<ManageJobsScreen> {
             );
           }
 
-          // Empty state
           if (!viewModel.hasJobs) {
             return EmptyJobsState(
               onAddJob: () => _showAddJobBottomSheet(context, false),
             );
           }
 
-          // Jobs list
           return RefreshIndicator(
             onRefresh: () => viewModel.fetchUserJobs(),
             color: PColors.primaryColor,
             backgroundColor: PColors.darkGray,
             child: ListView.builder(
               padding: EdgeInsets.all(16),
-              itemCount: viewModel.userJobs.length + 1, // +1 for add button at bottom
+              itemCount: viewModel.userJobs.length + 1,
               itemBuilder: (context, index) {
-                // Add button at bottom
                 if (index == viewModel.userJobs.length) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -104,18 +102,75 @@ class _ManageJobsScreenState extends State<ManageJobsScreen> {
                 }
 
                 final job = viewModel.userJobs[index];
+                
                 return JobCardWithMenu(
                   job: job,
-                  onTap: () {
-                    // Navigate to job detail screen (employer viewing own job - no Apply button)
-                    Navigator.pushNamed(
-                      context,
-                      PPages.jobDetailScreen,
-                      arguments: {
-                        'job': job,
-                        'showApplyButton': false, // Employer viewing own job
-                      },
-                    );
+                  onTap: () async {
+                    // FIX: Fetch company data and create JobWithCompanyModel
+                    try {
+                      // Show loading
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => Center(
+                          child: CircularProgressIndicator(
+                            color: PColors.primaryColor,
+                          ),
+                        ),
+                      );
+
+                      // Fetch company details
+                      final company = await _companyRepository.getCompanyById(job.companyId);
+                      
+                      // Close loading dialog
+                      Navigator.pop(context);
+
+                      if (company != null && context.mounted) {
+                        // Create JobWithCompanyModel
+                        final jobWithCompany = JobWithCompanyModel.fromModels(
+                          job: job,
+                          company: company,
+                        );
+
+                        print('Navigating to job: ${job.id} - ${job.jobTitle}');
+
+                        // Navigate with full data
+                        Navigator.pushNamed(
+                          context,
+                          PPages.jobDetailScreen,
+                          arguments: {
+                            'job': jobWithCompany,
+                            'showApplyButton': false, // Employer viewing own job
+                          },
+                        );
+                      } else {
+                        // Show error if company not found
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Could not load company details'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      // Close loading dialog if open
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
+                      
+                      print('Error loading company: $e');
+                      
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
                   },
                   onEdit: () {
                     viewModel.loadJobForEdit(job);
@@ -179,7 +234,6 @@ class _ManageJobsScreenState extends State<ManageJobsScreen> {
         expand: false,
         builder: (context, scrollController) => Column(
           children: [
-            // Handle bar
             Container(
               margin: EdgeInsets.only(top: 12, bottom: 8),
               width: 40,
@@ -189,8 +243,6 @@ class _ManageJobsScreenState extends State<ManageJobsScreen> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-
-            // Header
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -212,27 +264,19 @@ class _ManageJobsScreenState extends State<ManageJobsScreen> {
                 ],
               ),
             ),
-
-            // Divider
             Divider(
               color: PColors.lightGray.withOpacity(0.3),
               height: 1,
             ),
-
-            // Form
             Expanded(
               child: AddJobForm(
                 isEditing: isEditing,
-                onSuccess: () {
-                  // Close the bottom sheet
+                onSuccess: () async {
                   Navigator.pop(context);
-                  // Fetch jobs again to ensure UI is updated
-                  // (This is a backup - the viewModel already fetches)
-                  Future.delayed(Duration(milliseconds: 300), () {
-                    if (context.mounted) {
-                      context.read<AddJobViewModel>().fetchUserJobs();
-                    }
-                  });
+                  await Future.delayed(Duration(milliseconds: 500));
+                  if (context.mounted) {
+                    await context.read<AddJobViewModel>().fetchUserJobs();
+                  }
                 },
               ),
             ),
@@ -242,4 +286,3 @@ class _ManageJobsScreenState extends State<ManageJobsScreen> {
     );
   }
 }
-

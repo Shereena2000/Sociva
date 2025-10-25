@@ -12,6 +12,7 @@ class PostModel {
   final int commentCount; // Total number of comments
   final List<String> retweets; // List of user IDs who retweeted
   final String postType; // 'post' for Instagram-style, 'feed' for Twitter-style
+  final int viewCount; // Number of views
 
   PostModel({
     required this.postId,
@@ -25,6 +26,7 @@ class PostModel {
     this.commentCount = 0,
     this.retweets = const [],
     this.postType = 'post', // Default to post
+    this.viewCount = 0, // Default to 0 views
   }) : mediaUrls = mediaUrls ?? [mediaUrl]; // If no mediaUrls, use single mediaUrl
 
   // Check if post has multiple media
@@ -49,6 +51,9 @@ class PostModel {
   // Get retweet count
   int get retweetCount => retweets.length;
 
+  // Get view count
+  int get getViewCount => viewCount;
+
   Map<String, dynamic> toMap() {
     return {
       'postId': postId,
@@ -62,6 +67,7 @@ class PostModel {
       'commentCount': commentCount,
       'retweets': retweets,
       'postType': postType,
+      'viewCount': viewCount,
     };
   }
 
@@ -83,6 +89,7 @@ class PostModel {
       commentCount: map['commentCount'] ?? 0,
       retweets: (map['retweets'] as List? ?? []).map((e) => e.toString()).toList(),
       postType: map['postType'] ?? 'post', // Default to post for backward compatibility
+      viewCount: map['viewCount'] ?? 0, // Default to 0 for backward compatibility
     );
   }
 
@@ -99,6 +106,7 @@ class PostModel {
     int? commentCount,
     List<String>? retweets,
     String? postType,
+    int? viewCount,
   }) {
     return PostModel(
       postId: postId ?? this.postId,
@@ -112,6 +120,7 @@ class PostModel {
       commentCount: commentCount ?? this.commentCount,
       retweets: retweets ?? this.retweets,
       postType: postType ?? this.postType,
+      viewCount: viewCount ?? this.viewCount,
     );
   }
 }

@@ -3,7 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:social_media_app/Settings/common/widgets/custom_app_bar.dart';
 import 'package:social_media_app/Features/menu/saved_post/view_model/saved_post_view_model.dart';
 import 'package:social_media_app/Features/post/view/post_detail_screen.dart';
+import 'package:social_media_app/Settings/utils/p_colors.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
+
+import '../../../home/view_model/home_view_model.dart';
 
 class SavedPostScreen extends StatelessWidget {
   const SavedPostScreen({super.key});
@@ -83,7 +86,7 @@ class SavedPostScreen extends StatelessWidget {
                   crossAxisCount: 3,
                   crossAxisSpacing: 4,
                   mainAxisSpacing: 4,
-                  childAspectRatio: 1,
+                  childAspectRatio: 0.6,
                 ),
                 itemCount: viewModel.savedPosts.length,
                 itemBuilder: (context, index) {
@@ -104,7 +107,7 @@ class SavedPostScreen extends StatelessWidget {
                       // Show option to unsave
                       _showUnsaveDialog(context, viewModel, post.postId);
                     },
-                    child: _buildPostThumbnail(post),
+                    child: _buildPostThumbnail(post,context),
                   );
                 },
               ),
@@ -115,7 +118,8 @@ class SavedPostScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPostThumbnail(dynamic post) {
+  Widget _buildPostThumbnail(dynamic post,BuildContext context) {
+      final homeViewModel = Provider.of<HomeViewModel>(context, listen: false);
     final mediaUrl = post.mediaUrls.isNotEmpty ? post.mediaUrls[0] : '';
     final mediaType = post.mediaType ?? 'image';
 
@@ -196,20 +200,28 @@ class SavedPostScreen extends StatelessWidget {
             
             // Bookmark indicator
             Positioned(
-              bottom: 8,
-              right: 8,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
-                  shape: BoxShape.circle,
+              bottom: 15,
+              right: 0,
+              child:   // Save button with saved state
+                FutureBuilder<bool>(
+                  
+                  future: homeViewModel.isPostSaved(post.postId),
+                  builder: (context, snapshot) {
+                    final isSaved = snapshot.data ?? false;
+                    return IconButton(
+                      icon: Icon(
+                        isSaved ? Icons.bookmark : Icons.bookmark_border,
+                        color: isSaved ?PColors.white : Colors.black,
+                      ),
+                      onPressed: () async {
+                        await homeViewModel.toggleSave(post.postId);
+                        // Trigger rebuild to update icon
+                        (context as Element).markNeedsBuild();
+                      },
+                    );
+                  },
                 ),
-                child: const Icon(
-                  Icons.bookmark,
-                  color: Colors.white,
-                  size: 16,
-                ),
-              ),
+         
             ),
           ],
         ),

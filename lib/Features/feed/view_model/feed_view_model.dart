@@ -47,6 +47,8 @@ class FeedViewModel extends ChangeNotifier {
     fetchCurrentUserProfile();
     fetchForYouPosts();
     fetchFollowingList();
+    // Initialize viewCount for existing posts
+    _postRepository.initializeViewCountForExistingPosts();
   }
 
   /// Fetch current user profile

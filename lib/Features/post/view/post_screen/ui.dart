@@ -43,14 +43,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
       builder: (BuildContext context) {
         return Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color(0xFF1A1A2E),
-                Color(0xFF16213E),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
+            color: Colors.grey[900],
             borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
           ),
           child: SafeArea(
@@ -89,7 +82,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                     title: 'Choose from Gallery',
                     subtitle: 'Select photos or videos',
                     gradient: LinearGradient(
-                      colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                      colors: [Colors.grey[800]!, Colors.grey[800]!],
                     ),
                     onTap: () async {
                       Navigator.pop(context);
@@ -111,7 +104,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                     title: 'Take Photo',
                     subtitle: 'Capture a moment',
                     gradient: LinearGradient(
-                      colors: [Color(0xFFF093FB), Color(0xFFF5576C)],
+                      colors: [Colors.grey[800]!, Colors.grey[800]!],
                     ),
                     onTap: () async {
                       Navigator.pop(context);
@@ -133,7 +126,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                     title: 'Record Video',
                     subtitle: 'Create video content',
                     gradient: LinearGradient(
-                      colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
+                      colors: [Colors.grey[800]!, Colors.grey[800]!],
                     ),
                     onTap: () async {
                       Navigator.pop(context);
@@ -238,7 +231,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF0F0F1E),
+      backgroundColor: Colors.black,
       appBar: AppBar(
       
         elevation: 0,
@@ -270,9 +263,11 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                       : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: viewModel.selectedMedia != null
-                        ? Color(0xFF667EEA)
-                        : Colors.white.withOpacity(0.1),
-                    foregroundColor: Colors.white,
+                        ? Colors.white
+                        : Colors.grey[800],
+                    foregroundColor: viewModel.selectedMedia != null
+                        ? Colors.black
+                        : Colors.grey,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -304,13 +299,13 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
             opacity: _fadeAnimation,
              child: Column(
                children: [
-                 // Preview area - Increased height
-                Container(
+                 // Preview area - Flexible height
+                AspectRatio(
+                  aspectRatio: 1, // Square aspect ratio
+                  child: Container(
                    width: double.infinity,
-                   height: MediaQuery.of(context).size.width * 0.85, // Increased to 85% for better visibility
                    decoration: BoxDecoration(
-                     color: Color(0xFF1A1A2E), // Background color to avoid black spaces
-                     borderRadius: BorderRadius.circular(8),
+                     color: Colors.black, // Simple black background
                    ),
                   child: viewModel.selectedMedia != null
                       ? Stack(
@@ -330,7 +325,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                               );
                                             }
                                             return Container(
-                                              color: Color(0xFF1A1A2E),
+                                              color: Colors.black,
                                               child: Center(
                                                 child: CircularProgressIndicator(
                                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -341,7 +336,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                           },
                                         )
                                       : Container(
-                                          color: Color(0xFF1A1A2E),
+                                          color: Colors.black,
                                           child: Center(
                                             child: Column(
                                               mainAxisAlignment: MainAxisAlignment.center,
@@ -385,24 +380,15 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                             if (viewModel.isVideo)
                               Center(
                                 child: Container(
-                                  padding: const EdgeInsets.all(10),
+                                  padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                                    ),
+                                    color: Colors.grey[900],
                                     shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Color(0xFF667EEA).withOpacity(0.5),
-                                        blurRadius: 20,
-                                        spreadRadius: 2,
-                                      ),
-                                    ],
                                   ),
                                   child: const Icon(
                                     Icons.play_arrow_rounded,
                                     color: Colors.white,
-                                    size: 30,
+                                    size: 40,
                                   ),
                                 ),
                               ),
@@ -473,29 +459,21 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                           ],
                         )
                       : _buildEmptyPreview(),
+                  ),
                 ),
                 
                 // Gallery grid section
                 Flexible(
                   child: Container(
-                    color: Color(0xFF0F0F1E),
+                    color: Colors.black,
                     child: _isLoadingMedia
                         ? Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                                    ),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    strokeWidth: 3,
-                                  ),
+                                CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  strokeWidth: 3,
                                 ),
                                 const SizedBox(height: 20),
                                 Text(
@@ -526,11 +504,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                       onTap: () => _showCameraOptions(context, viewModel),
                                       child: Container(
                                         decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          ),
+                                          color: Colors.grey[800],
                                         ),
                                         child: Column(
                                           mainAxisAlignment: MainAxisAlignment.center,
@@ -566,7 +540,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                     builder: (context, snapshot) {
                                       if (!snapshot.hasData) {
                                         return Container(
-                                          color: Color(0xFF1A1A2E),
+                                          color: Colors.grey[900],
                                           child: Center(
                                             child: CircularProgressIndicator(
                                               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -588,7 +562,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                       decoration: BoxDecoration(
                                         border: isSelected
                                             ? Border.all(
-                                                color: Color(0xFF667EEA),
+                                                color: Colors.white,
                                                 width: 3,
                                               )
                                             : null,
@@ -607,7 +581,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                                   return snapshot.data!;
                                                 }
                                                 return Container(
-                                                  color: Color(0xFF1A1A2E),
+                                                  color: Colors.grey[900],
                                                   child: Center(
                                                     child: CircularProgressIndicator(
                                                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -696,7 +670,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                           if (isSelected)
                                             Container(
                                               decoration: BoxDecoration(
-                                                color: Color(0xFF667EEA).withOpacity(0.1),
+                                                color: Colors.white.withOpacity(0.2),
                                                 borderRadius: BorderRadius.circular(5),
                                               ),
                                             ),
@@ -729,7 +703,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                  colors: [Colors.grey[800]!, Colors.grey[800]!],
                 ),
                 shape: BoxShape.circle,
               ),
@@ -765,9 +739,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
   Widget _buildErrorPlaceholder(IconData icon) {
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
-        ),
+        color: Colors.grey[900],
       ),
       child: Center(
         child: Icon(
@@ -809,7 +781,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                     icon: Icons.photo_library_rounded,
                     label: 'Gallery',
                     gradient: LinearGradient(
-                      colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                      colors: [Colors.grey[800]!, Colors.grey[800]!],
                     ),
                     onTap: () async {
                       setState(() => _isLoadingMedia = true);
@@ -825,7 +797,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                     icon: Icons.camera_alt_rounded,
                     label: 'Camera',
                     gradient: LinearGradient(
-                      colors: [Color(0xFFF093FB), Color(0xFFF5576C)],
+                      colors: [Colors.grey[800]!, Colors.grey[800]!],
                     ),
                     onTap: () async {
                       setState(() => _isLoadingMedia = true);
@@ -841,7 +813,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                     icon: Icons.videocam_rounded,
                     label: 'Video',
                     gradient: LinearGradient(
-                      colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
+                      colors: [Colors.grey[800]!, Colors.grey[800]!],
                     ),
                     onTap: () async {
                       setState(() => _isLoadingMedia = true);
@@ -883,7 +855,7 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
     return Container(
       width: double.infinity,
       height: double.infinity,
-      color: Color(0xFF1A1A2E),
+      color: Colors.black,
       child: Icon(
         asset.type == AssetType.video ? Icons.videocam : Icons.image,
         color: Colors.white.withOpacity(0.3),

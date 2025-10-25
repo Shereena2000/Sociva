@@ -91,138 +91,112 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               children: [
                 // Swipeable Media Gallery
                 if (viewModel.selectedMediaList.isNotEmpty)
-                  Container(
-                    width: double.infinity,
-                    height: 380,
-                    child: Stack(
-                      children: [
-                        // PageView for swiping
-                        PageView.builder(
-                          controller: _pageController,
-                          onPageChanged: (index) {
-                            setState(() {
-                              _currentIndex = index;
-                            });
-                          },
-                          itemCount: viewModel.selectedMediaList.length,
-                          itemBuilder: (context, index) {
-                            final mediaFile = viewModel.selectedMediaList[index];
-                            final isVideo = _isVideoFile(mediaFile);
-                            
-                            return Container(
-                              width: double.infinity,
-                              height: double.infinity,
-                              child: Stack(
-                                children: [
-                                  // Media content
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: isVideo
-                                        ? Container(
-                                            color: Colors.black,
-                                            child: Stack(
-                                              children: [
-                                                // Try to show video thumbnail
-                                                Image.file(
-                                                  mediaFile,
-                                                  fit: BoxFit.cover,
-                                                  width: double.infinity,
-                                                  height: double.infinity,
-                                                  errorBuilder: (context, error, stackTrace) {
-                                                    return Container(
-                                                      color: Colors.black,
-                                                      child: Center(
-                                                        child: Icon(
-                                                          Icons.videocam_rounded,
-                                                          color: Colors.white.withOpacity(0.3),
-                                                          size: 80,
-                                                        ),
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                                // Video play overlay
-                                                Center(
-                                                  child: Container(
-                                                    padding: const EdgeInsets.all(20),
+                  AspectRatio(
+                    aspectRatio: 1, // Square aspect ratio
+                    child: Container(
+                      color: Colors.black,
+                      child: Stack(
+                        children: [
+                          // PageView for swiping
+                          PageView.builder(
+                            controller: _pageController,
+                            onPageChanged: (index) {
+                              setState(() {
+                                _currentIndex = index;
+                              });
+                            },
+                            itemCount: viewModel.selectedMediaList.length,
+                            itemBuilder: (context, index) {
+                              final mediaFile = viewModel.selectedMediaList[index];
+                              final isVideo = _isVideoFile(mediaFile);
+                              
+                              return Container(
+                                color: Colors.black,
+                                child: Stack(
+                                  children: [
+                                    // Media content
+                                    Center(
+                                      child: isVideo
+                                          ? Container(
+                                              color: Colors.black,
+                                              child: Stack(
+                                                alignment: Alignment.center,
+                                                children: [
+                                                  // Video icon background
+                                                  Icon(
+                                                    Icons.videocam_rounded,
+                                                    color: Colors.grey[800],
+                                                    size: 80,
+                                                  ),
+                                                  // Video play overlay
+                                                  Container(
+                                                    padding: const EdgeInsets.all(16),
                                                     decoration: BoxDecoration(
-                                                      gradient: LinearGradient(
-                                                        colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                                                      ),
+                                                      color: Colors.grey[900],
                                                       shape: BoxShape.circle,
-                                                      boxShadow: [
-                                                        BoxShadow(
-                                                          color: Color(0xFF667EEA).withOpacity(0.5),
-                                                          blurRadius: 20,
-                                                          spreadRadius: 2,
-                                                        ),
-                                                      ],
                                                     ),
                                                     child: const Icon(
                                                       Icons.play_arrow_rounded,
                                                       color: Colors.white,
-                                                      size: 50,
+                                                      size: 40,
                                                     ),
                                                   ),
-                                                ),
-                                              ],
-                                            ),
-                                          )
-                                        : Image.file(
-                                            mediaFile,
-                                            fit: BoxFit.cover,
-                                            width: double.infinity,
-                                            height: double.infinity,
-                                            errorBuilder: (context, error, stackTrace) {
-                                              return Container(
-                                                color: Colors.grey[900],
-                                                child: Center(
-                                                  child: Icon(
-                                                    Icons.broken_image_rounded,
-                                                    color: Colors.white.withOpacity(0.3),
-                                                    size: 80,
+                                                ],
+                                              ),
+                                            )
+                                          : Image.file(
+                                              mediaFile,
+                                              fit: BoxFit.contain,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                return Container(
+                                                  color: Colors.black,
+                                                  child: Center(
+                                                    child: Icon(
+                                                      Icons.broken_image_rounded,
+                                                      color: Colors.grey[700],
+                                                      size: 60,
+                                                    ),
                                                   ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                  ),
-                                  // Media type indicator
-                                  Positioned(
-                                    top: 12,
-                                    right: 12,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.7),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            isVideo ? Icons.videocam_rounded : Icons.image_rounded,
-                                            color: Colors.white,
-                                            size: 14,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            isVideo ? 'Video' : 'Image',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
+                                                );
+                                              },
                                             ),
-                                          ),
-                                        ],
+                                    ),
+                                    // Media type indicator
+                                    Positioned(
+                                      top: 12,
+                                      right: 12,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.7),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              isVideo ? Icons.videocam_rounded : Icons.image_rounded,
+                                              color: Colors.white,
+                                              size: 14,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              isVideo ? 'Video' : 'Image',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                         // Page indicators
                         if (viewModel.selectedMediaList.length > 1)
                           Positioned(
@@ -268,40 +242,79 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               ),
                             ),
                           ),
-                      ],
+                        ],
+                      ),
                     ),
                   )
                 else if (viewModel.selectedMedia != null)
-                  Container(
-                    width: double.infinity,
-                    height: 380,
-                    color: Colors.grey[900],
-                    child: Stack(
-                      children: [
-                        viewModel.isVideo
-                            ? Container(
-                                color: Colors.black,
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.videocam,
-                                    color: Colors.white,
-                                    size: 60,
+                  AspectRatio(
+                    aspectRatio: 1, // Square aspect ratio
+                    child: Container(
+                      color: Colors.black,
+                      child: Center(
+                        child: viewModel.isVideo
+                            ? Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.videocam_rounded,
+                                    color: Colors.grey[800],
+                                    size: 80,
                                   ),
-                                ),
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[900],
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.play_arrow_rounded,
+                                      color: Colors.white,
+                                      size: 40,
+                                    ),
+                                  ),
+                                ],
                               )
                             : Image.file(
                                 viewModel.selectedMedia!,
-                                fit: BoxFit.cover,
-                                width: double.infinity,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Icon(
+                                    Icons.broken_image_rounded,
+                                    color: Colors.grey[700],
+                                    size: 60,
+                                  );
+                                },
                               ),
-                      ],
+                      ),
                     ),
                   )
                 else
-                  Container(
-                    width: double.infinity,
-                    height: 300,
-                    color: Colors.grey[900],
+                  AspectRatio(
+                    aspectRatio: 1,
+                    child: Container(
+                      color: Colors.black,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.add_photo_alternate_outlined,
+                              color: Colors.grey[700],
+                              size: 64,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No media selected',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 const SizedBox(height: 16),
                 // Caption Input
@@ -354,12 +367,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                                 decoration: BoxDecoration(
                                   color: viewModel.postType == 'post'
-                                      ? Colors.blue
-                                      : Colors.grey[800],
+                                      ? Colors.grey[800]
+                                      : Colors.grey[900],
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: viewModel.postType == 'post'
-                                        ? Colors.blue
+                                        ? Colors.white
                                         : Colors.grey[700]!,
                                     width: 2,
                                   ),
@@ -396,12 +409,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                                 decoration: BoxDecoration(
                                   color: viewModel.postType == 'feed'
-                                      ? Colors.blue
-                                      : Colors.grey[800],
+                                      ? Colors.grey[800]
+                                      : Colors.grey[900],
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: viewModel.postType == 'feed'
-                                        ? Colors.blue
+                                        ? Colors.white
                                         : Colors.grey[700]!,
                                     width: 2,
                                   ),
@@ -453,7 +466,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
+                                      Colors.black,
                                     ),
                                   ),
                                 )
@@ -462,9 +475,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             viewModel.isUploading ? 'Uploading...' : 'Post',
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                         ),
                       ),

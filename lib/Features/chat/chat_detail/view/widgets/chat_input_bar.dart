@@ -21,34 +21,44 @@ class ChatInputBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end, // Align items to bottom
         children: [
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: PColors.darkGray,
-                borderRadius: BorderRadius.circular(25),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 120, // Maximum height (about 5 lines)
               ),
-              child: TextField(
-                controller: controller,
-                onChanged: onTextChanged,
-                onSubmitted: (value) {
-                  if (onSendTap != null && value.trim().isNotEmpty) {
-                    onSendTap!();
-                  }
-                },
-                style: TextStyle(color: PColors.white),
-                decoration: InputDecoration(
-                  hintText: "Your message",
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  hintStyle: TextStyle(color: Colors.grey[600]),
-                  suffixIcon: Icon(
-                    Icons.camera_alt_outlined,
-                    color: PColors.white,
-                    size: 24,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: PColors.darkGray,
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: TextField(
+                  controller: controller,
+                  onChanged: onTextChanged,
+                  onSubmitted: (value) {
+                    if (onSendTap != null && value.trim().isNotEmpty) {
+                      onSendTap!();
+                    }
+                  },
+                  style: TextStyle(color: PColors.white),
+                  maxLines: null, // Allow unlimited lines
+                  minLines: 1, // Start with 1 line
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: TextInputAction.newline, // Allow new lines
+                  decoration: InputDecoration(
+                    hintText: "Your message",
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    hintStyle: TextStyle(color: Colors.grey[600]),
+                    suffixIcon: Icon(
+                      Icons.camera_alt_outlined,
+                      color: PColors.white,
+                      size: 24,
+                    ),
                   ),
                 ),
               ),

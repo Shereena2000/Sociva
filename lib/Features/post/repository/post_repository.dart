@@ -391,11 +391,7 @@ class PostRepository {
         .where('parentCommentId', isEqualTo: commentId)
         .snapshots()
         .map((snapshot) {
-      if (snapshot.docs.isNotEmpty) {
-        for (var doc in snapshot.docs) {
-          final data = doc.data();
-        }
-      }
+      // Process replies
       
       // Get replies and sort in code (no Firebase index needed)
       final replies = snapshot.docs
@@ -469,6 +465,37 @@ class PostRepository {
       return snapshot.docs.length;
     } catch (e) {
       return 0;
+    }
+  }
+
+  // ==================== VIEW COUNT FUNCTIONALITY ====================
+
+  /// Increment view count for a post
+  Future<void> incrementViewCount(String postId) async {
+    try {
+      await _firestore.collection('posts').doc(postId).update({
+        'viewCount': FieldValue.increment(1),
+      });
+    } catch (e) {
+      // Silently fail for view count to not interrupt user experience
+      print('Failed to increment view count: $e');
+    }
+  }
+
+  /// Initialize viewCount field for existing posts that don't have it
+  Future<void> initializeViewCountForExistingPosts() async {
+    try {
+      final postsSnapshot = await _firestore.collection('posts').get();
+      
+      for (var doc in postsSnapshot.docs) {
+        final data = doc.data();
+        if (!data.containsKey('viewCount')) {
+          await doc.reference.update({'viewCount': 0});
+          print('Initialized viewCount for post: ${doc.id}');
+        }
+      }
+    } catch (e) {
+      print('Failed to initialize viewCount for existing posts: $e');
     }
   }
 }

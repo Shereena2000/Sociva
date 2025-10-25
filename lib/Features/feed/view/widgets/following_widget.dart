@@ -371,12 +371,12 @@ class FollowingWidget extends StatelessWidget {
               ),
             const SizeBoxV(5),
               
-              // Views (placeholder)
+              // Views count
               const Icon(Icons.bar_chart, color: Colors.white, size: 20),
               const SizedBox(width: 4),
-              const Text(
-                '0',
-                style: TextStyle(color: Colors.white, fontSize: 14),
+              Text(
+                '${postWithUser.post.viewCount}',
+                style: const TextStyle(color: Colors.white, fontSize: 14),
               ),
               
               const Spacer(),

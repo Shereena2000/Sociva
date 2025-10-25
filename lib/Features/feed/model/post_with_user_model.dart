@@ -21,6 +21,7 @@ class PostWithUserModel {
   DateTime get timestamp => post.timestamp;
   String get userId => post.userId;
   String get postId => post.postId;
+  int get viewCount => post.getViewCount;
 
   // Get time ago string (e.g., "2 days ago")
   String get timeAgo {

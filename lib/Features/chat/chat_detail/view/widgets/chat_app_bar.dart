@@ -61,6 +61,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
+        IconButton(onPressed: (){}, icon: Icon(Icons.call, color: Colors.white)),
         // More options menu
         if (onDeleteChat != null)
           PopupMenuButton<String>(

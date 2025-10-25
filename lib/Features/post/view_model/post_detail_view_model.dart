@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:social_media_app/Features/post/model/post_model.dart';
 import 'package:social_media_app/Features/profile/create_profile/model/user_profile_model.dart';
+import 'package:social_media_app/Features/post/repository/post_repository.dart';
 
 class PostDetailViewModel extends ChangeNotifier {
   final String postId;
+  final PostRepository _postRepository = PostRepository();
   
   PostModel? _post;
   String _username = 'Unknown User';
@@ -79,14 +81,14 @@ class PostDetailViewModel extends ChangeNotifier {
       if (userDoc.exists) {
         try {
           final userProfile = UserProfileModel.fromMap(
-            userDoc.data() as Map<String, dynamic>
+            userDoc.data()!
           );
           _username = userProfile.username.isNotEmpty 
               ? userProfile.username 
               : userProfile.name;
           _userImage = userProfile.profilePhotoUrl;
         } catch (e) {
-          final data = userDoc.data() as Map<String, dynamic>?;
+          final data = userDoc.data();
           if (data != null) {
             _username = data['username'] ?? data['name'] ?? 'Unknown User';
             _userImage = data['profilePhotoUrl'] ?? data['photoUrl'] ?? '';
@@ -96,6 +98,9 @@ class PostDetailViewModel extends ChangeNotifier {
 
       _isLoading = false;
       notifyListeners();
+      
+      // Increment view count when post is successfully loaded
+      _incrementViewCount();
       
     } catch (e) {
       debugPrint('❌ Error loading post: $e');
@@ -121,6 +126,17 @@ class PostDetailViewModel extends ChangeNotifier {
            lowerUrl.contains('.avi') ||
            lowerUrl.contains('.mkv') ||
            lowerUrl.contains('video');
+  }
+
+  /// Increment view count for this post
+  Future<void> _incrementViewCount() async {
+    try {
+      await _postRepository.incrementViewCount(postId);
+      debugPrint('👁️ View count incremented for post: $postId');
+    } catch (e) {
+      debugPrint('❌ Failed to increment view count: $e');
+      // Don't throw error as view count is not critical
+    }
   }
 
   @override

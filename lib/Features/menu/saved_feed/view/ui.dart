@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:social_media_app/Features/feed/view_model/feed_view_model.dart';
 import 'package:social_media_app/Features/menu/saved_feed/view_model/saved_feed_view_model.dart';
 import 'package:social_media_app/Features/post/view/post_detail_screen.dart';
 import 'package:social_media_app/Settings/common/widgets/custom_app_bar.dart';
+
+import '../../../../Settings/utils/p_colors.dart';
 
 class SavedFeedScreen extends StatelessWidget {
   const SavedFeedScreen({super.key});
@@ -83,7 +86,7 @@ class SavedFeedScreen extends StatelessWidget {
                   crossAxisCount: 3,
                   crossAxisSpacing: 4,
                   mainAxisSpacing: 4,
-                  childAspectRatio: 1,
+                  childAspectRatio: 0.5,
                 ),
                 itemCount: viewModel.savedFeeds.length,
                 itemBuilder: (context, index) {
@@ -112,7 +115,7 @@ class SavedFeedScreen extends StatelessWidget {
                     onLongPress: () {
                       _showUnsaveDialog(context, viewModel, feed.postId);
                     },
-                    child: _buildFeedThumbnail(feed, index),
+                    child: _buildFeedThumbnail(feed, index,context),
                   );
                 },
               ),
@@ -123,7 +126,12 @@ class SavedFeedScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFeedThumbnail(dynamic feed, int index) {
+  Widget _buildFeedThumbnail(dynamic feed, int index,BuildContext context) {
+    final FeedViewModel feedViewModel = Provider.of<FeedViewModel>(context, listen: false);
+    
+    // Debug: Print view count information
+    debugPrint('🔍 Feed ${feed.postId} view count: ${feed.viewCount}');
+    
     // Use first media URL from mediaUrls array if available
     String thumbnailUrl = '';
     if (feed.mediaUrls != null && feed.mediaUrls.isNotEmpty) {
@@ -218,6 +226,62 @@ class SavedFeedScreen extends StatelessWidget {
                 ),
               ),
             ),
+
+          // View count indicator
+          Positioned(
+            bottom: 8,
+            left: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.visibility,
+                    color: Colors.white,
+                    size: 12,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${feed.viewCount ?? 0}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+             Positioned(
+              bottom: 0,
+              right: 0,
+              child:   // Save button with saved state
+                FutureBuilder<bool>(
+                future: feedViewModel.isFeedSaved(feed.postId),
+                builder: (context, snapshot) {
+                  final isSaved = snapshot.data ?? false;
+                  return IconButton(
+                    icon: Icon(
+                      isSaved ? Icons.bookmark : Icons.bookmark_border,
+                      color:PColors.white ,
+                      size: 20,
+                    ),
+                    onPressed: () async {
+                      await feedViewModel.toggleSave(feed.postId);
+                      // Trigger rebuild to update icon
+                      (context as Element).markNeedsBuild();
+                    },
+                  );
+                },
+              ),
+                )
         ],
       ),
     );

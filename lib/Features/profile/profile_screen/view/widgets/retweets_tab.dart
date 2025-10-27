@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view_model/profile_view_model.dart';
+import 'package:social_media_app/Features/post/model/post_model.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
+import 'multi_media_carousel_provider.dart';
 
 class RetweetsTab extends StatelessWidget {
   const RetweetsTab({super.key});
@@ -107,31 +109,9 @@ class RetweetsTab extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Stack(
-                  children: [
-                    // Main content
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: _buildRetweetPostItem(post),
-                    ),
-                    // Retweet indicator badge
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.9),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.repeat,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ],
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: _buildRetweetPostItem(post),
                 ),
               ),
             );
@@ -141,116 +121,161 @@ class RetweetsTab extends StatelessWidget {
     );
   }
 
-  Widget _buildRetweetPostItem(dynamic post) {
-    // If post has media, show the image
-    if (post.mediaUrl.isNotEmpty) {
-      return Stack(
-        children: [
-                 // Media (Image or Video)
-                 post.mediaType == 'video'
-                     ? VideoPlayerWidget(
-                         videoUrl: post.mediaUrl,
-                         height: 200,
-                         width: double.infinity,
-                         autoPlay: false,
-                         showControls: true,
-                       )
-                     : Image.network(
-                         post.mediaUrl,
-                         fit: BoxFit.cover,
-                         loadingBuilder: (context, child, loadingProgress) {
-                           if (loadingProgress == null) return child;
-                           return Container(
-                             height: 200,
-                             color: Colors.grey[800],
-                             child: Center(
-                               child: CircularProgressIndicator(
-                                 value: loadingProgress.expectedTotalBytes != null
-                                     ? loadingProgress.cumulativeBytesLoaded /
-                                         loadingProgress.expectedTotalBytes!
-                                     : null,
-                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                               ),
-                             ),
-                           );
-                         },
-                         errorBuilder: (context, error, stackTrace) {
-                           return Container(
-                             height: 200,
-                             color: Colors.grey[800],
-                             child: const Icon(Icons.error, color: Colors.red),
-                           );
-                         },
-                       ),
-          
-          // Video play button overlay if video
-          if (post.mediaType == 'video')
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.3),
-                    ],
-                  ),
-                ),
-                child: Center(
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 2,
+  Widget _buildRetweetPostItem(PostModel post) {
+    // Determine which media to show
+    String? mediaUrl;
+    String? mediaType;
+    
+    if (post.mediaUrl.isNotEmpty && post.mediaUrl != '') {
+      // Regular post with media
+      mediaUrl = post.mediaUrl;
+      mediaType = post.mediaType;
+    } else if (post.isRetweetedComment && post.retweetedCommentData != null) {
+      // Retweeted comment with media
+      final commentData = post.retweetedCommentData!;
+      if (commentData['mediaUrl']?.isNotEmpty == true && commentData['mediaUrl'] != '') {
+        mediaUrl = commentData['mediaUrl'];
+        mediaType = commentData['mediaType'] ?? 'image';
+      }
+    } else if (post.isQuotedRetweet && post.quotedPostData != null) {
+      // Quoted post with media
+      final quotedData = post.quotedPostData!;
+      if (quotedData['mediaUrl']?.isNotEmpty == true && quotedData['mediaUrl'] != '') {
+        mediaUrl = quotedData['mediaUrl'];
+        mediaType = quotedData['mediaType'] ?? 'image';
+      }
+    }
+    
+    // Only show if we have media
+    if (mediaUrl != null && mediaUrl.isNotEmpty) {
+      // Get media URLs - use mediaUrls if available, otherwise fallback to single mediaUrl
+      List<String> mediaUrls = post.mediaUrls.isNotEmpty ? post.mediaUrls : [mediaUrl];
+      mediaUrls = mediaUrls.where((url) => url.isNotEmpty).toList();
+      
+      if (mediaUrls.length == 1) {
+        return _buildSingleMedia(mediaUrls[0], mediaType ?? 'image');
+      } else {
+        return _buildMultipleMedia(mediaUrls, mediaType ?? 'image');
+      }
+    } else {
+      // No media - return empty container (this should not happen due to filtering)
+      return const SizedBox.shrink();
+    }
+  }
+  
+  Widget _buildSingleMedia(String mediaUrl, String mediaType) {
+    if (mediaType == 'video') {
+      return VideoPlayerWidget(
+        videoUrl: mediaUrl,
+        height: 200,
+        width: double.infinity,
+        autoPlay: false,
+        showControls: true,
+      );
+    } else {
+      return Image.network(
+        mediaUrl,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            height: 200,
+            color: Colors.grey[800],
+            child: Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            height: 200,
+            color: Colors.grey[800],
+            child: const Icon(Icons.error, color: Colors.red),
+          );
+        },
+      );
+    }
+  }
+  
+  Widget _buildMultipleMedia(List<String> mediaUrls, String mediaType) {
+    final carouselKey = mediaUrls.join(',');
+    
+    return Consumer<MultiMediaCarouselProvider>(
+      builder: (context, carouselProvider, child) {
+        final currentIndex = carouselProvider.getCurrentPage(carouselKey);
+        
+        return Stack(
+          children: [
+            // PageView for multiple media
+            SizedBox(
+              height: 200,
+              child: PageView.builder(
+                onPageChanged: (index) {
+                  carouselProvider.setCurrentPage(carouselKey, index);
+                },
+                itemCount: mediaUrls.length,
+                itemBuilder: (context, index) {
+                  return _buildSingleMedia(mediaUrls[index], mediaType);
+                },
+              ),
+            ),
+            
+            // Page indicators
+            if (mediaUrls.length > 1)
+              Positioned(
+                bottom: 8,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    mediaUrls.length,
+                    (index) => Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: currentIndex == index 
+                            ? Colors.white 
+                            : Colors.white.withOpacity(0.3),
                       ),
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 28,
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
-      );
-    } else {
-      // If no media, show caption with gradient background
-      return Container(
-        height: 200,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.green[900]!,
-              Colors.teal[900]!,
-            ],
-          ),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Center(
-          child: Text(
-            post.caption.isNotEmpty ? post.caption : 'Retweeted post',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 1.4,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 6,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      );
-    }
+            
+            // Media counter
+            if (mediaUrls.length > 1)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${currentIndex + 1}/${mediaUrls.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
   }
 }
 

@@ -34,6 +34,17 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   // Track current page for each post's carousel
   final Map<String, int> _currentPageMap = {};
+  // Track PageControllers for each post's carousel
+  final Map<String, PageController> _pageControllers = {};
+
+  @override
+  void dispose() {
+    // Dispose all PageControllers
+    for (var controller in _pageControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1042,32 +1053,36 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildMediaCarousel(PostModel post) {
-    final PageController pageController = PageController();
     final currentPage = _currentPageMap[post.postId] ?? 0;
     const double height = 400.0;
 
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return Container(
-          height: height,
-          width: double.infinity,
-          decoration: BoxDecoration(
+    // Get or create PageController for this post
+    if (!_pageControllers.containsKey(post.postId)) {
+      _pageControllers[post.postId] = PageController(initialPage: currentPage);
+    }
+    
+    final pageController = _pageControllers[post.postId]!;
+
+    return Container(
+      height: height,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.grey[300],
+      ),
+      child: Stack(
+        children: [
+          // PageView for scrollable images
+          ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            color: Colors.grey[300],
-          ),
-          child: Stack(
-            children: [
-              // PageView for scrollable images
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: PageView.builder(
-                  controller: pageController,
-                  itemCount: post.mediaUrls.length,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentPageMap[post.postId] = index;
-                    });
-                  },
+            child: PageView.builder(
+              controller: pageController,
+              itemCount: post.mediaUrls.length,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentPageMap[post.postId] = index;
+                });
+              },
                   itemBuilder: (context, index) {
                     final mediaUrl = post.mediaUrls[index];
                     final isVideo = _isVideoUrl(mediaUrl);
@@ -1138,8 +1153,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         );
-      },
-    );
   }
 
   // Helper method to check if URL is a video

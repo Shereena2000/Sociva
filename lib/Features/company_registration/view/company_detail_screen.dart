@@ -148,14 +148,7 @@ class CompanyDetailScreen extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            PColors.blueColor.withOpacity(0.2),
-            PColors.purpleColor.withOpacity(0.2),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+       
       ),
       child: Column(
         children: [

@@ -183,7 +183,29 @@ class ProfileViewModel extends ChangeNotifier {
     final targetUserId = _viewingUserId ?? currentUser.uid;
     
     return _postRepository.getUserPosts(targetUserId).map((posts) {
-      return posts.where((post) => post.postType == 'feed').toList();
+      // Filter to only feed posts with media (images or videos)
+      return posts.where((post) {
+        if (post.postType != 'feed') return false;
+        
+        // Check if post has media
+        bool hasMedia = post.mediaUrl.isNotEmpty && post.mediaUrl != '';
+        
+        // Check if retweeted comment has media
+        if (!hasMedia && post.isRetweetedComment && post.retweetedCommentData != null) {
+          final commentData = post.retweetedCommentData!;
+          hasMedia = commentData['mediaUrl']?.isNotEmpty == true || 
+                    commentData['mediaUrls']?.isNotEmpty == true;
+        }
+        
+        // Check if quoted post has media
+        if (!hasMedia && post.isQuotedRetweet && post.quotedPostData != null) {
+          final quotedData = post.quotedPostData!;
+          hasMedia = quotedData['mediaUrl']?.isNotEmpty == true || 
+                    quotedData['mediaUrls']?.isNotEmpty == true;
+        }
+        
+        return hasMedia;
+      }).toList();
     });
   }
 
@@ -194,7 +216,29 @@ class ProfileViewModel extends ChangeNotifier {
     
     final targetUserId = _viewingUserId ?? currentUser.uid;
     
-    return _postRepository.getUserRetweetedPosts(targetUserId);
+    return _postRepository.getUserRetweetedPosts(targetUserId).map((posts) {
+      // Filter to only retweeted posts with media (images or videos)
+      return posts.where((post) {
+        // Check if post has media
+        bool hasMedia = post.mediaUrl.isNotEmpty && post.mediaUrl != '';
+        
+        // Check if retweeted comment has media
+        if (!hasMedia && post.isRetweetedComment && post.retweetedCommentData != null) {
+          final commentData = post.retweetedCommentData!;
+          hasMedia = commentData['mediaUrl']?.isNotEmpty == true || 
+                    commentData['mediaUrls']?.isNotEmpty == true;
+        }
+        
+        // Check if quoted post has media
+        if (!hasMedia && post.isQuotedRetweet && post.quotedPostData != null) {
+          final quotedData = post.quotedPostData!;
+          hasMedia = quotedData['mediaUrl']?.isNotEmpty == true || 
+                    quotedData['mediaUrls']?.isNotEmpty == true;
+        }
+        
+        return hasMedia;
+      }).toList();
+    });
   }
 
   // Fetch user's statuses

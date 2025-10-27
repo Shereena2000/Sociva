@@ -41,7 +41,7 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
   String? _replyToUserName;
   
   // Comment sorting
-  CommentSortType _sortType = CommentSortType.mostRelevant;
+  CommentSortType _sortType = CommentSortType.newest;
   
   @override
   void initState() {
@@ -192,10 +192,6 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
             },
             itemBuilder: (context) => [
               const PopupMenuItem(
-                value: CommentSortType.mostRelevant,
-                child: Text('Most relevant'),
-              ),
-              const PopupMenuItem(
                 value: CommentSortType.newest,
                 child: Text('Newest'),
               ),
@@ -235,7 +231,7 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
         body: Column(
           children: [
             // Comments List
-            Expanded(
+            Flexible(
               child: _buildCommentsList(currentUserId),
             ),
             
@@ -460,7 +456,7 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
             ],
           ),
           
-          const Divider(color: Colors.grey, height: 32),
+          const Divider(color: Colors.grey, height: 16),
         ],
       ),
     );
@@ -468,14 +464,14 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
 
   Widget _buildCommentsHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
         children: [
           Text(
             'Comments',
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -494,14 +490,14 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
 
   String _getSortTypeText(CommentSortType sortType) {
     switch (sortType) {
-      case CommentSortType.mostRelevant:
-        return 'Most relevant';
       case CommentSortType.newest:
         return 'Newest';
       case CommentSortType.oldest:
         return 'Oldest';
       case CommentSortType.mostLiked:
         return 'Most liked';
+      case CommentSortType.mostRelevant:
+        return 'Newest'; // Fallback to newest
     }
   }
 
@@ -546,16 +542,11 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey[700]),
-                const SizedBox(height: 16),
+                Icon(Icons.chat_bubble_outline, size: 48, color: Colors.grey[700]),
+                const SizedBox(height: 12),
                 Text(
                   'No comments yet',
                   style: TextStyle(fontSize: 16, color: Colors.grey[400]),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Be the first to comment!',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
               ],
             ),

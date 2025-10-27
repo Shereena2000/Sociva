@@ -347,11 +347,20 @@ class PostRepository {
         .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['postId'] = doc.id;
-        return PostModel.fromMap(data);
-      }).toList();
+      return snapshot.docs
+          .where((doc) {
+            // Only include posts with actual media URLs (not empty strings)
+            final data = doc.data();
+            return data['mediaUrl'] != null && 
+                   data['mediaUrl'].toString().isNotEmpty &&
+                   data['mediaUrl'] != '';
+          })
+          .map((doc) {
+            final data = doc.data();
+            data['postId'] = doc.id;
+            return PostModel.fromMap(data);
+          })
+          .toList();
     }).handleError((error) {
       return <PostModel>[];
     });

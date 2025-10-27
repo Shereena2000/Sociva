@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view_model/profile_view_model.dart';
+import 'package:social_media_app/Features/post/model/post_model.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
+import 'multi_media_carousel_provider.dart';
 
 class PhotoTabs extends StatelessWidget {
   const PhotoTabs({super.key});
@@ -116,13 +118,34 @@ class PhotoTabs extends StatelessWidget {
   }
 
   // Helper method to build media item (image or video)
-  Widget _buildMediaItem(dynamic post) {
-    // Check if the first media URL is a video
-    final isVideo = _isVideoUrl(post.mediaUrl);
+  Widget _buildMediaItem(PostModel post) {
+    // Get media URLs - use mediaUrls if available, otherwise fallback to single mediaUrl
+    List<String> mediaUrls = post.mediaUrls.isNotEmpty ? post.mediaUrls : [post.mediaUrl];
+    mediaUrls = mediaUrls.where((url) => url.isNotEmpty).toList();
+    
+    if (mediaUrls.isEmpty) {
+      return Container(
+        height: 200,
+        color: Colors.grey[800],
+        child: const Icon(Icons.error, color: Colors.red),
+      );
+    }
+    
+    // If only one media item, show it directly
+    if (mediaUrls.length == 1) {
+      return _buildSingleMedia(mediaUrls[0]);
+    }
+    
+    // Multiple media items - show with page indicators
+    return _buildMultipleMedia(mediaUrls);
+  }
+  
+  Widget _buildSingleMedia(String mediaUrl) {
+    final isVideo = _isVideoUrl(mediaUrl);
     
     if (isVideo) {
       return VideoPlayerWidget(
-        videoUrl: post.mediaUrl,
+        videoUrl: mediaUrl,
         height: 200,
         width: double.infinity,
         autoPlay: false,
@@ -130,7 +153,7 @@ class PhotoTabs extends StatelessWidget {
       );
     } else {
       return Image.network(
-        post.mediaUrl,
+        mediaUrl,
         fit: BoxFit.cover,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
@@ -157,6 +180,82 @@ class PhotoTabs extends StatelessWidget {
         },
       );
     }
+  }
+  
+  Widget _buildMultipleMedia(List<String> mediaUrls) {
+    // Use unique key for each carousel
+    final carouselKey = mediaUrls.join(',');
+    
+    return Consumer<MultiMediaCarouselProvider>(
+      builder: (context, carouselProvider, child) {
+        final currentIndex = carouselProvider.getCurrentPage(carouselKey);
+        
+        return Stack(
+          children: [
+            // PageView for multiple media
+            SizedBox(
+              height: 200,
+              child: PageView.builder(
+                onPageChanged: (index) {
+                  carouselProvider.setCurrentPage(carouselKey, index);
+                },
+                itemCount: mediaUrls.length,
+                itemBuilder: (context, index) {
+                  return _buildSingleMedia(mediaUrls[index]);
+                },
+              ),
+            ),
+            
+            // Page indicators
+            if (mediaUrls.length > 1)
+              Positioned(
+                bottom: 8,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    mediaUrls.length,
+                    (index) => Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: currentIndex == index 
+                            ? Colors.white 
+                            : Colors.white.withOpacity(0.3),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            
+            // Media counter
+            if (mediaUrls.length > 1)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${currentIndex + 1}/${mediaUrls.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
   }
 
   // Helper method to check if URL is a video

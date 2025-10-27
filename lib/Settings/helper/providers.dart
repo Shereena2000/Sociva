@@ -19,6 +19,7 @@ import 'package:social_media_app/Features/jobs/add_job_post/repository/job_repos
 import 'package:social_media_app/Features/company_registration/repository/company_repository.dart';
 import 'package:social_media_app/Features/jobs/service/job_application_service.dart';
 import 'package:social_media_app/Features/menu/saved_job/view_model/saved_job_view_model.dart';
+import 'package:social_media_app/Features/profile/profile_screen/view/widgets/multi_media_carousel_provider.dart';
 import 'package:social_media_app/Features/feed/view_model/twitter_comment_view_model.dart';
 
 List<SingleChildWidget> providers = [
@@ -46,7 +47,6 @@ List<SingleChildWidget> providers = [
   ),
   ChangeNotifierProvider(create: (_) => SavedJobViewModel()),
   ChangeNotifierProvider.value(value: TwitterCommentViewModel.instance),
-
-
+  ChangeNotifierProvider(create: (_) => MultiMediaCarouselProvider()),
 
 ];

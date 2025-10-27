@@ -114,14 +114,29 @@ class FollowingWidget extends StatelessWidget {
     final isRetweetedByCurrentUser = postWithUser.post.isRetweetedBy(currentUserId);
     final isCommentRetweet = postWithUser.post.isCommentRetweet;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
+    return GestureDetector(
+      onTap: () {
+        // Navigate to post detail screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TwitterPostDetailScreenWithProvider(
+              postId: postWithUser.postId,
+              postOwnerName: postWithUser.userName,
+              postOwnerId: postWithUser.userId,
+              postData: postWithUser.post.toMap(),
+            ),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Retweet header (if current user retweeted this OR if this is a retweeted comment)
@@ -470,6 +485,7 @@ class FollowingWidget extends StatelessWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }

@@ -32,6 +32,8 @@ class TwitterPostDetailScreen extends StatefulWidget {
 class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  late PageController _pageController;
+  int _currentPageIndex = 0;
   
   // Reply mode state
   String? _replyToCommentId;
@@ -43,6 +45,7 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     // Load comments when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final commentViewModel = Provider.of<TwitterCommentViewModel>(context, listen: false);
@@ -54,6 +57,7 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
   void dispose() {
     _commentController.dispose();
     _focusNode.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -336,14 +340,91 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
           if (postData['mediaUrls'] != null && (postData['mediaUrls'] as List).isNotEmpty)
             Container(
               margin: const EdgeInsets.only(top: 12),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  postData['mediaUrls'][0],
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: 200,
-                ),
+              height: 300,
+              child: Stack(
+                children: [
+                  // PageView for multiple images
+                  PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPageIndex = index;
+                      });
+                    },
+                    itemCount: (postData['mediaUrls'] as List).length,
+                    itemBuilder: (context, index) {
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          postData['mediaUrls'][index],
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: 300,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              height: 300,
+                              color: Colors.grey[800],
+                              child: const Center(
+                                child: Icon(
+                                  Icons.broken_image,
+                                  color: Colors.white,
+                                  size: 50,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                  
+                  // Page indicators (only show if more than 1 image)
+                  if ((postData['mediaUrls'] as List).length > 1)
+                    Positioned(
+                      bottom: 16,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          (postData['mediaUrls'] as List).length,
+                          (index) => Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: _currentPageIndex == index ? 24 : 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: _currentPageIndex == index 
+                                  ? Colors.white 
+                                  : Colors.white.withOpacity(0.4),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  
+                  // Image counter (only show if more than 1 image)
+                  if ((postData['mediaUrls'] as List).length > 1)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${_currentPageIndex + 1} of ${(postData['mediaUrls'] as List).length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           

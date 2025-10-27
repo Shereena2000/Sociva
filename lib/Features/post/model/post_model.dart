@@ -13,6 +13,8 @@ class PostModel {
   final List<String> retweets; // List of user IDs who retweeted
   final String postType; // 'post' for Instagram-style, 'feed' for Twitter-style
   final int viewCount; // Number of views
+  final String? quotedPostId; // ID of the post being quoted (for quote retweets)
+  final Map<String, dynamic>? quotedPostData; // Cached data of quoted post
 
   PostModel({
     required this.postId,
@@ -27,6 +29,8 @@ class PostModel {
     this.retweets = const [],
     this.postType = 'post', // Default to post
     this.viewCount = 0, // Default to 0 views
+    this.quotedPostId,
+    this.quotedPostData,
   }) : mediaUrls = mediaUrls ?? [mediaUrl]; // If no mediaUrls, use single mediaUrl
 
   // Check if post has multiple media
@@ -54,6 +58,9 @@ class PostModel {
   // Get view count
   int get getViewCount => viewCount;
 
+  // Check if this is a quoted retweet
+  bool get isQuotedRetweet => quotedPostId != null;
+
   Map<String, dynamic> toMap() {
     return {
       'postId': postId,
@@ -68,6 +75,8 @@ class PostModel {
       'retweets': retweets,
       'postType': postType,
       'viewCount': viewCount,
+      'quotedPostId': quotedPostId,
+      'quotedPostData': quotedPostData,
     };
   }
 
@@ -90,6 +99,10 @@ class PostModel {
       retweets: (map['retweets'] as List? ?? []).map((e) => e.toString()).toList(),
       postType: map['postType'] ?? 'post', // Default to post for backward compatibility
       viewCount: map['viewCount'] ?? 0, // Default to 0 for backward compatibility
+      quotedPostId: map['quotedPostId'],
+      quotedPostData: map['quotedPostData'] != null 
+          ? Map<String, dynamic>.from(map['quotedPostData'])
+          : null,
     );
   }
 
@@ -107,6 +120,8 @@ class PostModel {
     List<String>? retweets,
     String? postType,
     int? viewCount,
+    String? quotedPostId,
+    Map<String, dynamic>? quotedPostData,
   }) {
     return PostModel(
       postId: postId ?? this.postId,
@@ -121,6 +136,8 @@ class PostModel {
       retweets: retweets ?? this.retweets,
       postType: postType ?? this.postType,
       viewCount: viewCount ?? this.viewCount,
+      quotedPostId: quotedPostId ?? this.quotedPostId,
+      quotedPostData: quotedPostData ?? this.quotedPostData,
     );
   }
 }

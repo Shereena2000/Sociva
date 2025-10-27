@@ -249,6 +249,7 @@ class ChatDetailScreen extends StatelessWidget {
 'https://i.pinimg.com/736x/9e/83/75/9e837528f01cf3f42119c5aeeed1b336.jpg',              isOnline: viewModel.isOtherUserOnline,
               statusText: viewModel.getStatusText(),
               onDeleteChat: () => _showDeleteConfirmationDialog(context, viewModel),
+              receiverId: otherUserId, // Pass receiver ID for calls
             ),
             body: Column(
               children: [

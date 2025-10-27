@@ -4,10 +4,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:social_media_app/Features/feed/view_model/feed_view_model.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
-import 'package:social_media_app/Features/feed/view/comments_screen.dart';
+import 'package:social_media_app/Features/feed/view/twitter_post_detail_provider.dart';
 import 'package:social_media_app/Features/notifications/service/notification_service.dart';
 import 'package:social_media_app/Features/notifications/service/push_notification_service.dart';
 import 'package:social_media_app/Features/post/view/widgets/share_bottom_sheet.dart';
+import 'package:social_media_app/Features/post/view/widgets/retweet_bottom_sheet.dart';
 import 'package:social_media_app/Features/post/view/post_detail_screen.dart';
 import 'package:social_media_app/Settings/constants/sized_box.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
@@ -117,6 +118,7 @@ class ForYouWidget extends StatelessWidget {
     required dynamic postWithUser,
   }) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final isRetweetedByCurrentUser = postWithUser.post.isRetweetedBy(currentUserId);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -128,6 +130,13 @@ class ForYouWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Retweet header (if current user retweeted this)
+          if (isRetweetedByCurrentUser)
+            _buildRetweetHeader(context, currentUserId),
+          
+          if (isRetweetedByCurrentUser)
+            const SizedBox(height: 12),
+
           // Header with profile info
           Row(
             children: [
@@ -230,6 +239,13 @@ class ForYouWidget extends StatelessWidget {
             ),
 
           if (postWithUser.caption.isNotEmpty) const SizedBox(height: 12),
+
+          // Quoted post preview (if this is a quote retweet)
+          if (postWithUser.post.isQuotedRetweet && postWithUser.post.quotedPostData != null)
+            _buildQuotedPostPreview(postWithUser.post.quotedPostData!),
+
+          if (postWithUser.post.isQuotedRetweet && postWithUser.post.quotedPostData != null)
+            const SizedBox(height: 12),
 
           // Post image/video - Grid if multiple, single if one
           if (postWithUser.mediaUrl.isNotEmpty)
@@ -336,10 +352,22 @@ class ForYouWidget extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => CommentsScreen(
+                      builder: (context) => TwitterPostDetailScreenWithProvider(
                         postId: postWithUser.postId,
                         postOwnerName: postWithUser.username,
                         postOwnerId: postWithUser.userId,
+                        postData: {
+                          'userName': postWithUser.userName,
+                          'username': postWithUser.username,
+                          'userProfilePhoto': postWithUser.userProfilePhoto,
+                          'caption': postWithUser.post.caption,
+                          'timestamp': postWithUser.post.timestamp.toIso8601String(),
+                          'mediaUrls': postWithUser.post.mediaUrls,
+                          'likeCount': postWithUser.post.likeCount,
+                          'retweetCount': postWithUser.post.retweetCount,
+                          'commentCount': postWithUser.post.commentCount,
+                          'isVerified': false, // You can add this to your user model
+                        },
                       ),
                     ),
                   );
@@ -360,19 +388,27 @@ class ForYouWidget extends StatelessWidget {
                       : Colors.white,
                   size: 20,
                 ),
-                onPressed: () async {
-                  final isRetweeted = postWithUser.post.isRetweetedBy(currentUserId);
-                  feedViewModel.toggleRetweet(postWithUser.postId, isRetweeted);
-                  
-                  // Send notification if retweeting (not unretweeting)
-                  if (!isRetweeted) {
-                    await _sendRetweetNotification(
-                      fromUserId: currentUserId,
-                      toUserId: postWithUser.userId,
-                      postId: postWithUser.postId,
-                      postImage: postWithUser.mediaUrl,
-                    );
-                  }
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: Colors.transparent,
+                    isScrollControlled: true,
+                    builder: (context) => RetweetBottomSheet(
+                      postWithUser: postWithUser,
+                      onRetweetSuccess: () async {
+                        // Send notification when retweeting
+                        final isRetweeted = postWithUser.post.isRetweetedBy(currentUserId);
+                        if (!isRetweeted) {
+                          await _sendRetweetNotification(
+                            fromUserId: currentUserId,
+                            toUserId: postWithUser.userId,
+                            postId: postWithUser.postId,
+                            postImage: postWithUser.mediaUrl,
+                          );
+                        }
+                      },
+                    ),
+                  );
                 },
               ),
               Text(
@@ -740,5 +776,124 @@ class ForYouWidget extends StatelessWidget {
       }
     } catch (e) {
     }
+  }
+
+  // Build retweet header
+  Widget _buildRetweetHeader(BuildContext context, String currentUserId) {
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance.collection('users').doc(currentUserId).get(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+
+        final userData = snapshot.data?.data() as Map<String, dynamic>?;
+        final username = userData?['username'] ?? userData?['name'] ?? 'You';
+
+        return Row(
+          children: [
+            const Icon(
+              Icons.repeat,
+              color: Colors.grey,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$username retweeted',
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Build quoted post preview
+  Widget _buildQuotedPostPreview(Map<String, dynamic> quotedPostData) {
+    final quotedMediaUrl = quotedPostData['mediaUrl'] ?? '';
+    final quotedUserId = quotedPostData['userId'] ?? '';
+    final quotedPostId = quotedPostData['postId'] ?? '';
+
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance.collection('users').doc(quotedUserId).get(),
+      builder: (context, snapshot) {
+        final userData = snapshot.data?.data() as Map<String, dynamic>?;
+        final quotedUsername = userData?['username'] ?? userData?['name'] ?? 'Unknown';
+        final quotedUserImage = userData?['profilePhotoUrl'] ?? 
+            'https://i.pinimg.com/736x/9e/83/75/9e837528f01cf3f42119c5aeeed1b336.jpg';
+
+        return GestureDetector(
+          onTap: () {
+            // Navigate to the original post detail
+            if (quotedPostId.isNotEmpty) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PostDetailScreen(
+                    postId: quotedPostId,
+                  ),
+                ),
+              );
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey[700]!, width: 1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Quoted user info
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundImage: NetworkImage(quotedUserImage),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    quotedUsername,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              // Quoted post media preview (image only, no caption)
+              if (quotedMediaUrl.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    quotedMediaUrl,
+                    height: 120,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 120,
+                        color: Colors.grey[800],
+                        child: const Center(
+                          child: Icon(Icons.image, color: Colors.grey),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+          ),
+        );
+      },
+    );
   }
 }

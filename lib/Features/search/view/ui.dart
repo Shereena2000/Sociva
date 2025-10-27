@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/search/view_model/search_view_model.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
 import 'package:social_media_app/Settings/common/widgets/custom_elevated_button.dart';
+import 'package:social_media_app/Settings/constants/sized_box.dart';
 import 'package:social_media_app/Settings/utils/p_colors.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -304,7 +305,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                   
                   const SizedBox(height: 4),
-                  
+ 
                   // // Follower count
                   // Text(
                   //   '${user.followersCount} followers',

@@ -264,6 +264,61 @@ class PostRepository {
     }
   }
 
+  /// Create a quoted retweet (retweet with comment)
+  Future<void> createQuotedRetweet({
+    required String quotedPostId,
+    required Map<String, dynamic> quotedPostData,
+    required String comment,
+  }) async {
+    try {
+      print('🔍 createQuotedRetweet: Starting...');
+      
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) {
+        print('❌ createQuotedRetweet: User not authenticated');
+        throw Exception('User not authenticated');
+      }
+      print('✅ createQuotedRetweet: User ID: $userId');
+
+      // Generate new post ID
+      final postId = const Uuid().v4();
+      print('✅ createQuotedRetweet: Generated post ID: $postId');
+
+      // Create new post with quoted post reference
+      final quotedPost = {
+        'postId': postId,
+        'mediaUrl': '', // No media for quote tweets (just the comment)
+        'mediaUrls': [],
+        'mediaType': 'text',
+        'caption': comment,
+        'timestamp': DateTime.now().toIso8601String(),
+        'userId': userId,
+        'likes': [],
+        'commentCount': 0,
+        'retweets': [],
+        'postType': 'feed', // Quote retweets are feed posts
+        'viewCount': 0,
+        'quotedPostId': quotedPostId,
+        'quotedPostData': quotedPostData,
+      };
+
+      print('📤 createQuotedRetweet: Saving to Firestore...');
+      // Save to Firestore
+      await _firestore.collection('posts').doc(postId).set(quotedPost);
+      print('✅ createQuotedRetweet: Saved to Firestore successfully');
+
+      print('🔁 createQuotedRetweet: Adding to retweets array...');
+      // Also add to retweets array of original post
+      await retweetPost(quotedPostId);
+      print('✅ createQuotedRetweet: Added to retweets array');
+
+      print('🎉 createQuotedRetweet: Complete!');
+    } catch (e) {
+      print('❌ createQuotedRetweet: Error - $e');
+      throw Exception('Failed to create quoted retweet: $e');
+    }
+  }
+
   /// Get posts retweeted by a specific user
   Stream<List<PostModel>> getUserRetweetedPosts(String userId) {
     return _firestore

@@ -60,13 +60,16 @@ class PTextStyles {
     fontSize: 12,
     color: PColors.white,
   );
+
   // static TextStyle get displaySmall =>
   //     getTextComfortaa(fontSize: 18, fontWeight: FontWeight.bold);
+  
   // static TextStyle get labelMedium => getTextStyle(
   //   fontSize: 16,
   //   fontWeight: FontWeight.w500,
   //   color: PColors.black,
   // );
+
   // static TextStyle get labelSmall =>
   //     getTextComfortaa(fontSize: 16, fontWeight: FontWeight.w500);
 
@@ -75,6 +78,7 @@ class PTextStyles {
   //   color: PColors.white,
   //   fontWeight: FontWeight.bold,
   // );
+
   // static TextStyle get headlineMedium => getTextStyle(
   //   fontWeight: FontWeight.w500,
   //   fontSize: 16,
@@ -86,9 +90,11 @@ class PTextStyles {
   //   fontSize: 15,
   //   color: PColors.white,
   // );
+
   //   static TextStyle get bodySmall => getTextComfortaa(
   //   fontSize: 13,
   //   color: PColors.white,
   //   fontWeight: FontWeight.w400,
   // );
+
 }

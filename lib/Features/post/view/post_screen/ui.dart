@@ -15,6 +15,8 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
   bool _isLoadingMedia = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  late PageController _pageController;
+  int _currentPageIndex = 0;
 
   @override
   void initState() {
@@ -26,12 +28,14 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+    _pageController = PageController();
     _animationController.forward();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -256,16 +260,16 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
               return Container(
                 margin: const EdgeInsets.only(right: 16),
                 child: ElevatedButton(
-                  onPressed: viewModel.selectedMedia != null
+                  onPressed: (viewModel.selectedMediaList.isNotEmpty || viewModel.selectedMedia != null)
                       ? () {
                           Navigator.pushNamed(context, PPages.createPost);
                         }
                       : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: viewModel.selectedMedia != null
+                    backgroundColor: (viewModel.selectedMediaList.isNotEmpty || viewModel.selectedMedia != null)
                         ? Colors.white
                         : Colors.grey[800],
-                    foregroundColor: viewModel.selectedMedia != null
+                    foregroundColor: (viewModel.selectedMediaList.isNotEmpty || viewModel.selectedMedia != null)
                         ? Colors.black
                         : Colors.grey,
                     elevation: 0,
@@ -307,67 +311,25 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                    decoration: BoxDecoration(
                      color: Colors.black, // Simple black background
                    ),
-                  child: viewModel.selectedMedia != null
+                  child: viewModel.selectedMediaList.isNotEmpty
                       ? Stack(
                           children: [
-                            // Image or video thumbnail
-                            ClipRRect(
-                              child: viewModel.isVideo
-                                  ? (viewModel.selectedAsset != null
-                                      ? FutureBuilder<Widget>(
-                                          future: _buildAssetThumbnail(viewModel.selectedAsset!),
-                                          builder: (context, snapshot) {
-                                            if (snapshot.hasData) {
-                                              return Container(
-                                                width: double.infinity,
-                                                height: double.infinity,
-                                                child: snapshot.data!,
-                                              );
-                                            }
-                                            return Container(
-                                              color: Colors.black,
-                                              child: Center(
-                                                child: CircularProgressIndicator(
-                                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                                  strokeWidth: 2,
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        )
-                                      : Container(
-                                          color: Colors.black,
-                                          child: Center(
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                Icon(
-                                                  Icons.videocam_rounded,
-                                                  color: Colors.white.withOpacity(0.3),
-                                                  size: 80,
-                                                ),
-                                                const SizedBox(height: 16),
-                                                Text(
-                                                  'Video Selected',
-                                                  style: TextStyle(
-                                                    color: Colors.white.withOpacity(0.7),
-                                                    fontSize: 16,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 8),
-                                                Text(
-                                                  'No thumbnail available',
-                                                  style: TextStyle(
-                                                    color: Colors.white.withOpacity(0.5),
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ))
-                                  : Image.file(
-                                      viewModel.selectedMedia!,
+                            // PageView for multiple images
+                            PageView.builder(
+                              controller: _pageController,
+                              onPageChanged: (index) {
+                                setState(() {
+                                  _currentPageIndex = index;
+                                });
+                              },
+                              itemCount: viewModel.selectedMediaList.length,
+                              itemBuilder: (context, index) {
+                                final mediaFile = viewModel.selectedMediaList[index];
+                                return Stack(
+                                  children: [
+                                    // Image
+                                    Image.file(
+                                      mediaFile,
                                       fit: BoxFit.cover,
                                       width: double.infinity,
                                       height: double.infinity,
@@ -375,25 +337,63 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                         return _buildErrorPlaceholder(Icons.broken_image_rounded);
                                       },
                                     ),
+                                    // Remove button
+                                    Positioned(
+                                      top: 12,
+                                      right: 12,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          viewModel.removeMediaFromSelection(index);
+                                          if (index < _currentPageIndex) {
+                                            setState(() {
+                                              _currentPageIndex--;
+                                            });
+                                          }
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(0.7),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.close,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
-                            // Video play overlay - only show for videos
-                            if (viewModel.isVideo)
-                              Center(
-                                child: Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[900],
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.play_arrow_rounded,
-                                    color: Colors.white,
-                                    size: 40,
+                            // Page indicators
+                            if (viewModel.selectedMediaList.length > 1)
+                              Positioned(
+                                bottom: 16,
+                                left: 0,
+                                right: 0,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: List.generate(
+                                    viewModel.selectedMediaList.length,
+                                    (index) => Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                                      width: _currentPageIndex == index ? 24 : 8,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        color: _currentPageIndex == index 
+                                            ? Colors.white 
+                                            : Colors.white.withOpacity(0.4),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            // Multiple selection indicator
-                            if (viewModel.hasMultipleMedia)
+                            // Media counter
+                            if (viewModel.selectedMediaList.length > 1)
                               Positioned(
                                 top: 12,
                                 left: 12,
@@ -403,64 +403,111 @@ class _PostScreenState extends State<PostScreen> with SingleTickerProviderStateM
                                     color: Colors.black.withOpacity(0.7),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.layers_rounded,
-                                        color: Colors.white,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '${viewModel.selectedMediaList.length} items',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            // Current item indicator
-                            if (viewModel.hasMultipleMedia)
-                              Positioned(
-                                top: 12,
-                                right: 12,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.7),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        viewModel.isVideo ? Icons.videocam_rounded : Icons.image_rounded,
-                                        color: Colors.white,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Preview',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
+                                  child: Text(
+                                    '${_currentPageIndex + 1} of ${viewModel.selectedMediaList.length}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ),
                           ],
                         )
-                      : _buildEmptyPreview(),
+                      : viewModel.selectedMedia != null
+                          ? Stack(
+                              children: [
+                                // Single image
+                                Image.file(
+                                  viewModel.selectedMedia!,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return _buildErrorPlaceholder(Icons.broken_image_rounded);
+                                  },
+                                ),
+                                // Remove button for single image
+                                Positioned(
+                                  top: 12,
+                                  right: 12,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      viewModel.clearSelectedMedia();
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.7),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : _buildEmptyPreview(),
                   ),
                 ),
+                
+                // Thumbnail grid for multiple images
+                if (viewModel.selectedMediaList.length > 1)
+                  Container(
+                    height: 80,
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: viewModel.selectedMediaList.length,
+                      itemBuilder: (context, index) {
+                        final mediaFile = viewModel.selectedMediaList[index];
+                        final isSelected = index == _currentPageIndex;
+                        return GestureDetector(
+                          onTap: () {
+                            _pageController.animateToPage(
+                              index,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          },
+                          child: Container(
+                            width: 70,
+                            height: 70,
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isSelected ? Colors.white : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: Image.file(
+                                mediaFile,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.grey[800],
+                                    child: const Icon(
+                                      Icons.broken_image,
+                                      color: Colors.white,
+                                      size: 30,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 
                 // Gallery grid section
                 Flexible(

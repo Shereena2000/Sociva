@@ -36,39 +36,20 @@ class PostViewModel extends ChangeNotifier {
   // Load device media from gallery picker (photos and videos)
   Future<void> loadDeviceMediaFromGallery() async {
     try {
-      // Request permission first
-      final PermissionState ps = await PhotoManager.requestPermissionExtend();
-      if (!ps.isAuth) {
-        return;
-      }
-
-      // Get albums
-      final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
-        type: RequestType.common, // Get both images and videos
-        hasAll: true,
+      // Use image_picker to open gallery picker for multiple images
+      final List<XFile> images = await _imagePicker.pickMultiImage(
+        limit: 50, // Get up to 50 images
+        imageQuality: 80,
       );
-
-      if (albums.isEmpty) {
-        return;
-      }
-
-      // Get assets from first album (usually "Recent" or "All")
-      final List<AssetEntity> assets = await albums[0].getAssetListPaged(
-        page: 0,
-        size: 100, // Get 100 most recent items
-      );
-
-      _photoAssets = assets;
       
-      // Auto-select the first asset if available
-      if (assets.isNotEmpty) {
-        final firstAsset = assets[0];
-        final File? file = await firstAsset.file;
-        if (file != null) {
-          _selectedMedia = file;
-          _isVideo = firstAsset.type == AssetType.video;
-          notifyListeners();
-        }
+      if (images.isNotEmpty) {
+        _deviceMedia = images;
+        // Convert XFile to File and populate selectedMediaList
+        _selectedMediaList = images.map((xfile) => File(xfile.path)).toList();
+        // Auto-select the first image
+        _selectedMedia = File(images[0].path);
+        _isVideo = false;
+        notifyListeners();
       }
       
     } catch (e) {
@@ -93,6 +74,8 @@ class PostViewModel extends ChangeNotifier {
       
       if (images.isNotEmpty) {
         _deviceMedia = images;
+        // Convert XFile to File and populate selectedMediaList
+        _selectedMediaList = images.map((xfile) => File(xfile.path)).toList();
         // Auto-select the first image
         _selectedMedia = File(images[0].path);
         _isVideo = images[0].path.toLowerCase().endsWith('.mp4') ||
@@ -302,6 +285,28 @@ class PostViewModel extends ChangeNotifier {
   // Get posts stream
   Stream<List<PostModel>> getPosts() {
     return _postRepository.getPosts();
+  }
+
+  // Remove media from selection
+  void removeMediaFromSelection(int index) {
+    if (index >= 0 && index < _selectedMediaList.length) {
+      _selectedMediaList.removeAt(index);
+      
+      // Update primary selected media
+      if (_selectedMediaList.isNotEmpty) {
+        _selectedMedia = _selectedMediaList.first;
+        // Update video status based on first item
+        _isVideo = _selectedMedia!.path.toLowerCase().endsWith('.mp4') ||
+                   _selectedMedia!.path.toLowerCase().endsWith('.mov') ||
+                   _selectedMedia!.path.toLowerCase().endsWith('.avi');
+      } else {
+        _selectedMedia = null;
+        _selectedAsset = null;
+        _isVideo = false;
+      }
+      
+      notifyListeners();
+    }
   }
 
   // Clear selected media

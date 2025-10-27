@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:social_media_app/Features/feed/model/twitter_comment_model.dart';
 import 'package:social_media_app/Features/feed/view/widgets/twitter_comment_widget.dart';
 import 'package:social_media_app/Features/feed/view/widgets/twitter_comment_input_widget.dart';
@@ -326,18 +327,27 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
           ),
           const SizedBox(height: 12),
           
-          // Post text
-          Text(
-            postData['caption'] ?? '',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              height: 1.4,
+          // Post text (or retweeted comment text)
+          if (postData['isRetweetedComment'] == true && postData['retweetedCommentData'] != null)
+            // Show retweeted comment content
+            _buildRetweetedCommentContent(postData['retweetedCommentData'])
+          else
+            // Show regular post text
+            Text(
+              postData['caption'] ?? '',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                height: 1.4,
+              ),
             ),
-          ),
           
-          // Post media (if any)
-          if (postData['mediaUrls'] != null && (postData['mediaUrls'] as List).isNotEmpty)
+          // Post media (or retweeted comment media)
+          if (postData['isRetweetedComment'] == true && postData['retweetedCommentData'] != null)
+            // Show retweeted comment media
+            _buildRetweetedCommentMedia(postData['retweetedCommentData'])
+          else if (postData['mediaUrls'] != null && (postData['mediaUrls'] as List).isNotEmpty)
+            // Show regular post media
             Container(
               margin: const EdgeInsets.only(top: 12),
               height: 300,
@@ -680,6 +690,189 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
         );
       }
     }
+  }
+
+  // Build retweeted comment content
+  Widget _buildRetweetedCommentContent(Map<String, dynamic> retweetedCommentData) {
+    final commentText = retweetedCommentData['text'] ?? '';
+    final commentUserId = retweetedCommentData['userId'] ?? '';
+    
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance.collection('users').doc(commentUserId).get(),
+      builder: (context, snapshot) {
+        final userData = snapshot.data?.data() as Map<String, dynamic>?;
+        final commentUsername = userData?['username'] ?? userData?['name'] ?? 'Unknown';
+        final commentUserImage = userData?['profilePhotoUrl'] ?? 
+            'https://i.pinimg.com/736x/9e/83/75/9e837528f01cf3f42119c5aeeed1b336.jpg';
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[700]!, width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Comment author info
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundImage: NetworkImage(commentUserImage),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                commentUsername,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.verified,
+                              color: Colors.blue,
+                              size: 14,
+                            ),
+                          ],
+                        ),
+                        Text(
+                          '@${commentUsername.toLowerCase().replaceAll(' ', '')}',
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              
+              // Comment text
+              Text(
+                commentText,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Build retweeted comment media
+  Widget _buildRetweetedCommentMedia(Map<String, dynamic> retweetedCommentData) {
+    final commentMediaUrls = retweetedCommentData['mediaUrls'] as List<dynamic>? ?? [];
+    
+    if (commentMediaUrls.isEmpty) return const SizedBox.shrink();
+    
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      height: 300,
+      child: Stack(
+        children: [
+          // PageView for multiple images
+          PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPageIndex = index;
+              });
+            },
+            itemCount: commentMediaUrls.length,
+            itemBuilder: (context, index) {
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  commentMediaUrls[index],
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: 300,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 300,
+                      color: Colors.grey[800],
+                      child: const Center(
+                        child: Icon(
+                          Icons.broken_image,
+                          color: Colors.white,
+                          size: 50,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+          
+          // Page indicators (only show if more than 1 image)
+          if (commentMediaUrls.length > 1)
+            Positioned(
+              bottom: 16,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  commentMediaUrls.length,
+                  (index) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: _currentPageIndex == index ? 24 : 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: _currentPageIndex == index 
+                          ? Colors.white 
+                          : Colors.white.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          
+          // Image counter (only show if more than 1 image)
+          if (commentMediaUrls.length > 1)
+            Positioned(
+              top: 12,
+              right: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${_currentPageIndex + 1} of ${commentMediaUrls.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 

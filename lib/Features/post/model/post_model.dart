@@ -15,6 +15,10 @@ class PostModel {
   final int viewCount; // Number of views
   final String? quotedPostId; // ID of the post being quoted (for quote retweets)
   final Map<String, dynamic>? quotedPostData; // Cached data of quoted post
+  final bool isRetweetedComment; // Flag to identify comment retweets
+  final String? retweetedCommentId; // ID of the comment being retweeted
+  final Map<String, dynamic>? retweetedCommentData; // Cached data of retweeted comment
+  final String? originalPostId; // Reference to original post (for comment retweets)
 
   PostModel({
     required this.postId,
@@ -31,6 +35,10 @@ class PostModel {
     this.viewCount = 0, // Default to 0 views
     this.quotedPostId,
     this.quotedPostData,
+    this.isRetweetedComment = false,
+    this.retweetedCommentId,
+    this.retweetedCommentData,
+    this.originalPostId,
   }) : mediaUrls = mediaUrls ?? [mediaUrl]; // If no mediaUrls, use single mediaUrl
 
   // Check if post has multiple media
@@ -60,6 +68,9 @@ class PostModel {
 
   // Check if this is a quoted retweet
   bool get isQuotedRetweet => quotedPostId != null;
+  
+  // Check if this is a retweeted comment
+  bool get isCommentRetweet => isRetweetedComment;
 
   Map<String, dynamic> toMap() {
     return {
@@ -77,6 +88,10 @@ class PostModel {
       'viewCount': viewCount,
       'quotedPostId': quotedPostId,
       'quotedPostData': quotedPostData,
+      'isRetweetedComment': isRetweetedComment,
+      'retweetedCommentId': retweetedCommentId,
+      'retweetedCommentData': retweetedCommentData,
+      'originalPostId': originalPostId,
     };
   }
 
@@ -103,6 +118,12 @@ class PostModel {
       quotedPostData: map['quotedPostData'] != null 
           ? Map<String, dynamic>.from(map['quotedPostData'])
           : null,
+      isRetweetedComment: map['isRetweetedComment'] ?? false,
+      retweetedCommentId: map['retweetedCommentId'],
+      retweetedCommentData: map['retweetedCommentData'] != null 
+          ? Map<String, dynamic>.from(map['retweetedCommentData'])
+          : null,
+      originalPostId: map['originalPostId'],
     );
   }
 
@@ -122,6 +143,10 @@ class PostModel {
     int? viewCount,
     String? quotedPostId,
     Map<String, dynamic>? quotedPostData,
+    bool? isRetweetedComment,
+    String? retweetedCommentId,
+    Map<String, dynamic>? retweetedCommentData,
+    String? originalPostId,
   }) {
     return PostModel(
       postId: postId ?? this.postId,
@@ -138,6 +163,10 @@ class PostModel {
       viewCount: viewCount ?? this.viewCount,
       quotedPostId: quotedPostId ?? this.quotedPostId,
       quotedPostData: quotedPostData ?? this.quotedPostData,
+      isRetweetedComment: isRetweetedComment ?? this.isRetweetedComment,
+      retweetedCommentId: retweetedCommentId ?? this.retweetedCommentId,
+      retweetedCommentData: retweetedCommentData ?? this.retweetedCommentData,
+      originalPostId: originalPostId ?? this.originalPostId,
     );
   }
 }

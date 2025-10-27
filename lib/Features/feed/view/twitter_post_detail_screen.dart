@@ -7,6 +7,7 @@ import 'package:social_media_app/Features/feed/view/widgets/twitter_comment_inpu
 import 'package:social_media_app/Features/feed/view_model/twitter_comment_view_model.dart';
 import 'package:social_media_app/Features/feed/view/twitter_comment_detail_screen.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
+import 'package:social_media_app/Features/post/view/widgets/share_bottom_sheet.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 /// Twitter-style post detail screen with comments below (like Twitter)
@@ -119,11 +120,16 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
   }
 
   void _handleShare(TwitterCommentModel comment) {
-    // TODO: Implement share functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Share comment feature coming soon!'),
-        backgroundColor: Colors.blue,
+    // Show share bottom sheet for comment
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => ShareBottomSheet(
+        postId: comment.commentId, // Use comment ID as identifier
+        postCaption: comment.text,
+        postImage: comment.mediaUrls.isNotEmpty ? comment.mediaUrls.first : null,
+        postOwnerName: comment.userName,
       ),
     );
   }

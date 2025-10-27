@@ -119,6 +119,7 @@ class ForYouWidget extends StatelessWidget {
   }) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
     final isRetweetedByCurrentUser = postWithUser.post.isRetweetedBy(currentUserId);
+    final isCommentRetweet = postWithUser.post.isCommentRetweet;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -130,11 +131,11 @@ class ForYouWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Retweet header (if current user retweeted this)
-          if (isRetweetedByCurrentUser)
-            _buildRetweetHeader(context, currentUserId),
+          // Retweet header (if current user retweeted this OR if this is a retweeted comment)
+          if (isRetweetedByCurrentUser || isCommentRetweet)
+            _buildRetweetHeader(context, isCommentRetweet ? postWithUser.userId : currentUserId),
           
-          if (isRetweetedByCurrentUser)
+          if (isRetweetedByCurrentUser || isCommentRetweet)
             const SizedBox(height: 12),
 
           // Header with profile info
@@ -245,6 +246,13 @@ class ForYouWidget extends StatelessWidget {
             _buildQuotedPostPreview(postWithUser.post.quotedPostData!),
 
           if (postWithUser.post.isQuotedRetweet && postWithUser.post.quotedPostData != null)
+            const SizedBox(height: 12),
+
+          // Comment retweet preview (if this is a retweeted comment)
+          if (isCommentRetweet && postWithUser.post.retweetedCommentData != null)
+            _buildCommentRetweetPreview(postWithUser.post.retweetedCommentData!),
+
+          if (isCommentRetweet && postWithUser.post.retweetedCommentData != null)
             const SizedBox(height: 12),
 
           // Post image/video - Grid if multiple, single if one
@@ -891,6 +899,96 @@ class ForYouWidget extends StatelessWidget {
               ],
             ],
           ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Build comment retweet preview
+  Widget _buildCommentRetweetPreview(Map<String, dynamic> retweetedCommentData) {
+    final commentText = retweetedCommentData['text'] ?? '';
+    final commentUserId = retweetedCommentData['userId'] ?? '';
+    final commentMediaUrls = retweetedCommentData['mediaUrls'] as List<dynamic>? ?? [];
+    final commentMediaType = retweetedCommentData['mediaType'] ?? 'text';
+
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance.collection('users').doc(commentUserId).get(),
+      builder: (context, snapshot) {
+        final userData = snapshot.data?.data() as Map<String, dynamic>?;
+        final commentUsername = userData?['username'] ?? userData?['name'] ?? 'Unknown';
+        final commentUserImage = userData?['profilePhotoUrl'] ?? 
+            'https://i.pinimg.com/736x/9e/83/75/9e837528f01cf3f42119c5aeeed1b336.jpg';
+
+        return Container(
+          padding: const EdgeInsets.all(16), // Increased from 12 to 16
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey[700]!, width: 1),
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.grey[900], // Same as main container
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Comment author info
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundImage: NetworkImage(commentUserImage),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    commentUsername,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12), // Increased from 8 to 12
+              // Comment text
+              if (commentText.isNotEmpty)
+                Text(
+                  commentText,
+                  style: TextStyle(color: Colors.grey[400], fontSize: 14), // Increased from 12 to 14
+                  maxLines: 4, // Increased from 3 to 4
+                  overflow: TextOverflow.ellipsis,
+                ),
+              // Comment media preview (if available)
+              if (commentMediaUrls.isNotEmpty) ...[
+                const SizedBox(height: 12), // Increased from 8 to 12
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: commentMediaType == 'video'
+                      ? Container(
+                          height: 120, // Increased from 80 to 120
+                          width: double.infinity,
+                          color: Colors.grey[700],
+                          child: const Center(
+                            child: Icon(Icons.play_circle_outline, color: Colors.white, size: 32),
+                          ),
+                        )
+                      : Image.network(
+                          commentMediaUrls.first.toString(),
+                          height: 120, // Increased from 80 to 120
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              height: 120, // Increased from 80 to 120
+                              color: Colors.grey[700],
+                              child: const Center(
+                                child: Icon(Icons.image, color: Colors.grey),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ],
           ),
         );
       },

@@ -194,12 +194,91 @@ class TwitterCommentRepository {
     final isRetweeted = retweets.contains(currentUser.uid);
 
     if (isRetweeted) {
+      // Remove retweet
       retweets.remove(currentUser.uid);
+      await commentRef.update({'retweets': retweets});
+      
+      // Remove the retweet post from feed
+      await _removeRetweetPostFromFeed(commentId, currentUser.uid);
     } else {
+      // Add retweet
       retweets.add(currentUser.uid);
+      await commentRef.update({'retweets': retweets});
+      
+      // Create a new post in the feed for this retweeted comment
+      await _createRetweetPostInFeed(postId, commentId, commentData, currentUser.uid);
     }
+  }
 
-    await commentRef.update({'retweets': retweets});
+  /// Create a retweet post in the feed when a comment is retweeted
+  Future<void> _createRetweetPostInFeed(String postId, String commentId, Map<String, dynamic> commentData, String currentUserId) async {
+    try {
+      // Get current user data
+      final userDoc = await _firestore.collection('users').doc(currentUserId).get();
+      if (!userDoc.exists) throw Exception('User data not found');
+
+      final userData = userDoc.data()!;
+      final userName = userData['name'] ?? userData['username'] ?? 'Unknown';
+      final username = userData['username'] ?? 'unknown';
+      final userProfilePhoto = userData['profilePhotoUrl'] ?? '';
+      final isVerified = userData['isVerified'] ?? false;
+
+      // Generate new post ID for the retweet
+      final retweetPostId = DateTime.now().millisecondsSinceEpoch.toString();
+
+      // Create retweet post data
+      final retweetPost = {
+        'postId': retweetPostId,
+        'mediaUrl': '', // No media for comment retweets
+        'mediaUrls': [],
+        'mediaType': 'text',
+        'caption': '', // Empty caption for simple retweets
+        'timestamp': DateTime.now().toIso8601String(),
+        'userId': currentUserId,
+        'userName': userName,
+        'username': username,
+        'userProfilePhoto': userProfilePhoto,
+        'isVerified': isVerified,
+        'likes': [],
+        'commentCount': 0,
+        'retweets': [],
+        'postType': 'feed', // This is a feed post
+        'viewCount': 0,
+        'isRetweetedComment': true, // Flag to identify comment retweets
+        'retweetedCommentId': commentId,
+        'retweetedCommentData': commentData,
+        'originalPostId': postId, // Reference to original post
+      };
+
+      // Save retweet post to Firestore
+      await _firestore.collection('posts').doc(retweetPostId).set(retweetPost);
+      
+      print('✅ Comment retweet post created in feed: $retweetPostId');
+    } catch (e) {
+      print('❌ Error creating comment retweet post: $e');
+      throw Exception('Failed to create retweet post: $e');
+    }
+  }
+
+  /// Remove retweet post from feed when unretweeting
+  Future<void> _removeRetweetPostFromFeed(String commentId, String currentUserId) async {
+    try {
+      // Find and delete the retweet post
+      final retweetQuery = await _firestore
+          .collection('posts')
+          .where('isRetweetedComment', isEqualTo: true)
+          .where('retweetedCommentId', isEqualTo: commentId)
+          .where('userId', isEqualTo: currentUserId)
+          .get();
+
+      for (final doc in retweetQuery.docs) {
+        await doc.reference.delete();
+        print('✅ Removed comment retweet post: ${doc.id}');
+      }
+    } catch (e) {
+      print('❌ Error removing comment retweet post: $e');
+      // Don't throw here as the main retweet toggle should still work
+    }
   }
 
   /// Save/unsave a comment

@@ -1,10 +1,15 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:social_media_app/Features/feed/model/twitter_comment_model.dart';
 import 'package:social_media_app/Features/feed/repository/twitter_comment_repository.dart';
+import 'package:social_media_app/Service/cloudinary_service.dart';
 
 /// View model for Twitter-style comments
 class TwitterCommentViewModel extends ChangeNotifier {
   final TwitterCommentRepository _repository = TwitterCommentRepository();
+  final ImagePicker _imagePicker = ImagePicker();
+  final CloudinaryService _cloudinaryService = CloudinaryService();
 
   // State
   List<TwitterCommentModel> _comments = [];
@@ -13,6 +18,10 @@ class TwitterCommentViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   Map<String, bool> _isInteracting = {};
+  
+  // Media state for comment creation
+  List<File> _selectedMedia = [];
+  bool _isUploadingMedia = false;
 
   // Getters
   List<TwitterCommentModel> get comments => _comments;
@@ -21,6 +30,11 @@ class TwitterCommentViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool isInteracting(String commentId) => _isInteracting[commentId] ?? false;
+  
+  // Media getters
+  List<File> get selectedMedia => _selectedMedia;
+  bool get isUploadingMedia => _isUploadingMedia;
+  bool get hasSelectedMedia => _selectedMedia.isNotEmpty;
 
   /// Load comments for a post
   Future<void> loadComments(String postId) async {
@@ -363,5 +377,107 @@ class TwitterCommentViewModel extends ChangeNotifier {
     });
 
     notifyListeners();
+  }
+
+  // ========== Media Methods ==========
+  
+  /// Pick images from gallery
+  Future<void> pickImages() async {
+    try {
+      final List<XFile> images = await _imagePicker.pickMultiImage(
+        limit: 4, // Limit to 4 images like Twitter
+        imageQuality: 80,
+      );
+      
+      if (images.isNotEmpty) {
+        _selectedMedia = images.map((xFile) => File(xFile.path)).toList();
+        notifyListeners();
+      }
+    } catch (e) {
+      _setError('Failed to pick images: $e');
+    }
+  }
+  
+  /// Pick video from gallery
+  Future<void> pickVideo() async {
+    try {
+      final XFile? video = await _imagePicker.pickVideo(
+        source: ImageSource.gallery,
+        maxDuration: const Duration(minutes: 2), // Limit to 2 minutes like Twitter
+      );
+      
+      if (video != null) {
+        _selectedMedia = [File(video.path)];
+        notifyListeners();
+      }
+    } catch (e) {
+      _setError('Failed to pick video: $e');
+    }
+  }
+  
+  /// Pick media (image or video) from camera
+  Future<void> pickFromCamera() async {
+    try {
+      final XFile? media = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+      );
+      
+      if (media != null) {
+        _selectedMedia = [File(media.path)];
+        notifyListeners();
+      }
+    } catch (e) {
+      _setError('Failed to capture media: $e');
+    }
+  }
+  
+  /// Remove media at index
+  void removeMedia(int index) {
+    if (index >= 0 && index < _selectedMedia.length) {
+      _selectedMedia.removeAt(index);
+      notifyListeners();
+    }
+  }
+  
+  /// Clear all selected media
+  void clearMedia() {
+    _selectedMedia.clear();
+    notifyListeners();
+  }
+  
+  /// Check if file is video
+  bool isVideoFile(File file) {
+    final extension = file.path.toLowerCase().split('.').last;
+    return ['mp4', 'mov', 'avi', 'mkv', 'webm'].contains(extension);
+  }
+  
+  /// Upload media to Cloudinary and return URLs
+  Future<List<String>> uploadMedia() async {
+    if (_selectedMedia.isEmpty) return [];
+    
+    _isUploadingMedia = true;
+    notifyListeners();
+    
+    try {
+      final List<String> mediaUrls = [];
+      
+      for (final file in _selectedMedia) {
+        final isVideo = isVideoFile(file);
+        final mediaUrl = await _cloudinaryService.uploadMedia(
+          file, 
+          isVideo: isVideo,
+        );
+        mediaUrls.add(mediaUrl);
+      }
+      
+      return mediaUrls;
+    } catch (e) {
+      _setError('Failed to upload media: $e');
+      return [];
+    } finally {
+      _isUploadingMedia = false;
+      notifyListeners();
+    }
   }
 }

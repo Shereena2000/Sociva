@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:social_media_app/Features/feed/model/twitter_comment_model.dart';
-import 'package:social_media_app/Settings/utils/p_colors.dart';
+import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 
 /// Twitter-style comment widget that looks like a tweet/post
 class TwitterCommentWidget extends StatelessWidget {
@@ -252,28 +252,275 @@ class TwitterCommentWidget extends StatelessWidget {
   }
 
   Widget _buildCommentMedia(BuildContext context) {
+    // Don't show media if no URLs
+    if (comment.mediaUrls.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
       margin: const EdgeInsets.only(left: 52, right: 16, top: 8),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: comment.mediaType == 'image'
-            ? Image.network(
-                comment.mediaUrls.first,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: 200,
-              )
-            : comment.mediaType == 'video'
-                ? Container(
-                    height: 200,
-                    color: Colors.grey[900],
-                    child: const Center(
-                      child: Icon(Icons.play_circle_outline, size: 50, color: Colors.white),
-                    ),
-                  )
-                : const SizedBox.shrink(),
-      ),
+      child: _buildMediaGrid(),
     );
+  }
+
+  // Build media grid with dynamic layout based on number of images (same as posts)
+  Widget _buildMediaGrid() {
+    final mediaUrls = comment.mediaUrls;
+    
+    // Handle different cases based on number of images
+    if (mediaUrls.length == 1) {
+      // Single image/video: full width
+      return Container(
+        height: 200,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: _isVideoUrl(mediaUrls[0])
+              ? VideoPlayerWidget(
+                  videoUrl: mediaUrls[0],
+                  height: 200,
+                  width: double.infinity,
+                  autoPlay: false,
+                  showControls: true,
+                )
+              : Image.network(
+                  mediaUrls[0],
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 200,
+                      color: Colors.grey[800],
+                      child: const Center(
+                        child: Icon(
+                          Icons.image_not_supported,
+                          color: Colors.grey,
+                          size: 50,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      );
+    } else if (mediaUrls.length == 2) {
+      // Two images: side by side
+      return Container(
+        height: 200,
+        child: Row(
+          children: [
+            // Left image
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.only(right: 2),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: _isVideoUrl(mediaUrls[0])
+                      ? VideoPlayerWidget(
+                          videoUrl: mediaUrls[0],
+                          height: 200,
+                          width: double.infinity,
+                          autoPlay: false,
+                          showControls: true,
+                        )
+                      : Image.network(
+                          mediaUrls[0],
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[800],
+                              child: const Icon(
+                                Icons.image_not_supported,
+                                color: Colors.grey,
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ),
+            ),
+            // Right image
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.only(left: 2),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: _isVideoUrl(mediaUrls[1])
+                      ? VideoPlayerWidget(
+                          videoUrl: mediaUrls[1],
+                          height: 200,
+                          width: double.infinity,
+                          autoPlay: false,
+                          showControls: true,
+                        )
+                      : Image.network(
+                          mediaUrls[1],
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[800],
+                              child: const Icon(
+                                Icons.image_not_supported,
+                                color: Colors.grey,
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Three or more images: 2+1 layout (left: 1 large, right: 2 stacked)
+      final extraCount = mediaUrls.length > 3 ? mediaUrls.length - 3 : 0;
+
+      return Container(
+        height: 200,
+        child: Row(
+          children: [
+            // Left half - One large image
+            Expanded(
+              flex: 1,
+              child: Container(
+                margin: const EdgeInsets.only(right: 2),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: _isVideoUrl(mediaUrls[0])
+                      ? VideoPlayerWidget(
+                          videoUrl: mediaUrls[0],
+                          height: 200,
+                          width: double.infinity,
+                          autoPlay: false,
+                          showControls: true,
+                        )
+                      : Image.network(
+                          mediaUrls[0],
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[800],
+                              child: const Icon(
+                                Icons.image_not_supported,
+                                color: Colors.grey,
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ),
+            ),
+            // Right half - Two stacked images
+            Expanded(
+              flex: 1,
+              child: Column(
+                children: [
+                  // Top image
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 2, bottom: 1),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: _isVideoUrl(mediaUrls[1])
+                            ? VideoPlayerWidget(
+                                videoUrl: mediaUrls[1],
+                                height: 99,
+                                width: double.infinity,
+                                autoPlay: false,
+                                showControls: true,
+                              )
+                            : Image.network(
+                                mediaUrls[1],
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.grey[800],
+                                    child: const Icon(
+                                      Icons.image_not_supported,
+                                      color: Colors.grey,
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ),
+                  ),
+                  // Bottom image (or +count overlay)
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 2, top: 1),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: extraCount > 0
+                            ? Stack(
+                                children: [
+                                  Image.network(
+                                    mediaUrls[2],
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.grey[800],
+                                        child: const Icon(
+                                          Icons.image_not_supported,
+                                          color: Colors.grey,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  Container(
+                                    color: Colors.black.withOpacity(0.6),
+                                    child: Center(
+                                      child: Text(
+                                        '+$extraCount',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : _isVideoUrl(mediaUrls[2])
+                                ? VideoPlayerWidget(
+                                    videoUrl: mediaUrls[2],
+                                    height: 99,
+                                    width: double.infinity,
+                                    autoPlay: false,
+                                    showControls: true,
+                                  )
+                                : Image.network(
+                                    mediaUrls[2],
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.grey[800],
+                                        child: const Icon(
+                                          Icons.image_not_supported,
+                                          color: Colors.grey,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  // Helper method to check if URL is a video (same as posts)
+  bool _isVideoUrl(String url) {
+    final videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.webm', '.3gp', '.m4v'];
+    return videoExtensions.any((ext) => url.toLowerCase().contains(ext));
   }
 
   Widget _buildQuotedComment(BuildContext context) {

@@ -3,10 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:social_media_app/Features/feed/model/twitter_comment_model.dart';
 import 'package:social_media_app/Features/feed/view/widgets/twitter_comment_widget.dart';
+import 'package:social_media_app/Features/feed/view/widgets/twitter_comment_input_widget.dart';
 import 'package:social_media_app/Features/feed/view_model/twitter_comment_view_model.dart';
 import 'package:social_media_app/Features/feed/view/twitter_comment_detail_screen.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
-import 'package:social_media_app/Settings/utils/p_colors.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 /// Twitter-style post detail screen with comments below (like Twitter)
@@ -31,7 +31,6 @@ class TwitterPostDetailScreen extends StatefulWidget {
 class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  final ScrollController _scrollController = ScrollController();
   
   // Reply mode state
   String? _replyToCommentId;
@@ -54,7 +53,6 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
   void dispose() {
     _commentController.dispose();
     _focusNode.dispose();
-    _scrollController.dispose();
     super.dispose();
   }
 
@@ -199,39 +197,49 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Post Content (if available)
-          if (widget.postData != null)
-            Flexible(
-              flex: 0,
-              child: _buildPostContent(),
+      body: NestedScrollView(
+        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+          return <Widget>[
+            SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  // Post Content (if available)
+                  if (widget.postData != null)
+                    _buildPostContent(),
+                  
+                  // Comments Header
+                  _buildCommentsHeader(),
+                  
+                  // Reply mode indicator
+                  if (_replyToCommentId != null)
+                    _buildReplyIndicator(),
+                ],
+              ),
             ),
-          
-          // Comments Header
-          Flexible(
-            flex: 0,
-            child: _buildCommentsHeader(),
-          ),
-          
-          // Comments List
-          Expanded(
-            child: _buildCommentsList(currentUserId),
-          ),
-          
-          // Reply mode indicator
-          if (_replyToCommentId != null)
-            Flexible(
-              flex: 0,
-              child: _buildReplyIndicator(),
+          ];
+        },
+        body: Column(
+          children: [
+            // Comments List
+            Expanded(
+              child: _buildCommentsList(currentUserId),
             ),
-          
-          // Add Comment Input
-          Flexible(
-            flex: 0,
-            child: _buildCommentInput(),
-          ),
-        ],
+            
+            // Add Comment Input
+            TwitterCommentInputWidget(
+              postId: widget.postId,
+              parentCommentId: _replyToCommentId,
+              replyToCommentId: _replyToCommentId,
+              replyToUserName: _replyToUserName,
+              hintText: _replyToCommentId != null
+                  ? 'Reply to @$_replyToUserName...'
+                  : 'Add a comment...',
+              onCommentPosted: () {
+                _cancelReplyMode();
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -455,7 +463,8 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
         }
 
         return ListView.builder(
-          controller: _scrollController,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(), // Let NestedScrollView handle scrolling
           padding: const EdgeInsets.symmetric(vertical: 8),
           itemCount: comments.length,
           itemBuilder: (context, index) {
@@ -526,118 +535,6 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCommentInput() {
-    return Container(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 8,
-        top: 8,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 8,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.black,
-        border: Border(
-          top: BorderSide(color: Colors.grey[900]!),
-        ),
-      ),
-      child: SafeArea(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            // User Profile Picture
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.grey[800],
-              child: const Icon(Icons.person, size: 16, color: Colors.grey),
-            ),
-            const SizedBox(width: 12),
-            
-            // Text Field
-            Expanded(
-              child: Container(
-                constraints: const BoxConstraints(maxHeight: 100),
-                child: TextField(
-                  controller: _commentController,
-                  focusNode: _focusNode,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: _replyToCommentId != null
-                        ? 'Reply to @$_replyToUserName...'
-                        : 'Add a comment...',
-                    hintStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                  ),
-                  maxLines: null,
-                  textCapitalization: TextCapitalization.sentences,
-                ),
-              ),
-            ),
-            
-            // Post Button
-            TextButton(
-              onPressed: () async {
-                final text = _commentController.text.trim();
-                if (text.isEmpty) return;
-
-                try {
-                  final commentViewModel = Provider.of<TwitterCommentViewModel>(context, listen: false);
-                  await commentViewModel.addComment(
-                    postId: widget.postId,
-                    text: text,
-                    parentCommentId: _replyToCommentId,
-                    replyToCommentId: _replyToCommentId,
-                    replyToUserName: _replyToUserName,
-                  );
-                  
-                  _commentController.clear();
-                  _cancelReplyMode();
-                  FocusScope.of(context).unfocus();
-                  
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Comment posted!'),
-                        backgroundColor: Colors.green,
-                        duration: Duration(seconds: 1),
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to post comment: ${e.toString()}'),
-                        backgroundColor: Colors.red,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                  }
-                }
-              },
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                'Post',
-                style: TextStyle(
-                  color: _commentController.text.trim().isNotEmpty
-                      ? PColors.primaryColor
-                      : Colors.grey[700],
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

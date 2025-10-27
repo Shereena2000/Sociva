@@ -97,6 +97,9 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
       case CommentInteractionType.view:
         commentViewModel.incrementViewCount(widget.postId, comment.commentId);
         break;
+      case CommentInteractionType.delete:
+        _confirmDeleteComment(comment, commentViewModel);
+        break;
       default:
         break;
     }
@@ -543,6 +546,59 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
         ],
       ),
     );
+  }
+
+  /// Confirm and delete comment
+  Future<void> _confirmDeleteComment(TwitterCommentModel comment, TwitterCommentViewModel commentViewModel) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text(
+          'Delete Comment',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this comment? This action cannot be undone.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final success = await commentViewModel.deleteComment(widget.postId, comment.commentId);
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Comment deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to delete comment'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
 

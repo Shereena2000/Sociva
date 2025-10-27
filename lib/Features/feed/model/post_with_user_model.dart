@@ -44,5 +44,16 @@ class PostWithUserModel {
       return 'Just now';
     }
   }
+
+  /// Create a copy of this model with updated fields
+  PostWithUserModel copyWith({
+    PostModel? post,
+    UserProfileModel? userProfile,
+  }) {
+    return PostWithUserModel(
+      post: post ?? this.post,
+      userProfile: userProfile ?? this.userProfile,
+    );
+  }
 }
 

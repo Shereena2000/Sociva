@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:social_media_app/Features/post/repository/post_repository.dart';
+import 'package:social_media_app/Features/post/model/post_model.dart';
 import 'package:social_media_app/Features/profile/create_profile/repository/profile_repository.dart';
 import 'package:social_media_app/Features/profile/status/repository/status_repository.dart';
 import 'package:social_media_app/Features/profile/follow/repository/follow_repository_optimized.dart';
@@ -365,9 +366,7 @@ class HomeViewModel extends ChangeNotifier {
         _isLoadingStatuses = false;
         
         if (_statusGroups.isNotEmpty) {
-          for (var group in _statusGroups) {
-            final isCurrentUser = group.userId == currentUserId;
-          }
+          // Status groups are ready
         }
         
         notifyListeners();
@@ -427,6 +426,48 @@ class HomeViewModel extends ChangeNotifier {
   Future<void> refreshStatuses() async {
     await loadViewedStatusIds();
     fetchStatuses();
+  }
+
+  /// Update post caption in local state
+  void updatePostCaption(String postId, String newCaption) {
+    final postIndex = _posts.indexWhere((post) => post.postId == postId);
+    if (postIndex != -1) {
+      // Create a new PostModel with updated caption
+      final updatedPost = PostModel(
+        postId: _posts[postIndex].post.postId,
+        mediaUrl: _posts[postIndex].post.mediaUrl,
+        mediaUrls: _posts[postIndex].post.mediaUrls,
+        mediaType: _posts[postIndex].post.mediaType,
+        caption: newCaption, // Updated caption
+        timestamp: _posts[postIndex].post.timestamp,
+        userId: _posts[postIndex].post.userId,
+        likes: _posts[postIndex].post.likes,
+        commentCount: _posts[postIndex].post.commentCount,
+        retweets: _posts[postIndex].post.retweets,
+        postType: _posts[postIndex].post.postType,
+        viewCount: _posts[postIndex].post.viewCount,
+        quotedPostId: _posts[postIndex].post.quotedPostId,
+        quotedPostData: _posts[postIndex].post.quotedPostData,
+        isRetweetedComment: _posts[postIndex].post.isRetweetedComment,
+        retweetedCommentId: _posts[postIndex].post.retweetedCommentId,
+        retweetedCommentData: _posts[postIndex].post.retweetedCommentData,
+        originalPostId: _posts[postIndex].post.originalPostId,
+      );
+      
+      // Update the PostWithUserModel with the new PostModel
+      _posts[postIndex] = PostWithUserModel(
+        post: updatedPost,
+        userProfile: _posts[postIndex].userProfile,
+      );
+      
+      notifyListeners();
+    }
+  }
+
+  /// Remove post from local state
+  void removePost(String postId) {
+    _posts.removeWhere((post) => post.postId == postId);
+    notifyListeners();
   }
 }
 

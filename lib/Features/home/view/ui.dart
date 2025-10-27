@@ -698,12 +698,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.more_vert, color: Colors.black),
-                  onPressed: () {
-                    // Show options menu
-                  },
-                ),
+                // Only show three dots menu for own posts
+                if (postWithUser.userId == FirebaseAuth.instance.currentUser?.uid)
+                  IconButton(
+                    icon: const Icon(Icons.more_vert, color: Colors.black),
+                    onPressed: () {
+                      _showPostOptionsMenu(context, postWithUser, homeViewModel);
+                    },
+                  ),
               ],
             ),
           ),
@@ -1200,5 +1202,205 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     } catch (e) {}
+  }
+
+  /// Show post options menu (edit and delete for own posts)
+  void _showPostOptionsMenu(BuildContext context, dynamic postWithUser, HomeViewModel homeViewModel) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[600],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Edit option
+            ListTile(
+              leading: const Icon(Icons.edit, color: Colors.blue),
+              title: const Text(
+                'Edit Post',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await _showEditPostDialog(context, postWithUser, homeViewModel);
+              },
+            ),
+            
+            // Delete option
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text(
+                'Delete Post',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await _confirmDeletePost(context, postWithUser, homeViewModel);
+              },
+            ),
+            
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Show edit post dialog
+  Future<void> _showEditPostDialog(BuildContext context, dynamic postWithUser, HomeViewModel homeViewModel) async {
+    final TextEditingController captionController = TextEditingController(text: postWithUser.caption);
+    
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text(
+          'Edit Post',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: TextField(
+            controller: captionController,
+            maxLines: 4,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              hintText: 'Edit your caption...',
+              hintStyle: TextStyle(color: Colors.grey),
+              border: OutlineInputBorder(),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.blue),
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _updatePostCaption(context, postWithUser, captionController.text, homeViewModel);
+            },
+            child: const Text(
+              'Save',
+              style: TextStyle(color: Colors.blue),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Update post caption
+  Future<void> _updatePostCaption(BuildContext context, dynamic postWithUser, String newCaption, HomeViewModel homeViewModel) async {
+    try {
+      // Update in Firebase
+      await FirebaseFirestore.instance
+          .collection('posts')
+          .doc(postWithUser.postId)
+          .update({'caption': newCaption});
+      
+      // Update local state
+      homeViewModel.updatePostCaption(postWithUser.postId, newCaption);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Post updated successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to update post'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Confirm and delete post
+  Future<void> _confirmDeletePost(BuildContext context, dynamic postWithUser, HomeViewModel homeViewModel) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text(
+          'Delete Post',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this post? This action cannot be undone.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        // Delete from Firebase
+        await FirebaseFirestore.instance
+            .collection('posts')
+            .doc(postWithUser.postId)
+            .delete();
+        
+        // Remove from local state
+        homeViewModel.removePost(postWithUser.postId);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Post deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to delete post'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

@@ -35,9 +35,6 @@ class _TwitterCommentsScreenState extends State<TwitterCommentsScreen> {
   final List<String> _threadStack = []; // Stack of comment IDs for navigation
   String? _currentThreadRoot; // Current thread root comment ID
   
-  // Expanded threads state
-  final Map<String, bool> _expandedThreads = {};
-  
   @override
   void dispose() {
     _commentController.dispose();

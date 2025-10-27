@@ -19,8 +19,7 @@ import 'package:social_media_app/Features/jobs/add_job_post/repository/job_repos
 import 'package:social_media_app/Features/company_registration/repository/company_repository.dart';
 import 'package:social_media_app/Features/jobs/service/job_application_service.dart';
 import 'package:social_media_app/Features/menu/saved_job/view_model/saved_job_view_model.dart';
-
-import '../../Features/post/view_model/post_detail_view_model.dart';
+import 'package:social_media_app/Features/feed/view_model/twitter_comment_view_model.dart';
 
 List<SingleChildWidget> providers = [
   ChangeNotifierProvider(create: (_) => WrapperViewModel()),
@@ -46,6 +45,7 @@ List<SingleChildWidget> providers = [
     lazy: true, // Make it lazy to avoid initialization issues
   ),
   ChangeNotifierProvider(create: (_) => SavedJobViewModel()),
+  ChangeNotifierProvider.value(value: TwitterCommentViewModel.instance),
 
 
 

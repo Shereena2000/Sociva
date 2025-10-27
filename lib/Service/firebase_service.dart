@@ -75,6 +75,38 @@ class FirebaseService {
     }
   }
 
+  // Create text-only post (no media)
+  Future<void> createTextPost({
+    required String caption,
+    required String userId,
+    String postType = 'feed',
+  }) async {
+    try {
+      // Generate a new UUID for each post
+      final postId = const Uuid().v4();
+      final timestamp = DateTime.now();
+
+      final post = PostModel(
+        postId: postId,
+        mediaUrl: '', // No media for text posts
+        mediaUrls: [], // Empty media URLs
+        mediaType: 'text',
+        caption: caption,
+        timestamp: timestamp,
+        userId: userId,
+        postType: postType,
+      );
+
+      await _firestore
+          .collection('posts')
+          .doc(postId)
+          .set(post.toMap());
+      
+    } catch (e) {
+      throw Exception('Failed to create text post: $e');
+    }
+  }
+
   Stream<List<PostModel>> getPosts() {
     return _firestore
         .collection('posts')

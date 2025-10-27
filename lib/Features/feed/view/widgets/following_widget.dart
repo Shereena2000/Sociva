@@ -209,12 +209,14 @@ class FollowingWidget extends StatelessWidget {
                   ),
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.more_vert, color: Colors.white),
-                onPressed: () {
-                  // Show options menu
-                },
-              ),
+              // Only show three dots menu for own posts
+              if (postWithUser.userId == currentUserId)
+                IconButton(
+                  icon: const Icon(Icons.more_vert, color: Colors.white),
+                  onPressed: () {
+                    _showPostOptionsMenu(context, postWithUser, feedViewModel);
+                  },
+                ),
             ],
           ),
           const SizedBox(height: 12),
@@ -372,6 +374,9 @@ class FollowingWidget extends StatelessWidget {
                             postImage: postWithUser.mediaUrl,
                           );
                         }
+                        
+                        // Refresh feed to update retweet count
+                        feedViewModel.refreshFollowing();
                       },
                     ),
                   );
@@ -981,5 +986,107 @@ class FollowingWidget extends StatelessWidget {
         );
       },
     );
+  }
+
+  /// Show post options menu (delete for own posts)
+  void _showPostOptionsMenu(BuildContext context, dynamic postWithUser, FeedViewModel feedViewModel) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final isOwnPost = postWithUser.userId == currentUserId;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[600],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            if (isOwnPost) ...[
+              // Delete option for own posts
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text(
+                  'Delete Post',
+                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _confirmDeletePost(context, postWithUser, feedViewModel);
+                },
+              ),
+            ],
+            
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Confirm and delete post
+  Future<void> _confirmDeletePost(BuildContext context, dynamic postWithUser, FeedViewModel feedViewModel) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text(
+          'Delete Post',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this post? This action cannot be undone.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final success = await feedViewModel.deletePost(postWithUser.postId);
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Post deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to delete post'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

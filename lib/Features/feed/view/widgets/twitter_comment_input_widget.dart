@@ -30,6 +30,15 @@ class _TwitterCommentInputWidgetState extends State<TwitterCommentInputWidget> {
   final FocusNode _focusNode = FocusNode();
 
   @override
+  void initState() {
+    super.initState();
+    // Add listener to update button state when text changes
+    _commentController.addListener(() {
+      setState(() {}); // Rebuild when text changes
+    });
+  }
+
+  @override
   void dispose() {
     _commentController.dispose();
     _focusNode.dispose();

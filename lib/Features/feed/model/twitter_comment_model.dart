@@ -280,6 +280,7 @@ enum CommentInteractionType {
   reply,
   quote,
   view,
+  delete,
 }
 
 /// Comment interaction result

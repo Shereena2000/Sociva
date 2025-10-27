@@ -9,6 +9,7 @@ import '../../../../Settings/utils/p_colors.dart';
 import '../../../../Settings/utils/p_text_styles.dart';
 import '../view_model/profile_view_model.dart';
 import '../../status/view/add_status_dialog.dart';
+import 'add_feed_dialog.dart';
 import 'widgets/photos_tab.dart';
 import 'widgets/videos_tab.dart';
 import 'widgets/feed_tab.dart';
@@ -78,6 +79,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         top: 0,
                       ),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildProfileHeader(viewModel),
                           SizeBoxH(15),
@@ -98,7 +100,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           else
                             _buildOtherUserActions(context, viewModel),
                           SizeBoxH(20), // Status List
-                          _buildStatusSection(context, viewModel),
+                          // _buildStatusSection(context, viewModel), // Commented out status section
+                          SizeBoxH(20), // Add Feed Section
+                          _buildAddFeedSection(context, viewModel),
                         ],
                       ),
                     ),
@@ -429,6 +433,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _showAddFeedDialog(BuildContext context, ProfileViewModel viewModel) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AddFeedDialog(
+        onFeedCreated: () {
+          // Refresh profile if feed was created
+          viewModel.refreshProfile();
+        },
+      ),
+    );
+
+    // Refresh profile if feed was created
+    if (result == true) {
+      viewModel.refreshProfile();
+    }
+  }
+
   void _showStatusDetails(
       BuildContext context, status, ProfileViewModel viewModel) {
     showDialog(
@@ -594,6 +615,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAddFeedSection(BuildContext context, ProfileViewModel viewModel) {
+
+
+  return Column(
+   
+        children: [
+          // Add Feed Card - Only show for current user
+          if (viewModel.isCurrentUser) ...[
+            GestureDetector(
+              onTap: () => _showAddFeedDialog(context, viewModel),
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundImage: viewModel.userProfile?.profilePhotoUrl != null && viewModel.userProfile!.profilePhotoUrl.isNotEmpty
+                        ? NetworkImage(viewModel.userProfile!.profilePhotoUrl)
+                        : const NetworkImage(
+                            'https://i.pinimg.com/736x/bd/68/11/bd681155d2bd24325d2746b9c9ba690d.jpg',
+                          ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.black, width: 2),
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        size: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizeBoxH(8),
+            Text('Add Feed', style: PTextStyles.labelMedium),
+          ],
+        ],
+
     );
   }
 

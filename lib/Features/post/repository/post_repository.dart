@@ -92,6 +92,26 @@ class PostRepository {
     }
   }
 
+  // Create text-only post (no media)
+  Future<String> createTextPost({
+    required String caption,
+    required String userId,
+    String postType = 'feed',
+  }) async {
+    try {
+      // Save post data to Firebase
+      await _firebaseService.createTextPost(
+        caption: caption,
+        userId: userId,
+        postType: postType,
+      );
+
+      return 'text_post_created';
+    } catch (e) {
+      throw Exception('Failed to create text post: $e');
+    }
+  }
+
   // Helper to check if file is a video
   bool _isVideoFile(String path) {
     return path.toLowerCase().endsWith('.mp4') ||

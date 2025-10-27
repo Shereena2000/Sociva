@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:social_media_app/Features/feed/model/twitter_comment_model.dart';
+import 'package:social_media_app/Features/feed/view_model/twitter_comment_view_model.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 
 /// Twitter-style comment widget that looks like a tweet/post
@@ -30,51 +32,60 @@ class TwitterCommentWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(
-        left: comment.threadLevel * 20.0, // More indentation for threading
-        bottom: 1, // Minimal spacing between comments
-      ),
-      decoration: BoxDecoration(
-        color: Colors.black,
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.grey[900]!,
-            width: 0.5,
+    return Consumer<TwitterCommentViewModel>(
+      builder: (context, commentViewModel, child) {
+        // Get the updated comment from the view model if available
+        final updatedComment = commentViewModel.comments
+            .where((c) => c.commentId == comment.commentId)
+            .firstOrNull ?? comment;
+            
+        return Container(
+          margin: EdgeInsets.only(
+            left: updatedComment.threadLevel * 20.0, // More indentation for threading
+            bottom: 1, // Minimal spacing between comments
           ),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Thread line (if not main comment)
-          if (showThreadLine && comment.isReply)
-            Container(
-              margin: const EdgeInsets.only(left: 20, bottom: 0),
-              height: 20,
-              width: 2,
-              color: Colors.grey[700],
+          decoration: BoxDecoration(
+            color: Colors.black,
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.grey[900]!,
+                width: 0.5,
+              ),
             ),
-          
-          // Main comment content (looks like a tweet)
-          _buildTweetLikeContent(context),
-          
-          // Media attachments
-          if (comment.hasMedia)
-            _buildCommentMedia(context),
-          
-          // Quoted comment (if this is a quote comment)
-          if (comment.isQuoteComment)
-            _buildQuotedComment(context),
-          
-          // Interaction buttons (like Twitter)
-          _buildTwitterInteractionButtons(context),
-        ],
-      ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Thread line (if not main comment)
+              if (showThreadLine && updatedComment.isReply)
+                Container(
+                  margin: const EdgeInsets.only(left: 20, bottom: 0),
+                  height: 20,
+                  width: 2,
+                  color: Colors.grey[700],
+                ),
+              
+              // Main comment content (looks like a tweet)
+              _buildTweetLikeContent(context, updatedComment),
+              
+              // Media attachments
+              if (updatedComment.hasMedia)
+                _buildCommentMedia(context, updatedComment),
+              
+              // Quoted comment (if this is a quote comment)
+              if (updatedComment.isQuoteComment)
+                _buildQuotedComment(context, updatedComment),
+              
+              // Interaction buttons (like Twitter)
+              _buildTwitterInteractionButtons(context, updatedComment),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildTweetLikeContent(BuildContext context) {
+  Widget _buildTweetLikeContent(BuildContext context, TwitterCommentModel updatedComment) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -82,14 +93,14 @@ class TwitterCommentWidget extends StatelessWidget {
         children: [
           // Profile picture
           GestureDetector(
-            onTap: () => onUserTap(comment.userId),
+            onTap: () => onUserTap(updatedComment.userId),
             child: CircleAvatar(
               radius: 20,
-              backgroundImage: comment.userProfilePhoto.isNotEmpty
-                  ? NetworkImage(comment.userProfilePhoto)
+              backgroundImage: updatedComment.userProfilePhoto.isNotEmpty
+                  ? NetworkImage(updatedComment.userProfilePhoto)
                   : null,
               backgroundColor: Colors.grey[800],
-              child: comment.userProfilePhoto.isEmpty
+              child: updatedComment.userProfilePhoto.isEmpty
                   ? const Icon(Icons.person, size: 20, color: Colors.grey)
                   : null,
             ),
@@ -102,16 +113,16 @@ class TwitterCommentWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header (username, verified badge, timestamp) - like Twitter
-                _buildTwitterHeader(),
+                _buildTwitterHeader(updatedComment),
                 const SizedBox(height: 4),
                 
                 // Comment text - like Twitter tweet text
-                _buildTwitterText(),
+                _buildTwitterText(updatedComment),
                 const SizedBox(height: 8),
                 
                 // Reply indicator (if replying to someone) - like Twitter
-                if (comment.isReply && comment.replyToUserName != null)
-                  _buildTwitterReplyIndicator(),
+                if (updatedComment.isReply && updatedComment.replyToUserName != null)
+                  _buildTwitterReplyIndicator(updatedComment),
               ],
             ),
           ),
@@ -120,14 +131,14 @@ class TwitterCommentWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildTwitterHeader() {
+  Widget _buildTwitterHeader(TwitterCommentModel updatedComment) {
     return Row(
       children: [
         // Username
         GestureDetector(
-          onTap: () => onUserTap(comment.userId),
+          onTap: () => onUserTap(updatedComment.userId),
           child: Text(
-            comment.userName,
+            updatedComment.userName,
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
@@ -137,7 +148,7 @@ class TwitterCommentWidget extends StatelessWidget {
         ),
         
         // Verified badge
-        if (comment.isVerified) ...[
+        if (updatedComment.isVerified) ...[
           const SizedBox(width: 4),
           const Icon(
             Icons.verified,
@@ -149,9 +160,9 @@ class TwitterCommentWidget extends StatelessWidget {
         // Username handle
         const SizedBox(width: 4),
         GestureDetector(
-          onTap: () => onUserTap(comment.userId),
+          onTap: () => onUserTap(updatedComment.userId),
           child: Text(
-            '@${comment.username}',
+            '@${updatedComment.username}',
             style: TextStyle(
               color: Colors.grey[500],
               fontSize: 15,
@@ -163,7 +174,7 @@ class TwitterCommentWidget extends StatelessWidget {
         
         // Timestamp
         Text(
-          '· ${timeago.format(comment.timestamp, locale: 'en_short')}',
+          '· ${timeago.format(updatedComment.timestamp, locale: 'en_short')}',
           style: TextStyle(
             color: Colors.grey[500],
             fontSize: 15,
@@ -184,48 +195,37 @@ class TwitterCommentWidget extends StatelessWidget {
         
         const Spacer(),
         
-        // More options menu
-        PopupMenuButton<String>(
-          icon: Icon(
-            Icons.more_horiz,
-            color: Colors.grey[500],
-            size: 18,
+        // More options menu (only show for own comments)
+        if (updatedComment.userId == currentUserId)
+          PopupMenuButton<String>(
+            icon: Icon(
+              Icons.more_horiz,
+              color: Colors.grey[500],
+              size: 18,
+            ),
+            onSelected: (value) {
+              switch (value) {
+                case 'delete':
+                  onInteraction(updatedComment, CommentInteractionType.delete);
+                  break;
+              }
+            },
+            itemBuilder: (context) {
+              return [
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Text('Delete comment'),
+                ),
+              ];
+            },
           ),
-          onSelected: (value) {
-            switch (value) {
-              case 'report':
-                // Handle report
-                break;
-              case 'block':
-                // Handle block
-                break;
-              case 'mute':
-                // Handle mute
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'report',
-              child: Text('Report comment'),
-            ),
-            const PopupMenuItem(
-              value: 'block',
-              child: Text('Block user'),
-            ),
-            const PopupMenuItem(
-              value: 'mute',
-              child: Text('Mute user'),
-            ),
-          ],
-        ),
       ],
     );
   }
 
-  Widget _buildTwitterText() {
+  Widget _buildTwitterText(TwitterCommentModel updatedComment) {
     return SelectableText(
-      comment.text,
+      updatedComment.text,
       style: const TextStyle(
         color: Colors.white,
         fontSize: 15,
@@ -234,7 +234,7 @@ class TwitterCommentWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildTwitterReplyIndicator() {
+  Widget _buildTwitterReplyIndicator(TwitterCommentModel updatedComment) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -242,7 +242,7 @@ class TwitterCommentWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        'Replying to @${comment.replyToUserName}',
+        'Replying to @${updatedComment.replyToUserName}',
         style: TextStyle(
           color: Colors.grey[500],
           fontSize: 13,
@@ -251,21 +251,21 @@ class TwitterCommentWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildCommentMedia(BuildContext context) {
+  Widget _buildCommentMedia(BuildContext context, TwitterCommentModel updatedComment) {
     // Don't show media if no URLs
-    if (comment.mediaUrls.isEmpty) {
+    if (updatedComment.mediaUrls.isEmpty) {
       return const SizedBox.shrink();
     }
 
     return Container(
       margin: const EdgeInsets.only(left: 52, right: 16, top: 8),
-      child: _buildMediaGrid(),
+      child: _buildMediaGrid(updatedComment),
     );
   }
 
   // Build media grid with dynamic layout based on number of images (same as posts)
-  Widget _buildMediaGrid() {
-    final mediaUrls = comment.mediaUrls;
+  Widget _buildMediaGrid(TwitterCommentModel updatedComment) {
+    final mediaUrls = updatedComment.mediaUrls;
     
     // Handle different cases based on number of images
     if (mediaUrls.length == 1) {
@@ -523,10 +523,10 @@ class TwitterCommentWidget extends StatelessWidget {
     return videoExtensions.any((ext) => url.toLowerCase().contains(ext));
   }
 
-  Widget _buildQuotedComment(BuildContext context) {
-    if (comment.quotedCommentData == null) return const SizedBox.shrink();
+  Widget _buildQuotedComment(BuildContext context, TwitterCommentModel updatedComment) {
+    if (updatedComment.quotedCommentData == null) return const SizedBox.shrink();
     
-    final quotedData = comment.quotedCommentData!;
+    final quotedData = updatedComment.quotedCommentData!;
     return Container(
       margin: const EdgeInsets.only(left: 52, right: 16, top: 8),
       padding: const EdgeInsets.all(12),
@@ -588,7 +588,7 @@ class TwitterCommentWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildTwitterInteractionButtons(BuildContext context) {
+  Widget _buildTwitterInteractionButtons(BuildContext context, TwitterCommentModel updatedComment) {
     return Container(
       margin: const EdgeInsets.only(left: 52, right: 16, top: 8, bottom: 8),
       child: Row(
@@ -596,9 +596,9 @@ class TwitterCommentWidget extends StatelessWidget {
           // Reply button
           _buildTwitterInteractionButton(
             icon: Icons.chat_bubble_outline,
-            count: comment.replyCount,
+            count: updatedComment.replyCount,
             isActive: false,
-            onTap: () => onReply(comment),
+            onTap: () => onReply(updatedComment),
             color: Colors.grey[500]!,
           ),
           
@@ -607,15 +607,15 @@ class TwitterCommentWidget extends StatelessWidget {
           // Retweet button
           _buildTwitterInteractionButton(
             icon: Icons.repeat,
-            count: comment.retweetCount,
-            isActive: comment.isRetweetedBy(currentUserId),
+            count: updatedComment.retweetCount,
+            isActive: updatedComment.isRetweetedBy(currentUserId),
             onTap: () => onInteraction(
-              comment,
-              comment.isRetweetedBy(currentUserId) 
+              updatedComment,
+              updatedComment.isRetweetedBy(currentUserId) 
                   ? CommentInteractionType.unretweet 
                   : CommentInteractionType.retweet,
             ),
-            color: comment.isRetweetedBy(currentUserId) ? Colors.green : Colors.grey[500]!,
+            color: updatedComment.isRetweetedBy(currentUserId) ? Colors.green : Colors.grey[500]!,
           ),
           
           const SizedBox(width: 24),
@@ -623,15 +623,15 @@ class TwitterCommentWidget extends StatelessWidget {
           // Like button
           _buildTwitterInteractionButton(
             icon: Icons.favorite_border,
-            count: comment.likeCount,
-            isActive: comment.isLikedBy(currentUserId),
+            count: updatedComment.likeCount,
+            isActive: updatedComment.isLikedBy(currentUserId),
             onTap: () => onInteraction(
-              comment,
-              comment.isLikedBy(currentUserId) 
+              updatedComment,
+              updatedComment.isLikedBy(currentUserId) 
                   ? CommentInteractionType.unlike 
                   : CommentInteractionType.like,
             ),
-            color: comment.isLikedBy(currentUserId) ? Colors.red : Colors.grey[500]!,
+            color: updatedComment.isLikedBy(currentUserId) ? Colors.red : Colors.grey[500]!,
             activeIcon: Icons.favorite,
           ),
           
@@ -640,15 +640,15 @@ class TwitterCommentWidget extends StatelessWidget {
           // Save button
           _buildTwitterInteractionButton(
             icon: Icons.bookmark_border,
-            count: comment.saveCount,
-            isActive: comment.isSavedBy(currentUserId),
+            count: updatedComment.saveCount,
+            isActive: updatedComment.isSavedBy(currentUserId),
             onTap: () => onInteraction(
-              comment,
-              comment.isSavedBy(currentUserId) 
+              updatedComment,
+              updatedComment.isSavedBy(currentUserId) 
                   ? CommentInteractionType.unsave 
                   : CommentInteractionType.save,
             ),
-            color: comment.isSavedBy(currentUserId) ? Colors.blue : Colors.grey[500]!,
+            color: updatedComment.isSavedBy(currentUserId) ? Colors.blue : Colors.grey[500]!,
             activeIcon: Icons.bookmark,
           ),
           
@@ -659,7 +659,7 @@ class TwitterCommentWidget extends StatelessWidget {
             icon: Icons.share_outlined,
             count: 0,
             isActive: false,
-            onTap: () => onShare(comment),
+            onTap: () => onShare(updatedComment),
             color: Colors.grey[500]!,
           ),
         ],

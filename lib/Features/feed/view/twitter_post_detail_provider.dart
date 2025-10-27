@@ -14,8 +14,8 @@ class TwitterCommentProvider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<TwitterCommentViewModel>(
-      create: (context) => TwitterCommentViewModel(),
+    return ChangeNotifierProvider<TwitterCommentViewModel>.value(
+      value: TwitterCommentViewModel.instance,
       child: child,
     );
   }
@@ -38,13 +38,11 @@ class TwitterPostDetailScreenWithProvider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TwitterCommentProvider(
-      child: TwitterPostDetailScreen(
-        postId: postId,
-        postOwnerName: postOwnerName,
-        postOwnerId: postOwnerId,
-        postData: postData,
-      ),
+    return TwitterPostDetailScreen(
+      postId: postId,
+      postOwnerName: postOwnerName,
+      postOwnerId: postOwnerId,
+      postData: postData,
     );
   }
 }

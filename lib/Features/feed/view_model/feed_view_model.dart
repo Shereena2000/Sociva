@@ -213,6 +213,23 @@ class FeedViewModel extends ChangeNotifier {
     fetchFollowingList();
   }
 
+  /// Delete a post
+  Future<bool> deletePost(String postId) async {
+    try {
+      await _postRepository.deletePost(postId);
+      
+      // Remove from both lists
+      _forYouPosts.removeWhere((post) => post.postId == postId);
+      _followingPosts.removeWhere((post) => post.postId == postId);
+      
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('Failed to delete post: $e');
+      return false;
+    }
+  }
+
   /// Toggle like on a post
   Future<void> toggleLike(String postId, bool isCurrentlyLiked) async {
     try {
@@ -259,15 +276,6 @@ class FeedViewModel extends ChangeNotifier {
       notifyListeners();
       
     } catch (e) {
-    }
-  }
-
-  /// Delete a post
-  Future<void> deletePost(String postId) async {
-    try {
-      await _postRepository.deletePost(postId);
-    } catch (e) {
-      rethrow;
     }
   }
 }

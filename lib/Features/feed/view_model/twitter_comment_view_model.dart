@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,6 +8,14 @@ import 'package:social_media_app/Service/cloudinary_service.dart';
 
 /// View model for Twitter-style comments
 class TwitterCommentViewModel extends ChangeNotifier {
+  static TwitterCommentViewModel? _instance;
+  static TwitterCommentViewModel get instance {
+    _instance ??= TwitterCommentViewModel._internal();
+    return _instance!;
+  }
+  
+  TwitterCommentViewModel._internal();
+  
   final TwitterCommentRepository _repository = TwitterCommentRepository();
   final ImagePicker _imagePicker = ImagePicker();
   final CloudinaryService _cloudinaryService = CloudinaryService();
@@ -18,6 +27,9 @@ class TwitterCommentViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   Map<String, bool> _isInteracting = {};
+  
+  // Stream subscription management
+  StreamSubscription<List<TwitterCommentModel>>? _commentsSubscription;
   
   // Media state for comment creation
   List<File> _selectedMedia = [];
@@ -38,11 +50,14 @@ class TwitterCommentViewModel extends ChangeNotifier {
 
   /// Load comments for a post
   Future<void> loadComments(String postId) async {
+    // Cancel existing subscription to prevent multiple streams
+    await _commentsSubscription?.cancel();
+    
     _setLoading(true);
     _clearError();
 
     try {
-      _repository.getComments(postId).listen(
+      _commentsSubscription = _repository.getComments(postId).listen(
         (comments) {
           _comments = comments;
           notifyListeners();
@@ -144,17 +159,9 @@ class TwitterCommentViewModel extends ChangeNotifier {
     try {
       await _repository.toggleLike(postId, commentId);
       
-      // Update local state
-      _updateCommentInList(commentId, (comment) {
-        final likes = List<String>.from(comment.likes);
-        if (likes.contains(comment.userId)) {
-          likes.remove(comment.userId);
-        } else {
-          likes.add(comment.userId);
-        }
-        return comment.copyWith(likes: likes);
-      });
-
+      // Reload comments to get fresh data
+      await loadComments(postId);
+      
       return true;
     } catch (e) {
       _setError('Failed to toggle like: $e');
@@ -171,17 +178,9 @@ class TwitterCommentViewModel extends ChangeNotifier {
     try {
       await _repository.toggleRetweet(postId, commentId);
       
-      // Update local state
-      _updateCommentInList(commentId, (comment) {
-        final retweets = List<String>.from(comment.retweets);
-        if (retweets.contains(comment.userId)) {
-          retweets.remove(comment.userId);
-        } else {
-          retweets.add(comment.userId);
-        }
-        return comment.copyWith(retweets: retweets);
-      });
-
+      // Reload comments to get fresh data
+      await loadComments(postId);
+      
       return true;
     } catch (e) {
       _setError('Failed to toggle retweet: $e');
@@ -198,17 +197,9 @@ class TwitterCommentViewModel extends ChangeNotifier {
     try {
       await _repository.toggleSave(postId, commentId);
       
-      // Update local state
-      _updateCommentInList(commentId, (comment) {
-        final saves = List<String>.from(comment.saves);
-        if (saves.contains(comment.userId)) {
-          saves.remove(comment.userId);
-        } else {
-          saves.add(comment.userId);
-        }
-        return comment.copyWith(saves: saves);
-      });
-
+      // Reload comments to get fresh data
+      await loadComments(postId);
+      
       return true;
     } catch (e) {
       _setError('Failed to toggle save: $e');
@@ -223,10 +214,8 @@ class TwitterCommentViewModel extends ChangeNotifier {
     try {
       await _repository.incrementViewCount(postId, commentId);
       
-      // Update local state
-      _updateCommentInList(commentId, (comment) {
-        return comment.copyWith(viewCount: comment.viewCount + 1);
-      });
+      // Reload comments to get fresh data
+      await loadComments(postId);
     } catch (e) {
       debugPrint('Failed to increment view count: $e');
     }
@@ -240,14 +229,8 @@ class TwitterCommentViewModel extends ChangeNotifier {
     try {
       await _repository.editComment(postId, commentId, newText);
       
-      // Update local state
-      _updateCommentInList(commentId, (comment) {
-        return comment.copyWith(
-          text: newText,
-          isEdited: true,
-          editedAt: DateTime.now(),
-        );
-      });
+      // Reload comments to get fresh data
+      await loadComments(postId);
 
       return true;
     } catch (e) {
@@ -266,16 +249,9 @@ class TwitterCommentViewModel extends ChangeNotifier {
     try {
       await _repository.deleteComment(postId, commentId);
       
-      // Remove from local state
-      _comments.removeWhere((comment) => comment.commentId == commentId);
+      // Reload comments to get fresh data
+      await loadComments(postId);
       
-      // Remove from replies
-      _replies.remove(commentId);
-      
-      // Remove from threads
-      _threads.remove(commentId);
-
-      notifyListeners();
       return true;
     } catch (e) {
       _setError('Failed to delete comment: $e');
@@ -347,36 +323,10 @@ class TwitterCommentViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _updateCommentInList(String commentId, TwitterCommentModel Function(TwitterCommentModel) updater) {
-    // Update in main comments list
-    for (int i = 0; i < _comments.length; i++) {
-      if (_comments[i].commentId == commentId) {
-        _comments[i] = updater(_comments[i]);
-        break;
-      }
-    }
-
-    // Update in replies
-    _replies.forEach((parentId, replies) {
-      for (int i = 0; i < replies.length; i++) {
-        if (replies[i].commentId == commentId) {
-          replies[i] = updater(replies[i]);
-          break;
-        }
-      }
-    });
-
-    // Update in threads
-    _threads.forEach((threadId, threadComments) {
-      for (int i = 0; i < threadComments.length; i++) {
-        if (threadComments[i].commentId == commentId) {
-          threadComments[i] = updater(threadComments[i]);
-          break;
-        }
-      }
-    });
-
-    notifyListeners();
+  /// Dispose resources
+  void dispose() {
+    _commentsSubscription?.cancel();
+    super.dispose();
   }
 
   // ========== Media Methods ==========

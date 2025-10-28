@@ -47,18 +47,22 @@ class FollowRepository {
         'followedAt': FieldValue.serverTimestamp(),
       });
 
-      // Update follower/following counts (use set with merge to handle missing fields)
+      // Update follower/following counts - ensure fields exist first
       final currentUserDoc = _firestore.collection('users').doc(user.uid);
+      final targetUserDoc = _firestore.collection('users').doc(targetUserId);
+      
+      // First, ensure the count fields exist with default value 0
       batch.set(currentUserDoc, {
         'followingCount': FieldValue.increment(1),
       }, SetOptions(merge: true));
-
-      final targetUserDoc = _firestore.collection('users').doc(targetUserId);
+      
       batch.set(targetUserDoc, {
         'followersCount': FieldValue.increment(1),
       }, SetOptions(merge: true));
 
+      print('🔄 Follow: Increasing following count for ${user.uid} and followers count for $targetUserId');
       await batch.commit();
+      print('✅ Follow: Counts updated successfully');
     } catch (e) {
       throw Exception('Failed to follow user: $e');
     }
@@ -92,18 +96,22 @@ class FollowRepository {
 
       batch.delete(targetUserFollowersDoc);
 
-      // Update follower/following counts (use set with merge to handle missing fields)
+      // Update follower/following counts - ensure fields exist first
       final currentUserDoc = _firestore.collection('users').doc(user.uid);
+      final targetUserDoc = _firestore.collection('users').doc(targetUserId);
+      
+      // Decrement counts, but ensure they don't go below 0
       batch.set(currentUserDoc, {
         'followingCount': FieldValue.increment(-1),
       }, SetOptions(merge: true));
-
-      final targetUserDoc = _firestore.collection('users').doc(targetUserId);
+      
       batch.set(targetUserDoc, {
         'followersCount': FieldValue.increment(-1),
       }, SetOptions(merge: true));
 
+      print('🔄 Unfollow: Decreasing following count for ${user.uid} and followers count for $targetUserId');
       await batch.commit();
+      print('✅ Unfollow: Counts updated successfully');
     } catch (e) {
       throw Exception('Failed to unfollow user: $e');
     }
@@ -224,6 +232,50 @@ class FollowRepository {
         .map((snapshot) {
       return snapshot.docs.map((doc) => doc.id).toList();
     });
+  }
+
+  /// Fix negative counts for a user (call this if counts are showing as negative)
+  Future<void> fixNegativeCounts(String userId) async {
+    try {
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      if (!userDoc.exists) return;
+
+      final data = userDoc.data()!;
+      final followersCount = data['followersCount'] ?? 0;
+      final followingCount = data['followingCount'] ?? 0;
+
+      // If counts are negative, set them to 0
+      if (followersCount < 0 || followingCount < 0) {
+        await _firestore.collection('users').doc(userId).update({
+          'followersCount': followersCount < 0 ? 0 : followersCount,
+          'followingCount': followingCount < 0 ? 0 : followingCount,
+        });
+        print('🔧 Fixed negative counts for user $userId');
+      }
+    } catch (e) {
+      print('❌ Error fixing negative counts: $e');
+    }
+  }
+
+  /// Initialize count fields for a user if they don't exist
+  Future<void> initializeCountFields(String userId) async {
+    try {
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      if (!userDoc.exists) return;
+
+      final data = userDoc.data()!;
+      
+      // If count fields don't exist, initialize them to 0
+      if (!data.containsKey('followersCount') || !data.containsKey('followingCount')) {
+        await _firestore.collection('users').doc(userId).update({
+          'followersCount': data['followersCount'] ?? 0,
+          'followingCount': data['followingCount'] ?? 0,
+        });
+        print('🔧 Initialized count fields for user $userId');
+      }
+    } catch (e) {
+      print('❌ Error initializing count fields: $e');
+    }
   }
 }
 

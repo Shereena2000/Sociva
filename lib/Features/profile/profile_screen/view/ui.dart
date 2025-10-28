@@ -319,13 +319,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildStatItem(
-              viewModel.userProfile?.followersCount.toString() ?? '0',
-              'Followers',
+            GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(
+                  context,
+                  PPages.followersFollowingScreen,
+                  arguments: {
+                    'userId': viewModel.userProfile?.uid ?? '',
+                    'userName': viewModel.userProfile?.name ?? 'User',
+                    'tabIndex': 0, // 0 for followers tab
+                  },
+                );
+              },
+              child: _buildStatItem(
+                viewModel.userProfile?.followersCount.toString() ?? '0',
+                'Followers',
+              ),
             ),
-            _buildStatItem(
-              viewModel.userProfile?.followingCount.toString() ?? '0',
-              'Following',
+            GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(
+                  context,
+                  PPages.followersFollowingScreen,
+                  arguments: {
+                    'userId': viewModel.userProfile?.uid ?? '',
+                    'userName': viewModel.userProfile?.name ?? 'User',
+                    'tabIndex': 1, // 1 for following tab
+                  },
+                );
+              },
+              child: _buildStatItem(
+                viewModel.userProfile?.followingCount.toString() ?? '0',
+                'Following',
+              ),
             ),
             _buildStatItem(viewModel.allPosts.length.toString(), 'Posts'),
           ],

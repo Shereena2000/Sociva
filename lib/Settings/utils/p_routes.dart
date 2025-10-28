@@ -4,6 +4,7 @@ import 'package:social_media_app/Features/chat/chat_list/view/ui.dart';
 import 'package:social_media_app/Features/jobs/job_detail_screen/view/ui.dart';
 import 'package:social_media_app/Features/profile/create_profile/view/ui.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
+import 'package:social_media_app/Features/profile/followers_following/view/ui.dart';
 import 'package:social_media_app/Features/search/view/ui.dart';
 import 'package:social_media_app/Features/wrapper/view/ui.dart';
 import 'package:social_media_app/Features/post/view/create_post/ui.dart';
@@ -34,7 +35,11 @@ class Routes {
         return MaterialPageRoute(builder: (context) => SignUpScreen());
 
       case PPages.wrapperPageUi:
-        return MaterialPageRoute(builder: (context) => WrapperPage());
+        final args = settings.arguments as Map<String, dynamic>?;
+        final initialTabIndex = args?['initialTabIndex'] as int?;
+        return MaterialPageRoute(
+          builder: (context) => WrapperPage(initialTabIndex: initialTabIndex),
+        );
 
       case PPages.profilePageUi:
         return MaterialPageRoute(builder: (context) => ProfileScreen());
@@ -91,9 +96,21 @@ class Routes {
         return MaterialPageRoute(
           builder: (context) => const SavedFeedScreen(),
         );
-  case PPages.savedJobScreen:
+      case PPages.savedJobScreen:
         return MaterialPageRoute(
           builder: (context) => const SavedJobScreen(),
+        );
+      case PPages.followersFollowingScreen:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final userId = args?['userId'] as String? ?? '';
+        final userName = args?['userName'] as String? ?? 'User';
+        final initialTabIndex = args?['tabIndex'] as int? ?? 0;
+        return MaterialPageRoute(
+          builder: (context) => FollowersFollowingScreen(
+            userId: userId,
+            userName: userName,
+            initialTabIndex: initialTabIndex,
+          ),
         );
 
 

@@ -102,13 +102,13 @@ class SavedJobScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
                       onPressed: () {
-                        // Navigate back to main app and switch to jobs tab
+                        // Navigate to wrapper page with jobs tab (index 3) as initial tab
                         Navigator.pushNamedAndRemoveUntil(
                           context, 
                           PPages.wrapperPageUi, 
-                          (route) => false
+                          (route) => false,
+                          arguments: {'initialTabIndex': 3},
                         );
-                        // Note: You might want to add a way to switch to jobs tab programmatically
                       },
                       icon: const Icon(Icons.search),
                       label: const Text('Browse Jobs'),

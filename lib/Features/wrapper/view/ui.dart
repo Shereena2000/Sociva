@@ -14,7 +14,9 @@ import 'widgets/custom_bottom_navigation_bar.dart';
 
 
 class WrapperPage extends StatefulWidget {
-  const WrapperPage({super.key});
+  final int? initialTabIndex;
+  
+  const WrapperPage({super.key, this.initialTabIndex});
 
   @override
   State<WrapperPage> createState() => _WrapperPageState();
@@ -24,9 +26,13 @@ class _WrapperPageState extends State<WrapperPage> {
   @override
   void initState() {
     super.initState();
-    // Reset to home screen and load user's company data when wrapper initializes
+    // Set initial tab or reset to home screen and load user's company data when wrapper initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<WrapperViewModel>().resetToHome();
+      if (widget.initialTabIndex != null) {
+        context.read<WrapperViewModel>().setSelectedIndex(widget.initialTabIndex!);
+      } else {
+        context.read<WrapperViewModel>().resetToHome();
+      }
       context.read<CompanyRegistrationViewModel>().loadUserCompany();
     });
   }

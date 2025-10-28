@@ -97,7 +97,9 @@ class ProfileViewModel extends ChangeNotifier {
       
       if (profile != null) {
         _userProfile = profile;
+        print('📊 Profile loaded: Followers: ${profile.followersCount}, Following: ${profile.followingCount}');
       } else {
+        print('❌ Profile not found for user: $targetUserId');
       }
 
       _isLoading = false;
@@ -347,7 +349,9 @@ class ProfileViewModel extends ChangeNotifier {
       }
 
       // Refresh the profile to get updated follower counts
+      print('🔄 Refreshing profile after follow/unfollow action...');
       await fetchUserProfile();
+      print('✅ Profile refreshed with updated counts');
       
       _isFollowActionLoading = false;
       notifyListeners();

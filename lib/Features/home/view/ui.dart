@@ -10,6 +10,7 @@ import 'package:social_media_app/Features/feed/view/status_viewer_dialog.dart';
 import 'package:social_media_app/Features/profile/status/view/add_status_dialog.dart';
 import 'package:social_media_app/Features/feed/view/comments_screen.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view/ui.dart';
+import 'package:social_media_app/Features/profile/profile_screen/view/widgets/multi_media_carousel_provider.dart';
 import 'package:social_media_app/Features/post/view/post_detail_screen.dart';
 import 'package:social_media_app/Features/notifications/view/notification_screen.dart';
 import 'package:social_media_app/Features/notifications/view_model/notification_view_model.dart';
@@ -32,19 +33,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Track current page for each post's carousel
-  final Map<String, int> _currentPageMap = {};
-  // Track PageControllers for each post's carousel
-  final Map<String, PageController> _pageControllers = {};
-
-  @override
-  void dispose() {
-    // Dispose all PageControllers
-    for (var controller in _pageControllers.values) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -620,7 +608,25 @@ class _HomeScreenState extends State<HomeScreen> {
     dynamic postWithUser,
     HomeViewModel homeViewModel,
   ) {
-    return Container(
+    return GestureDetector(
+      onPanEnd: (details) {
+        // Debug: Print velocity to see what's happening
+        print('Pan velocity: ${details.velocity.pixelsPerSecond.dx}');
+        
+        // Detect swipe from right to left (negative velocity)
+        // Lowered threshold to make it more sensitive
+        if (details.velocity.pixelsPerSecond.dx < -200) {
+          print('Swipe detected! Navigating to profile: ${postWithUser.userId}');
+          // Navigate to profile screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProfileScreen(userId: postWithUser.userId),
+            ),
+          );
+        }
+      },
+      child: Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -723,7 +729,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // Post image/video - Carousel if multiple, single if one
           GestureDetector(
-            onLongPress: () {
+            onTap: () {
               // Navigate to full screen post detail
               Navigator.push(
                 context,
@@ -881,6 +887,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 12),
         ],
       ),
+    ),
     );
   }
 
@@ -1053,36 +1060,31 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildMediaCarousel(PostModel post) {
-    final currentPage = _currentPageMap[post.postId] ?? 0;
     const double height = 400.0;
-
-    // Get or create PageController for this post
-    if (!_pageControllers.containsKey(post.postId)) {
-      _pageControllers[post.postId] = PageController(initialPage: currentPage);
-    }
+    // Use unique key for each carousel
+    final carouselKey = post.postId;
     
-    final pageController = _pageControllers[post.postId]!;
-
-    return Container(
-      height: height,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.grey[300],
-      ),
-      child: Stack(
-        children: [
-          // PageView for scrollable images
-          ClipRRect(
+    return Consumer<MultiMediaCarouselProvider>(
+      builder: (context, carouselProvider, child) {
+        final currentIndex = carouselProvider.getCurrentPage(carouselKey);
+        
+        return Container(
+          height: height,
+          width: double.infinity,
+          decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            child: PageView.builder(
-              controller: pageController,
-              itemCount: post.mediaUrls.length,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPageMap[post.postId] = index;
-                });
-              },
+            color: Colors.grey[300],
+          ),
+          child: Stack(
+            children: [
+              // PageView for scrollable images
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: PageView.builder(
+                  itemCount: post.mediaUrls.length,
+                  onPageChanged: (index) {
+                    carouselProvider.setCurrentPage(carouselKey, index);
+                  },
                   itemBuilder: (context, index) {
                     final mediaUrl = post.mediaUrls[index];
                     final isVideo = _isVideoUrl(mediaUrl);
@@ -1142,7 +1144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: 6,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: currentPage == index
+                          color: currentIndex == index
                               ? Colors.white
                               : Colors.white.withOpacity(0.4),
                         ),
@@ -1153,6 +1155,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         );
+      },
+    );
   }
 
   // Helper method to check if URL is a video

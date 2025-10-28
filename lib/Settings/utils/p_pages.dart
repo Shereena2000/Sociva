@@ -21,4 +21,5 @@ class PPages {
       static const String  savedPostScreen = "/savedPostScreen";
       static const String  savedFeedScreen = "/savedFeedScreen";
       static const String  savedJobScreen = "/savedJobScreen";
+      static const String  followersFollowingScreen = "/followersFollowingScreen";
 }

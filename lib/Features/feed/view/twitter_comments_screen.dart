@@ -291,8 +291,9 @@ class _TwitterCommentsScreenState extends State<TwitterCommentsScreen> {
             // User Profile Picture
             CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.grey[800],
-              child: const Icon(Icons.person, size: 16, color: Colors.grey),
+              backgroundImage: const NetworkImage(
+                'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
+              ),
             ),
             const SizedBox(width: 12),
             

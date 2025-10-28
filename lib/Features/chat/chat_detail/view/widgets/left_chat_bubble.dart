@@ -168,7 +168,7 @@ class LeftChatBubble extends StatelessWidget {
             ),
           );
         }
-      } catch (e, stackTrace) {
+      } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error opening PDF: $e'),

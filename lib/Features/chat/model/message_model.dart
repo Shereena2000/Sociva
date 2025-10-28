@@ -7,6 +7,7 @@ enum MessageType {
   audio,
   resume,
   jobApplication,
+  file,
 }
 
 class MessageModel {
@@ -76,6 +77,8 @@ class MessageModel {
         return MessageType.resume;
       case 'jobApplication':
         return MessageType.jobApplication;
+      case 'file':
+        return MessageType.file;
       default:
         return MessageType.text;
     }

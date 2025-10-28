@@ -16,7 +16,7 @@ class ChatListScreen extends StatelessWidget {
 
   // Helper method to get display name with fallback hierarchy
   String _getDisplayName(Map<String, dynamic>? userDetails) {
-    if (userDetails == null) return 'Chat User';
+    if (userDetails == null) return 'User';
     
     // 1. First try username (nickname)
     final username = userDetails['username']?.toString();
@@ -24,14 +24,14 @@ class ChatListScreen extends StatelessWidget {
       return username;
     }
     
-    // 2. Fallback to name (real name)
+    // 2. If username is null, use name (real name)
     final name = userDetails['name']?.toString();
     if (name != null && name.isNotEmpty) {
       return name;
     }
     
     // 3. Final fallback
-    return 'Chat User';
+    return 'User';
   }
 
   @override

@@ -163,7 +163,7 @@ class FollowingWidget extends StatelessWidget {
                   backgroundImage: postWithUser.userProfilePhoto.isNotEmpty
                       ? NetworkImage(postWithUser.userProfilePhoto)
                       : const NetworkImage(
-                          'https://i.pinimg.com/736x/bd/68/11/bd681155d2bd24325d2746b9c9ba690d.jpg',
+                          'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
                         ),
                 ),
               ),
@@ -871,7 +871,11 @@ class FollowingWidget extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 12,
-                    backgroundImage: NetworkImage(quotedUserImage),
+                    backgroundImage: quotedUserImage.isNotEmpty
+                        ? NetworkImage(quotedUserImage)
+                        : const NetworkImage(
+                            'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
+                          ),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -944,7 +948,11 @@ class FollowingWidget extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 12,
-                    backgroundImage: NetworkImage(commentUserImage),
+                    backgroundImage: commentUserImage.isNotEmpty
+                        ? NetworkImage(commentUserImage)
+                        : const NetworkImage(
+                            'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
+                          ),
                   ),
                   const SizedBox(width: 8),
                   Text(

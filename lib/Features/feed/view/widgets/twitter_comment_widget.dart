@@ -98,11 +98,9 @@ class TwitterCommentWidget extends StatelessWidget {
               radius: 20,
               backgroundImage: updatedComment.userProfilePhoto.isNotEmpty
                   ? NetworkImage(updatedComment.userProfilePhoto)
-                  : null,
-              backgroundColor: Colors.grey[800],
-              child: updatedComment.userProfilePhoto.isEmpty
-                  ? const Icon(Icons.person, size: 20, color: Colors.grey)
-                  : null,
+                  : const NetworkImage(
+                      'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
+                    ),
             ),
           ),
           const SizedBox(width: 12),
@@ -545,11 +543,9 @@ class TwitterCommentWidget extends StatelessWidget {
                 radius: 12,
                 backgroundImage: quotedData['userProfilePhoto'] != null && quotedData['userProfilePhoto'].isNotEmpty
                     ? NetworkImage(quotedData['userProfilePhoto'])
-                    : null,
-                backgroundColor: Colors.grey[800],
-                child: quotedData['userProfilePhoto'] == null || quotedData['userProfilePhoto'].isEmpty
-                    ? const Icon(Icons.person, size: 12, color: Colors.grey)
-                    : null,
+                    : const NetworkImage(
+                        'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
+                      ),
               ),
               const SizedBox(width: 8),
               Text(

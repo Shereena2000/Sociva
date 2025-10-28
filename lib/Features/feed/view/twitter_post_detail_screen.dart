@@ -269,11 +269,9 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
                 radius: 20,
                 backgroundImage: postData['userProfilePhoto'] != null && postData['userProfilePhoto'].isNotEmpty
                     ? NetworkImage(postData['userProfilePhoto'])
-                    : null,
-                backgroundColor: Colors.grey[800],
-                child: postData['userProfilePhoto'] == null || postData['userProfilePhoto'].isEmpty
-                    ? const Icon(Icons.person, size: 20, color: Colors.grey)
-                    : null,
+                    : const NetworkImage(
+                        'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
+                      ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -711,7 +709,11 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
                 children: [
                   CircleAvatar(
                     radius: 16,
-                    backgroundImage: NetworkImage(commentUserImage),
+                    backgroundImage: commentUserImage.isNotEmpty
+                        ? NetworkImage(commentUserImage)
+                        : const NetworkImage(
+                            'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
+                          ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(

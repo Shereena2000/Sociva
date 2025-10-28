@@ -109,10 +109,9 @@ class _StatusViewerDialogState extends State<StatusViewerDialog> {
                           radius: 20,
                           backgroundImage: widget.statusGroup.userProfilePhoto.isNotEmpty
                               ? NetworkImage(widget.statusGroup.userProfilePhoto)
-                              : null,
-                          child: widget.statusGroup.userProfilePhoto.isEmpty
-                              ? Icon(Icons.person)
-                              : null,
+                              : const NetworkImage(
+                                  'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
+                                ),
                         ),
                         SizedBox(width: 12),
                         Expanded(

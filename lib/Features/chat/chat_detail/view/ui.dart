@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/chat/chat_detail/view_model/chat_detail_view_model.dart';
+import 'package:social_media_app/Features/chat/chat_detail/view_model/chat_media_provider.dart';
 import 'package:social_media_app/Settings/constants/text_styles.dart';
 
 import '../../../../Settings/constants/sized_box.dart';
@@ -21,7 +23,7 @@ class ChatDetailScreen extends StatelessWidget {
 
   // Helper method to get display name with fallback hierarchy
   String _getDisplayName(Map<String, dynamic>? userDetails) {
-    if (userDetails == null) return 'Chat User';
+    if (userDetails == null) return 'User';
     
     // 1. First try username (nickname)
     final username = userDetails['username']?.toString();
@@ -29,14 +31,14 @@ class ChatDetailScreen extends StatelessWidget {
       return username;
     }
     
-    // 2. Fallback to name (real name)
+    // 2. If username is null, use name (real name)
     final name = userDetails['name']?.toString();
     if (name != null && name.isNotEmpty) {
       return name;
     }
     
     // 3. Final fallback
-    return 'Chat User';
+    return 'User';
   }
 
   // Show delete message confirmation dialog (for individual messages)
@@ -236,22 +238,27 @@ class ChatDetailScreen extends StatelessWidget {
       );
     }
 
-    return ChangeNotifierProvider(
-      create: (_) => ChatDetailViewModel()..initializeChat(userId, roomId),
-      child: Consumer<ChatDetailViewModel>(
-        builder: (context, viewModel, child) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ChatDetailViewModel()..initializeChat(userId, roomId)),
+        ChangeNotifierProvider(create: (_) => ChatMediaProvider()),
+      ],
+      child: Consumer2<ChatDetailViewModel, ChatMediaProvider>(
+        builder: (context, viewModel, mediaProvider, child) {
           final messageController = TextEditingController();
 
           return Scaffold(
             appBar: ChatAppBar(
               userName: _getDisplayName(viewModel.otherUserDetails),
               userImage: viewModel.otherUserDetails?['profilePhotoUrl'] ??
-'https://i.pinimg.com/736x/9e/83/75/9e837528f01cf3f42119c5aeeed1b336.jpg',              isOnline: viewModel.isOtherUserOnline,
+'https://i.pinimg.com/736x/9e/83/75/9e837528f01cf3f42119c5aeeed1b336.jpg',
+              isOnline: viewModel.isOtherUserOnline,
               statusText: viewModel.getStatusText(),
               onDeleteChat: () => _showDeleteConfirmationDialog(context, viewModel),
-              receiverId: otherUserId, // Pass receiver ID for calls
             ),
-            body: Column(
+            body: Stack(
+              children: [
+                Column(
               children: [
                 if (viewModel.isLoading)
                   Expanded(
@@ -365,10 +372,48 @@ class ChatDetailScreen extends StatelessWidget {
                     if (messageController.text.trim().isNotEmpty) {
                       viewModel.sendTextMessage(messageController.text);
                       messageController.clear();
+                    } else if (mediaProvider.hasMedia) {
+                      // Send media with caption
+                      // Create a copy of the list to avoid concurrent modification
+                      final mediaFilesCopy = List<File>.from(mediaProvider.selectedMedia);
+                      final caption = messageController.text.trim().isEmpty ? null : messageController.text.trim();
+                      messageController.clear();
+                      
+                      // Send media asynchronously and clear after
+                      viewModel.sendMediaMessages(mediaFilesCopy, caption).then((_) {
+                        mediaProvider.clearMedia();
+                      });
                     }
                   },
                 ),
                 SizeBoxH(16),
+              ],
+            ),
+                // Loading overlay for media upload
+                if (viewModel.isSending)
+                  Container(
+                    color: Colors.black.withOpacity(0.7),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            strokeWidth: 3,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Uploading media...',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           );

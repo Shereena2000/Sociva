@@ -1,14 +1,17 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:social_media_app/Features/chat/model/message_model.dart';
 import 'package:social_media_app/Features/chat/repository/chat_repository.dart';
 import 'package:social_media_app/Service/user_presence_service.dart';
+import 'package:social_media_app/Service/cloudinary_service.dart';
 
 class ChatDetailViewModel extends ChangeNotifier {
   final ChatRepository _chatRepository = ChatRepository();
   final UserPresenceService _presenceService = UserPresenceService();
+  final CloudinaryService _cloudinaryService = CloudinaryService();
   final String? _currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
   String _chatRoomId = '';
@@ -87,8 +90,6 @@ class ChatDetailViewModel extends ChangeNotifier {
 
     _chatRepository.getMessages(_chatRoomId).listen(
       (messages) {
-        for (var message in messages) {
-        }
         _messages = messages;
         notifyListeners();
       },
@@ -120,6 +121,69 @@ class ChatDetailViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _errorMessage = 'Failed to send message';
+      _isSending = false;
+      notifyListeners();
+    }
+  }
+
+  /// Send media messages (images/videos/files) like WhatsApp
+  Future<void> sendMediaMessages(List<File> mediaFiles, String? caption) async {
+    if (mediaFiles.isEmpty || _chatRoomId.isEmpty || _otherUserId.isEmpty) {
+      return;
+    }
+
+    _isSending = true;
+    notifyListeners();
+
+    try {
+      // Upload each media file to Cloudinary and send as separate messages
+      print('📤 Starting to send ${mediaFiles.length} media files');
+      for (var file in mediaFiles) {
+        print('📁 Processing file: ${file.path}');
+        print('   File exists: ${await file.exists()}');
+        final isVideo = file.path.toLowerCase().endsWith('.mp4') ||
+            file.path.toLowerCase().endsWith('.mov') ||
+            file.path.toLowerCase().endsWith('.avi');
+        
+        final fileExtension = file.path.split('.').last.toLowerCase();
+        final isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(fileExtension);
+        
+        print('   Is video: $isVideo, Is image: $isImage');
+        
+        // Upload to Cloudinary
+        print('   Uploading to Cloudinary...');
+        final mediaUrl = await _cloudinaryService.uploadMedia(file, isVideo: isVideo);
+        print('   Upload successful: $mediaUrl');
+        
+        // Determine message type
+        MessageType messageType;
+        if (isVideo) {
+          messageType = MessageType.video;
+        } else if (isImage) {
+          messageType = MessageType.image;
+        } else {
+          messageType = MessageType.file;
+        }
+        
+        // Send message with media
+        print('   Sending message to Firebase...');
+        await _chatRepository.sendMessage(
+          chatRoomId: _chatRoomId,
+          receiverId: _otherUserId,
+          content: caption ?? '',
+          messageType: messageType,
+          mediaUrl: mediaUrl,
+        );
+        print('   Message sent successfully!');
+      }
+
+      _isSending = false;
+      _errorMessage = null;
+      notifyListeners();
+    } catch (e, stackTrace) {
+      print('❌ Error sending media: $e');
+      print('Stack trace: $stackTrace');
+      _errorMessage = 'Failed to send media: $e';
       _isSending = false;
       notifyListeners();
     }

@@ -130,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 .get(),
             builder: (context, snapshot) {
               String profileImageUrl =
-                  'https://i.pinimg.com/736x/8d/4e/22/8d4e220866ec920f1a57c3730ca8aa11.jpg';
+                  'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg';
               String displayName = 'User';
 
               if (snapshot.hasData && snapshot.data?.data() != null) {
@@ -658,7 +658,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     backgroundImage: postWithUser.userProfilePhoto.isNotEmpty
                         ? NetworkImage(postWithUser.userProfilePhoto)
                         : const NetworkImage(
-                            'https://i.pinimg.com/736x/bd/68/11/bd681155d2bd24325d2746b9c9ba690d.jpg',
+                            'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
                           ),
                   ),
                 ),

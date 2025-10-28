@@ -85,9 +85,22 @@ class RightChatBubble extends StatelessWidget {
   }
 
   Widget _buildMessageContent(BuildContext context) {
-    // Debug parameters
+    // Handle image messages
+    if (messageType == 'image' && mediaUrl != null) {
+      return _buildImageMessage(context);
+    }
+    
+    // Handle video messages
+    if (messageType == 'video' && mediaUrl != null) {
+      return _buildVideoMessage(context);
+    }
     
     // Handle file attachments
+    if (messageType == 'file' && mediaUrl != null) {
+      return _buildFileMessage(context);
+    }
+    
+    // Handle job application attachments
     if (messageType == 'jobApplication' && mediaUrl != null) {
       return _buildResumeAttachment(context);
     }
@@ -180,7 +193,7 @@ class RightChatBubble extends StatelessWidget {
             ),
           );
         }
-      } catch (e, stackTrace) {
+      } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error opening PDF: $e'),
@@ -329,5 +342,191 @@ class RightChatBubble extends StatelessWidget {
       }
     } catch (e) {
     }
+  }
+
+  Widget _buildImageMessage(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Image preview
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            mediaUrl!,
+            width: 250,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                width: 250,
+                height: 200,
+                color: Colors.grey[800],
+                child: Center(
+                  child: CircularProgressIndicator(
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded / 
+                          loadingProgress.expectedTotalBytes!
+                        : null,
+                  ),
+                ),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                width: 250,
+                height: 200,
+                color: Colors.grey[800],
+                child: Icon(Icons.broken_image, color: Colors.grey, size: 50),
+              );
+            },
+          ),
+        ),
+        // Caption if exists
+        if (message.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: TextStyle(fontSize: 16, color: Colors.white),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildVideoMessage(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Video thumbnail
+        GestureDetector(
+          onTap: () {
+            // TODO: Open video player
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Video playback coming soon')),
+            );
+          },
+          child: Container(
+            width: 250,
+            height: 200,
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Video thumbnail
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    mediaUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(color: Colors.black);
+                    },
+                  ),
+                ),
+                // Play button overlay
+                Center(
+                  child: Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.play_arrow,
+                      color: Colors.white,
+                      size: 50,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Caption if exists
+        if (message.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: TextStyle(fontSize: 16, color: Colors.white),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildFileMessage(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // File attachment
+        GestureDetector(
+          onTap: () {
+            // TODO: Download/open file
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('File download coming soon')),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.white.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.insert_drive_file,
+                  color: Colors.white,
+                  size: 32,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'File Attachment',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tap to download',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.download,
+                  color: Colors.white70,
+                  size: 24,
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Caption if exists
+        if (message.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: TextStyle(fontSize: 16, color: Colors.white),
+          ),
+        ],
+      ],
+    );
   }
 }

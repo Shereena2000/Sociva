@@ -422,11 +422,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
             radius: isReply ? 14 : 16,
             backgroundImage: comment.userProfilePhoto.isNotEmpty
                 ? NetworkImage(comment.userProfilePhoto)
-                : null,
-            backgroundColor: Colors.grey[800],
-            child: comment.userProfilePhoto.isEmpty
-                ? Icon(Icons.person, size: isReply ? 14 : 16, color: Colors.grey[600])
-                : null,
+                : const NetworkImage(
+                    'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
+                  ),
           ),
           const SizedBox(width: 12),
           
@@ -540,12 +538,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
               backgroundImage: homeViewModel.currentUserProfile?.profilePhotoUrl != null &&
                       homeViewModel.currentUserProfile!.profilePhotoUrl.isNotEmpty
                   ? NetworkImage(homeViewModel.currentUserProfile!.profilePhotoUrl)
-                  : null,
-              backgroundColor: Colors.grey[800],
-              child: homeViewModel.currentUserProfile?.profilePhotoUrl == null ||
-                      homeViewModel.currentUserProfile!.profilePhotoUrl.isEmpty
-                  ? const Icon(Icons.person, size: 16, color: Colors.grey)
-                  : null,
+                  : const NetworkImage(
+                      'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
+                    ),
             ),
             const SizedBox(width: 12),
             

@@ -3,6 +3,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view_model/profile_view_model.dart';
 import 'package:social_media_app/Features/post/model/post_model.dart';
+import 'package:social_media_app/Features/post/view/post_card_detail_screen.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 import 'multi_media_carousel_provider.dart';
 
@@ -94,8 +95,10 @@ class VideoTabs extends StatelessWidget {
             final post = videos[index];
             
             return _buildVideoCard(
+              context,
               post,
               index,
+              videos,
             );
           },
         );
@@ -103,7 +106,7 @@ class VideoTabs extends StatelessWidget {
     );
   }
 
-  Widget _buildVideoCard(PostModel post, int index) {
+  Widget _buildVideoCard(BuildContext context, PostModel post, int index, List<PostModel> allVideos) {
     // Get video URLs - use mediaUrls if available, otherwise fallback to single mediaUrl
     List<String> videoUrls = post.mediaUrls.isNotEmpty ? post.mediaUrls : [post.mediaUrl];
     videoUrls = videoUrls.where((url) => url.isNotEmpty && _isVideoUrl(url)).toList();
@@ -118,36 +121,88 @@ class VideoTabs extends StatelessWidget {
     
     // If only one video, show it directly
     if (videoUrls.length == 1) {
-      return GestureDetector(
-        onTap: () {
-          // Handle tap
-        },
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: VideoPlayerWidget(
-            videoUrl: videoUrls[0],
-            height: 200,
-            width: double.infinity,
-            autoPlay: false,
-            showControls: true,
-          ),
-        ),
+      return _VideoCardWithGestures(
+        context: context,
+        videoUrl: videoUrls[0],
+        post: post,
+        allVideos: allVideos,
+        index: index,
       );
     }
     
     // Multiple videos - show with page indicators
-    return GestureDetector(
-      onTap: () {
-        // Handle tap
-      },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: _buildMultipleVideos(videoUrls),
+    return _VideoCardCarouselWithGestures(
+      context: context,
+      videoUrls: videoUrls,
+      post: post,
+      allVideos: allVideos,
+      index: index,
+    );
+  }
+
+  // Widget for single video with gesture handling
+  Widget _VideoCardWithGestures({
+    required BuildContext context,
+    required String videoUrl,
+    required PostModel post,
+    required List<PostModel> allVideos,
+    required int index,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: VideoPlayerWidget(
+        videoUrl: videoUrl,
+        height: 200,
+        width: double.infinity,
+        autoPlay: false,
+        showControls: true,
+        enableDoubleTapPlayPause: true,
+        onSingleTap: () {
+          // Single tap - navigate to detail screen (only in video tab)
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PostCardDetailScreen(
+                postId: post.postId,
+                postIds: allVideos.map((p) => p.postId).toList(),
+                initialIndex: index,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // Widget for multiple videos with gesture handling
+  Widget _VideoCardCarouselWithGestures({
+    required BuildContext context,
+    required List<String> videoUrls,
+    required PostModel post,
+    required List<PostModel> allVideos,
+    required int index,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: _buildMultipleVideos(
+        videoUrls,
+        onSingleTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PostCardDetailScreen(
+                postId: post.postId,
+                postIds: allVideos.map((p) => p.postId).toList(),
+                initialIndex: index,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
   
-  Widget _buildMultipleVideos(List<String> videoUrls) {
+  Widget _buildMultipleVideos(List<String> videoUrls, {VoidCallback? onSingleTap}) {
     final carouselKey = videoUrls.join(',');
     
     return Consumer<MultiMediaCarouselProvider>(
@@ -171,6 +226,8 @@ class VideoTabs extends StatelessWidget {
                     width: double.infinity,
                     autoPlay: false,
                     showControls: true,
+                    enableDoubleTapPlayPause: true, // Enable double tap for video tab
+                    onSingleTap: onSingleTap, // Pass navigation callback
                   );
                 },
               ),

@@ -8,6 +8,8 @@ class VideoPlayerWidget extends StatefulWidget {
   final double? height;
   final double? width;
   final BoxFit fit;
+  final bool enableDoubleTapPlayPause; // Enable double tap to play/pause (for video tab)
+  final VoidCallback? onSingleTap; // Optional callback for single tap (overrides default toggleControls)
 
   const VideoPlayerWidget({
     super.key,
@@ -17,6 +19,8 @@ class VideoPlayerWidget extends StatefulWidget {
     this.height,
     this.width,
     this.fit = BoxFit.cover,
+    this.enableDoubleTapPlayPause = false,
+    this.onSingleTap,
   });
 
   @override
@@ -29,6 +33,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _isPlaying = false;
   bool _showControls = true;
   bool _isLoading = true;
+  bool _isMuted = false;
 
   @override
   void initState() {
@@ -60,6 +65,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             _isPlaying = true;
           });
         }
+
+        // Initialize volume based on mute state
+        _controller!.setVolume(_isMuted ? 0.0 : 1.0);
 
         _controller!.addListener(() {
           if (mounted) {
@@ -94,6 +102,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     });
   }
 
+  void _toggleMute() {
+    if (_controller != null && _isInitialized) {
+      setState(() {
+        _isMuted = !_isMuted;
+        _controller!.setVolume(_isMuted ? 0.0 : 1.0);
+      });
+    }
+  }
+
   @override
   void dispose() {
     _controller?.dispose();
@@ -103,7 +120,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: _toggleControls,
+      onTap: widget.onSingleTap ?? _toggleControls, // Use custom callback if provided, otherwise toggle controls
+      onDoubleTap: widget.enableDoubleTapPlayPause ? _togglePlayPause : null,
       child: Container(
         height: widget.height,
         width: widget.width,
@@ -139,6 +157,28 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     Icons.videocam,
                     color: Colors.white,
                     size: 64,
+                  ),
+                ),
+              ),
+
+            // Mute/Unmute button (top-right corner) - Always visible
+            if (_isInitialized && widget.showControls)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: GestureDetector(
+                  onTap: _toggleMute,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _isMuted ? Icons.volume_off : Icons.volume_up,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
                 ),
               ),

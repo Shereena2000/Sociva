@@ -3,6 +3,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view_model/profile_view_model.dart';
 import 'package:social_media_app/Features/post/model/post_model.dart';
+import 'package:social_media_app/Features/post/view/post_card_detail_screen.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 import 'multi_media_carousel_provider.dart';
 
@@ -92,7 +93,18 @@ class PhotoTabs extends StatelessWidget {
             
             return GestureDetector(
               onTap: () {
-                // No navigation - just display photo in grid
+                // Navigate to PostCardDetailScreen with all photos list and initial index
+                // This allows horizontal scrolling through all photos
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PostCardDetailScreen(
+                      postId: post.postId,
+                      postIds: photos.map((p) => p.postId).toList(),
+                      initialIndex: index,
+                    ),
+                  ),
+                );
               },
               child: Container(
                 decoration: BoxDecoration(

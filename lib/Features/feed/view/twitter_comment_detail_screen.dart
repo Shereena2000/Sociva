@@ -134,16 +134,28 @@ class _TwitterCommentDetailScreenState extends State<TwitterCommentDetailScreen>
   }
 
   void _handleShare(TwitterCommentModel comment) {
-    // Show share bottom sheet for comment
+    // Show share bottom sheet for comment (use comment-aware path)
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => ShareBottomSheet(
-        postId: comment.commentId, // Use comment ID as identifier
+        postId: comment.commentId, // this is commentId for identification
         postCaption: comment.text,
         postImage: comment.mediaUrls.isNotEmpty ? comment.mediaUrls.first : null,
         postOwnerName: comment.userName,
+        isComment: true,
+        parentPostId: widget.postId, // Use the actual postId from the screen
+        commentData: {
+          'commentId': comment.commentId,
+          'userId': comment.userId,
+          'userName': comment.userName,
+          'text': comment.text,
+          'mediaUrls': comment.mediaUrls,
+          'mediaType': comment.mediaType,
+          'timestamp': comment.timestamp.toIso8601String(),
+          'parentCommentId': comment.parentCommentId, // Important for nested comments
+        },
       ),
     );
   }

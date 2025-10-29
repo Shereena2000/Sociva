@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:social_media_app/Features/feed/model/twitter_comment_model.dart';
+import 'package:social_media_app/Features/feed/view/twitter_comment_detail_screen.dart';
 import 'package:social_media_app/Features/chat/utils/resume_downloader.dart';
 import 'package:social_media_app/Features/post/view/post_detail_screen.dart';
 import 'package:social_media_app/Settings/utils/p_colors.dart';
@@ -76,7 +79,9 @@ class LeftChatBubble extends StatelessWidget {
   }
 
   Widget _buildMessageContent(BuildContext context) {
-    // Debug parameters
+    // Debug logging
+    debugPrint('🔍 LeftChatBubble - messageType: $messageType');
+    debugPrint('🔍 LeftChatBubble - metadata: $metadata');
     
     // Handle file attachments
     if (messageType == 'jobApplication' && mediaUrl != null) {
@@ -85,6 +90,11 @@ class LeftChatBubble extends StatelessWidget {
     // Shared post preview
     if (messageType == 'post') {
       return _ChatPostPreview(message: message, metadata: metadata);
+    }
+    // Shared comment preview
+    if (messageType == 'comment') {
+      debugPrint('✅ LeftChatBubble - Rendering comment preview');
+      return _ChatCommentPreview(metadata: metadata);
     }
     
     // Handle regular text messages
@@ -384,6 +394,135 @@ class _ChatPostPreview extends StatelessWidget {
         ),
       ],
     ),
+    );
+  }
+}
+
+class _ChatCommentPreview extends StatelessWidget {
+  final Map<String, dynamic>? metadata;
+  const _ChatCommentPreview({this.metadata});
+
+  @override
+  Widget build(BuildContext context) {
+    final data = metadata ?? const {};
+    final postId = data['postId']?.toString() ?? '';
+    final commentId = data['commentId']?.toString() ?? '';
+    final comment = data['comment'] as Map<String, dynamic>? ?? {};
+    final text = comment['text']?.toString() ?? '';
+    final mediaUrls = (comment['mediaUrls'] as List?)?.map((e) => e.toString()).toList() ?? const [];
+    final thumb = mediaUrls.isNotEmpty ? mediaUrls.first : '';
+
+    debugPrint('🔍 _ChatCommentPreview - postId: $postId, commentId: $commentId');
+    debugPrint('🔍 _ChatCommentPreview - comment data: $comment');
+    debugPrint('🔍 _ChatCommentPreview - text: $text');
+
+    return GestureDetector(
+      onTap: () async {
+        if (postId.isEmpty || commentId.isEmpty) {
+          debugPrint('❌ _ChatCommentPreview - Missing postId or commentId: postId=$postId, commentId=$commentId');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Invalid comment data: missing post or comment ID')),
+          );
+          return;
+        }
+        
+        debugPrint('🔍 _ChatCommentPreview - Fetching comment: posts/$postId/comments/$commentId');
+        try {
+          // Load the comment document to build model
+          // Note: Both main comments and nested comments (replies) are stored in the same collection
+          // The path is: posts/{postId}/comments/{commentId}
+          final doc = await FirebaseFirestore.instance
+              .collection('posts')
+              .doc(postId)
+              .collection('comments')
+              .doc(commentId)
+              .get();
+              
+          if (!doc.exists) {
+            debugPrint('❌ _ChatCommentPreview - Comment not found: posts/$postId/comments/$commentId');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Comment not found. It may have been deleted.')),
+            );
+            return;
+          }
+          
+          final docData = doc.data();
+          if (docData == null) {
+            debugPrint('❌ _ChatCommentPreview - Comment data is null');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Comment data is invalid')),
+            );
+            return;
+          }
+          
+          debugPrint('✅ _ChatCommentPreview - Comment found, building model');
+          final model = TwitterCommentModel.fromMap(docData);
+          debugPrint('✅ _ChatCommentPreview - Model built: commentId=${model.commentId}, postId=${model.postId}, parentCommentId=${model.parentCommentId}');
+          
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TwitterCommentDetailScreen(
+                postId: postId,
+                comment: model,
+              ),
+            ),
+          );
+        } catch (e, stackTrace) {
+          debugPrint('❌ _ChatCommentPreview - Error loading comment: $e');
+          debugPrint('Stack trace: $stackTrace');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to open comment: ${e.toString()}')),
+          );
+        }
+      },
+      child: Container(
+        width: 250,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.12)),
+        ),
+        padding: const EdgeInsets.all(10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: 56,
+                height: 56,
+                color: Colors.grey[800],
+                child: thumb.isNotEmpty
+                    ? Image.network(thumb, fit: BoxFit.cover, errorBuilder: (c, e, s) => Icon(Icons.image, color: Colors.white54))
+                    : Icon(Icons.chat_bubble_outline, color: Colors.white54),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Comment',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  if (text.isNotEmpty)
+                    Text(
+                      text,
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

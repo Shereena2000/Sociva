@@ -43,6 +43,11 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
   // Comment sorting
   CommentSortType _sortType = CommentSortType.newest;
   
+  // User data state (if not in postData)
+  String? _loadedUserName;
+  String? _loadedUsername;
+  bool _userDataLoaded = false;
+  
   @override
   void initState() {
     super.initState();
@@ -51,7 +56,80 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final commentViewModel = Provider.of<TwitterCommentViewModel>(context, listen: false);
       commentViewModel.loadComments(widget.postId);
+      
+      // Load user data if missing from postData
+      _loadUserDataIfNeeded();
     });
+  }
+  
+  Future<void> _loadUserDataIfNeeded() async {
+    // Check if postData has user info
+    final postData = widget.postData;
+    final hasUserName = postData != null && 
+                      postData['userName'] != null && 
+                      postData['userName'].toString().isNotEmpty &&
+                      postData['userName'] != 'Unknown';
+    final hasUsername = postData != null && 
+                       postData['username'] != null && 
+                       postData['username'].toString().isNotEmpty &&
+                       postData['username'] != 'unknown';
+    
+    // If we have both, no need to load
+    if (hasUserName && hasUsername) {
+      return;
+    }
+    
+    // If postOwnerId is provided, use it
+    final userId = widget.postOwnerId;
+    if (userId == null || userId.isEmpty) {
+      // Try to get userId from post document
+      try {
+        final postDoc = await FirebaseFirestore.instance
+            .collection('posts')
+            .doc(widget.postId)
+            .get();
+        
+        if (postDoc.exists) {
+          final postDataFromDoc = postDoc.data();
+          final userIdFromPost = postDataFromDoc?['userId']?.toString();
+          
+          if (userIdFromPost != null && userIdFromPost.isNotEmpty) {
+            await _fetchUserData(userIdFromPost);
+          }
+        }
+      } catch (e) {
+        debugPrint('❌ Error loading user data: $e');
+      }
+    } else {
+      await _fetchUserData(userId);
+    }
+  }
+  
+  Future<void> _fetchUserData(String userId) async {
+    if (_userDataLoaded) return;
+    
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      
+      if (userDoc.exists && mounted) {
+        final userData = userDoc.data()!;
+        setState(() {
+          _loadedUserName = userData['name']?.toString().trim() ?? 
+                          userData['username']?.toString().trim() ?? 
+                          widget.postOwnerName;
+          _loadedUsername = userData['username']?.toString().trim() ?? 
+                           userData['name']?.toString().trim() ?? 
+                           '';
+          _userDataLoaded = true;
+        });
+        debugPrint('✅ Loaded user data: $_loadedUserName @$_loadedUsername');
+      }
+    } catch (e) {
+      debugPrint('❌ Error fetching user data: $e');
+    }
   }
 
   @override
@@ -128,16 +206,27 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
   }
 
   void _handleShare(TwitterCommentModel comment) {
-    // Show share bottom sheet for comment
+    // Show share bottom sheet for comment (use comment-aware path)
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => ShareBottomSheet(
-        postId: comment.commentId, // Use comment ID as identifier
+        postId: comment.commentId, // this is commentId for identification
         postCaption: comment.text,
         postImage: comment.mediaUrls.isNotEmpty ? comment.mediaUrls.first : null,
         postOwnerName: comment.userName,
+        isComment: true,
+        parentPostId: widget.postId,
+        commentData: {
+          'commentId': comment.commentId,
+          'userId': comment.userId,
+          'userName': comment.userName,
+          'text': comment.text,
+          'mediaUrls': comment.mediaUrls,
+          'mediaType': comment.mediaType,
+          'timestamp': comment.timestamp.toIso8601String(),
+        },
       ),
     );
   }
@@ -256,6 +345,15 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
 
   Widget _buildPostContent() {
     final postData = widget.postData!;
+    
+    // Use loaded user data if available, otherwise fall back to postData
+    final userName = _loadedUserName ?? 
+                    postData['userName']?.toString() ?? 
+                    widget.postOwnerName;
+    final username = _loadedUsername ?? 
+                    postData['username']?.toString() ?? 
+                    '';
+    
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -281,7 +379,7 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
                     Row(
                       children: [
                         Text(
-                          postData['userName'] ?? 'Unknown',
+                          userName,
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -297,13 +395,14 @@ class _TwitterPostDetailScreenState extends State<TwitterPostDetailScreen> {
                           ),
                         ],
                         const SizedBox(width: 4),
-                        Text(
-                          '@${postData['username'] ?? 'unknown'}',
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                            fontSize: 15,
+                        if (username.isNotEmpty)
+                          Text(
+                            '@$username',
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 15,
+                            ),
                           ),
-                        ),
                         const SizedBox(width: 8),
                         Text(
                           '· ${timeago.format(DateTime.parse(postData['timestamp']), locale: 'en_short')}',

@@ -9,6 +9,10 @@ class ShareBottomSheet extends StatelessWidget {
   final String? postImage;
   final String postOwnerName;
   final Map<String, dynamic>? postData; // full snapshot for chat share
+  // Comment sharing support
+  final bool isComment;
+  final String? parentPostId; // required when isComment = true
+  final Map<String, dynamic>? commentData; // compact comment map
 
   const ShareBottomSheet({
     super.key,
@@ -17,6 +21,9 @@ class ShareBottomSheet extends StatelessWidget {
     this.postImage,
     required this.postOwnerName,
     this.postData,
+    this.isComment = false,
+    this.parentPostId,
+    this.commentData,
   });
 
   @override
@@ -78,7 +85,7 @@ class ShareBottomSheet extends StatelessWidget {
                 _buildSimpleShareOption(
                   context: context,
                   icon: Icons.chat_bubble_outline,
-                  title: 'Share to Chat',
+                  title: isComment ? 'Share comment to Chat' : 'Share to Chat',
                   onTap: () => _shareToChat(context),
                 ),
 
@@ -143,6 +150,9 @@ class ShareBottomSheet extends StatelessWidget {
           postImage: postImage,
           postOwnerName: postOwnerName,
           postData: postData,
+          isComment: isComment,
+          parentPostId: parentPostId,
+          commentData: commentData,
         ),
       ),
     );
@@ -188,6 +198,9 @@ class _ChatSelectionScreen extends StatelessWidget {
   final String? postImage;
   final String postOwnerName;
   final Map<String, dynamic>? postData;
+  final bool isComment;
+  final String? parentPostId;
+  final Map<String, dynamic>? commentData;
 
   const _ChatSelectionScreen({
     required this.postId,
@@ -195,6 +208,9 @@ class _ChatSelectionScreen extends StatelessWidget {
     this.postImage,
     required this.postOwnerName,
     this.postData,
+    this.isComment = false,
+    this.parentPostId,
+    this.commentData,
   });
 
   @override
@@ -304,14 +320,38 @@ class _ChatSelectionScreen extends StatelessWidget {
       final currentUserId = FirebaseAuth.instance.currentUser?.uid;
       if (currentUserId == null) return;
 
-      // Create a message with the shared post
+      // Create a message with the shared post or comment
       final messageId = FirebaseFirestore.instance.collection('chatRooms').doc().id;
-      final snapshot = postData ?? {
-        'postId': postId,
-        'caption': postCaption,
-        'mediaUrl': postImage ?? '',
-        'mediaUrls': postImage != null ? [postImage!] : [],
-      };
+      Map<String, dynamic> snapshot;
+      String messageType;
+      String lastMessage;
+
+      if (isComment) {
+        // Ensure parent post id exists
+        final parentId = parentPostId ?? '';
+        snapshot = {
+          'postId': parentId,
+          'commentId': postId, // postId here is actually the commentId
+          'comment': commentData ?? {
+            'commentId': postId,
+            'text': postCaption,
+            'mediaUrls': postImage != null ? [postImage!] : [],
+            'userName': postOwnerName,
+          },
+        };
+        messageType = 'comment';
+        lastMessage = 'Shared a comment';
+        debugPrint('💬 Sharing comment to chat: postId=$parentId, commentId=$postId, commentData=$commentData');
+      } else {
+        snapshot = postData ?? {
+          'postId': postId,
+          'caption': postCaption,
+          'mediaUrl': postImage ?? '',
+          'mediaUrls': postImage != null ? [postImage!] : [],
+        };
+        messageType = 'post';
+        lastMessage = 'Shared a post';
+      }
 
       await FirebaseFirestore.instance
           .collection('chatRooms')
@@ -324,7 +364,7 @@ class _ChatSelectionScreen extends StatelessWidget {
         'senderId': currentUserId,
         'receiverId': receiverId,
         'content': '',
-        'messageType': 'post',
+          'messageType': messageType,
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
         'mediaUrl': null,
@@ -336,7 +376,7 @@ class _ChatSelectionScreen extends StatelessWidget {
           .collection('chatRooms')
           .doc(chatRoomId)
           .update({
-        'lastMessage': 'Shared a post',
+        'lastMessage': lastMessage,
         'lastMessageTime': FieldValue.serverTimestamp(),
         'lastMessageSenderId': currentUserId,
         'unreadCount.$receiverId': FieldValue.increment(1),

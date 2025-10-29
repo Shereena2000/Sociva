@@ -9,6 +9,7 @@ enum MessageType {
   jobApplication,
   file,
   post,
+  comment,
 }
 
 class MessageModel {
@@ -80,10 +81,12 @@ class MessageModel {
         return MessageType.jobApplication;
       case 'file':
         return MessageType.file;
-      case 'post':
-        return MessageType.post;
-      default:
-        return MessageType.text;
+        case 'post':
+          return MessageType.post;
+        case 'comment':
+          return MessageType.comment;
+        default:
+          return MessageType.text;
     }
   }
 }

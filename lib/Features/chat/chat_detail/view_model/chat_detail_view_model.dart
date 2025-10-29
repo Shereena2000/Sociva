@@ -195,30 +195,49 @@ class ChatDetailViewModel extends ChangeNotifier {
 
   String getFormattedTime(DateTime timestamp) {
     final now = DateTime.now();
-    final difference = now.difference(timestamp);
+    
+    // Normalize dates to compare by calendar day (ignore time)
+    final today = DateTime(now.year, now.month, now.day);
+    final messageDate = DateTime(timestamp.year, timestamp.month, timestamp.day);
+    
+    // Calculate difference in calendar days
+    final daysDifference = today.difference(messageDate).inDays;
 
-    if (difference.inDays == 0) {
-      final hour = timestamp.hour > 12 ? timestamp.hour - 12 : timestamp.hour;
+    if (daysDifference == 0) {
+      // Same calendar day - show time
+      final hour24 = timestamp.hour;
+      final displayHour = hour24 == 0
+          ? 12
+          : (hour24 > 12 ? hour24 - 12 : hour24);
       final minute = timestamp.minute.toString().padLeft(2, '0');
-      final period = timestamp.hour >= 12 ? 'PM' : 'AM';
-      return '$hour:$minute $period';
-    } else if (difference.inDays == 1) {
+      final period = hour24 >= 12 ? 'PM' : 'AM';
+      return '$displayHour:$minute $period';
+    } else if (daysDifference == 1) {
+      // Yesterday
       return 'Yesterday';
-    } else if (difference.inDays < 7) {
+    } else if (daysDifference < 7) {
+      // Within this week - show day name
       const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       return days[timestamp.weekday - 1];
     } else {
+      // Older - show date
       return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
     }
   }
 
   String getDateSeparator(DateTime timestamp) {
     final now = DateTime.now();
-    final difference = now.difference(timestamp);
+    
+    // Normalize dates to compare by calendar day (ignore time)
+    final today = DateTime(now.year, now.month, now.day);
+    final messageDate = DateTime(timestamp.year, timestamp.month, timestamp.day);
+    
+    // Calculate difference in calendar days
+    final daysDifference = today.difference(messageDate).inDays;
 
-    if (difference.inDays == 0) {
+    if (daysDifference == 0) {
       return 'Today';
-    } else if (difference.inDays == 1) {
+    } else if (daysDifference == 1) {
       return 'Yesterday';
     } else {
       return '${timestamp.day}/${timestamp.month}/${timestamp.year}';

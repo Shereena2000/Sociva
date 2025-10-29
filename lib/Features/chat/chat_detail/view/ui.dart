@@ -347,6 +347,7 @@ class ChatDetailScreen extends StatelessWidget {
                                       mediaUrl: message.mediaUrl,
                                       messageType: message.messageType.toString().split('.').last,
                                       isRead: message.isRead,
+                                      metadata: message.metadata,
                                       onLongPress: () => _showDeleteMessageDialog(context, viewModel, message.messageId),
                                     )
                                   else
@@ -355,6 +356,7 @@ class ChatDetailScreen extends StatelessWidget {
                                       time: viewModel.getFormattedTime(message.timestamp),
                                       mediaUrl: message.mediaUrl,
                                       messageType: message.messageType.toString().split('.').last,
+                                      metadata: message.metadata,
                                       onLongPress: () => _showDeleteMessageDialog(context, viewModel, message.messageId),
                                     ),
                                   const SizedBox(height: 12),

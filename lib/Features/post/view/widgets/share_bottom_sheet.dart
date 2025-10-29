@@ -8,6 +8,7 @@ class ShareBottomSheet extends StatelessWidget {
   final String postCaption;
   final String? postImage;
   final String postOwnerName;
+  final Map<String, dynamic>? postData; // full snapshot for chat share
 
   const ShareBottomSheet({
     super.key,
@@ -15,6 +16,7 @@ class ShareBottomSheet extends StatelessWidget {
     required this.postCaption,
     this.postImage,
     required this.postOwnerName,
+    this.postData,
   });
 
   @override
@@ -140,6 +142,7 @@ class ShareBottomSheet extends StatelessWidget {
           postCaption: postCaption,
           postImage: postImage,
           postOwnerName: postOwnerName,
+          postData: postData,
         ),
       ),
     );
@@ -184,12 +187,14 @@ class _ChatSelectionScreen extends StatelessWidget {
   final String postCaption;
   final String? postImage;
   final String postOwnerName;
+  final Map<String, dynamic>? postData;
 
   const _ChatSelectionScreen({
     required this.postId,
     required this.postCaption,
     this.postImage,
     required this.postOwnerName,
+    this.postData,
   });
 
   @override
@@ -301,7 +306,12 @@ class _ChatSelectionScreen extends StatelessWidget {
 
       // Create a message with the shared post
       final messageId = FirebaseFirestore.instance.collection('chatRooms').doc().id;
-      final shareMessage = '📤 Shared a post by $postOwnerName:\n\n$postCaption\n\n🔗 https://yourapp.com/post/$postId';
+      final snapshot = postData ?? {
+        'postId': postId,
+        'caption': postCaption,
+        'mediaUrl': postImage ?? '',
+        'mediaUrls': postImage != null ? [postImage!] : [],
+      };
 
       await FirebaseFirestore.instance
           .collection('chatRooms')
@@ -313,11 +323,12 @@ class _ChatSelectionScreen extends StatelessWidget {
         'chatRoomId': chatRoomId,
         'senderId': currentUserId,
         'receiverId': receiverId,
-        'content': shareMessage,
-        'messageType': 'text',
+        'content': '',
+        'messageType': 'post',
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
-        'mediaUrl': postImage,
+        'mediaUrl': null,
+        'metadata': snapshot,
       });
 
       // Update chat room last message

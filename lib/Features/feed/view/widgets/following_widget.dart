@@ -478,6 +478,7 @@ class FollowingWidget extends StatelessWidget {
                       postCaption: postWithUser.post.caption,
                       postImage: postWithUser.mediaUrl.isNotEmpty ? postWithUser.mediaUrl : null,
                       postOwnerName: postWithUser.username,
+                      postData: postWithUser.post.toMap(),
                     ),
                   );
                 },

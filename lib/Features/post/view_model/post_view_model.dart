@@ -36,24 +36,41 @@ class PostViewModel extends ChangeNotifier {
   // Load device media from gallery picker (photos and videos)
   Future<void> loadDeviceMediaFromGallery() async {
     try {
-      // Use image_picker to open gallery picker for multiple images
-      final List<XFile> images = await _imagePicker.pickMultiImage(
-        limit: 50, // Get up to 50 images
-        imageQuality: 80,
+      // Request permission first
+      final PermissionState permission = await PhotoManager.requestPermissionExtend();
+      if (!permission.isAuth) {
+        print('Permission not granted for photo manager');
+        return;
+      }
+
+      // Get all albums
+      final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
+        type: RequestType.common, // This includes both images and videos
+        hasAll: true,
       );
+
+      if (albums.isEmpty) {
+        print('No albums found');
+        return;
+      }
+
+      // Get recent album (usually the first one)
+      final AssetPathEntity recentAlbum = albums.first;
       
-      if (images.isNotEmpty) {
-        _deviceMedia = images;
-        // Convert XFile to File and populate selectedMediaList
-        _selectedMediaList = images.map((xfile) => File(xfile.path)).toList();
-        // Auto-select the first image
-        _selectedMedia = File(images[0].path);
-        _isVideo = false;
+      // Load assets from recent album
+      final List<AssetEntity> assets = await recentAlbum.getAssetListPaged(
+        page: 0,
+        size: 100, // Load up to 100 media items
+      );
+
+      if (assets.isNotEmpty) {
+        _photoAssets = assets;
         notifyListeners();
+        print('📱 Loaded ${assets.length} media items from gallery (images and videos)');
       }
       
     } catch (e) {
-      // Don't throw, just print error
+      print('Error loading gallery media: $e');
     }
   }
 
@@ -65,26 +82,40 @@ class PostViewModel extends ChangeNotifier {
   // Load device media automatically without opening gallery picker
   Future<void> loadDeviceMediaAutomatically() async {
     try {
-      // For now, let's use a simple approach - open gallery picker automatically
-      // but show the images in a grid format like Instagram
-      final List<XFile> images = await _imagePicker.pickMultiImage(
-        limit: 50, // Get up to 50 images
-        imageQuality: 80,
+      // Use photo_manager to load both images and videos automatically
+      final PermissionState permission = await PhotoManager.requestPermissionExtend();
+      if (!permission.isAuth) {
+        print('Permission not granted for photo manager');
+        return;
+      }
+
+      // Get all albums
+      final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
+        type: RequestType.common, // This includes both images and videos
+        hasAll: true,
       );
+
+      if (albums.isEmpty) {
+        print('No albums found');
+        return;
+      }
+
+      // Get recent album (usually the first one)
+      final AssetPathEntity recentAlbum = albums.first;
       
-      if (images.isNotEmpty) {
-        _deviceMedia = images;
-        // Convert XFile to File and populate selectedMediaList
-        _selectedMediaList = images.map((xfile) => File(xfile.path)).toList();
-        // Auto-select the first image
-        _selectedMedia = File(images[0].path);
-        _isVideo = images[0].path.toLowerCase().endsWith('.mp4') ||
-            images[0].path.toLowerCase().endsWith('.mov') ||
-            images[0].path.toLowerCase().endsWith('.avi');
+      // Load assets from recent album
+      final List<AssetEntity> assets = await recentAlbum.getAssetListPaged(
+        page: 0,
+        size: 100, // Load up to 100 media items
+      );
+
+      if (assets.isNotEmpty) {
+        _photoAssets = assets;
         notifyListeners();
+        print('📱 Auto-loaded ${assets.length} media items from gallery (images and videos)');
       }
     } catch (e) {
-      // Don't throw, just print error
+      print('Error auto-loading gallery media: $e');
     }
   }
 

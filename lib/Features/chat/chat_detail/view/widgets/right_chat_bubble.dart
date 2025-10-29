@@ -11,6 +11,7 @@ class RightChatBubble extends StatelessWidget {
   final String? messageType;
   final bool isRead;
   final VoidCallback? onLongPress;
+  final Map<String, dynamic>? metadata;
 
   const RightChatBubble({
     super.key,
@@ -20,6 +21,7 @@ class RightChatBubble extends StatelessWidget {
     this.messageType,
     this.isRead = false,
     this.onLongPress,
+    this.metadata,
   });
 
   @override
@@ -85,6 +87,10 @@ class RightChatBubble extends StatelessWidget {
   }
 
   Widget _buildMessageContent(BuildContext context) {
+    // Shared post preview
+    if (messageType == 'post') {
+      return _ChatPostPreview(message: message, metadata: metadata);
+    }
     // Handle image messages
     if (messageType == 'image' && mediaUrl != null) {
       return _buildImageMessage(context);
@@ -527,6 +533,91 @@ class RightChatBubble extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _ChatPostPreview extends StatelessWidget {
+  final String message;
+  final Map<String, dynamic>? metadata;
+
+  const _ChatPostPreview({required this.message, this.metadata});
+
+  @override
+  Widget build(BuildContext context) {
+    // Message expected to be empty; metadata will be read from elsewhere in message bubble usage
+    // Fallback simple label
+    final post = metadata ?? const {};
+    final postId = post['postId']?.toString() ?? '';
+    final caption = post['caption']?.toString() ?? '';
+    final mediaUrls = (post['mediaUrls'] as List?)?.map((e) => e.toString()).toList() ?? const [];
+    final thumb = mediaUrls.isNotEmpty ? mediaUrls.first : (post['mediaUrl']?.toString() ?? '');
+
+    return GestureDetector(
+      onTap: () {
+        if (postId.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PostDetailScreen(postId: postId),
+            ),
+          );
+        }
+      },
+      child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (caption.isNotEmpty) ...[
+          Text(caption, style: TextStyle(fontSize: 16, color: Colors.white), maxLines: 3, overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 8),
+        ],
+        Container(
+          width: 250,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.12)),
+          ),
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  color: Colors.grey[800],
+                  child: thumb.isNotEmpty
+                      ? Image.network(thumb, fit: BoxFit.cover, errorBuilder: (c, e, s) => Icon(Icons.image, color: Colors.white54))
+                      : Icon(Icons.image, color: Colors.white54),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Post',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Tap to view details',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
     );
   }
 }

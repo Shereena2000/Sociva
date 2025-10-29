@@ -3,6 +3,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/profile/profile_screen/view_model/profile_view_model.dart';
 import 'package:social_media_app/Features/post/model/post_model.dart';
+import 'package:social_media_app/Features/feed/view/feed_card_detail_screen.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 import 'multi_media_carousel_provider.dart';
 
@@ -96,7 +97,18 @@ class RetweetsTab extends StatelessWidget {
             
             return GestureDetector(
               onTap: () {
-                // Handle tap - can navigate to post detail
+                // Navigate to FeedCardDetailScreen with all retweeted post IDs
+                final allRetweetedPostIds = retweetedPosts.map((p) => p.postId).toList();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FeedCardDetailScreen(
+                      feedId: post.postId,
+                      feedIds: allRetweetedPostIds,
+                      initialIndex: index,
+                    ),
+                  ),
+                );
               },
               child: Container(
                 decoration: BoxDecoration(

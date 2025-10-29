@@ -13,6 +13,7 @@ import 'package:social_media_app/Features/auth/sign_up/view/ui.dart';
 
 import '../../Features/menu/saved_feed/view/ui.dart';
 import '../../Features/menu/saved_post/view/ui.dart';
+import '../../Features/menu/saved_comment/view/ui.dart';
 import '../../Features/menu/saved_job/view/ui.dart';
 import '../../Features/splash/view/ui.dart';
 import '../../Features/company_registration/view/ui.dart';
@@ -95,6 +96,10 @@ class Routes {
   case PPages.savedFeedScreen:
         return MaterialPageRoute(
           builder: (context) => const SavedFeedScreen(),
+        );
+      case PPages.savedCommentScreen:
+        return MaterialPageRoute(
+          builder: (context) => const SavedCommentScreen(),
         );
       case PPages.savedJobScreen:
         return MaterialPageRoute(

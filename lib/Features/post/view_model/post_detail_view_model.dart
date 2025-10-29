@@ -61,21 +61,45 @@ class PostDetailViewModel extends ChangeNotifier {
       postData['postId'] = postDoc.id;
       _post = PostModel.fromMap(postData);
 
-      // Extract media URLs
-      _mediaUrls = _post!.mediaUrls.where((url) => url.isNotEmpty).toList();
-      if (_mediaUrls.isEmpty && _post!.mediaUrl.isNotEmpty) {
-        _mediaUrls = [_post!.mediaUrl];
+      // Extract media URLs - prioritize quoted post media for quote retweets
+      if (_post!.isQuotedRetweet && _post!.quotedPostData != null) {
+        // For quote retweets, show the quoted post's media instead
+        final quotedMediaUrls = _post!.quotedPostData!['mediaUrls'] as List<dynamic>? ?? [];
+        if (quotedMediaUrls.isNotEmpty) {
+          _mediaUrls = quotedMediaUrls.where((url) => url != null && url.toString().isNotEmpty).map((url) => url.toString()).toList();
+        } else if (_post!.quotedPostData!['mediaUrl'] != null && _post!.quotedPostData!['mediaUrl'].toString().isNotEmpty) {
+          _mediaUrls = [_post!.quotedPostData!['mediaUrl'].toString()];
+        }
+      }
+      
+      // Fallback to retweet post's media if quoted post has no media
+      if (_mediaUrls.isEmpty) {
+        _mediaUrls = _post!.mediaUrls.where((url) => url.isNotEmpty).toList();
+        if (_mediaUrls.isEmpty && _post!.mediaUrl.isNotEmpty) {
+          _mediaUrls = [_post!.mediaUrl];
+        }
       }
 
       debugPrint('🎬 Post loaded with ${_mediaUrls.length} media items');
+      if (_post!.isQuotedRetweet) {
+        debugPrint('📝 This is a quoted retweet - showing quoted post content');
+      }
       for (int i = 0; i < _mediaUrls.length; i++) {
         debugPrint('   [$i] ${_mediaUrls[i].substring(0, _mediaUrls[i].length > 60 ? 60 : _mediaUrls[i].length)}...');
       }
 
-      // Load user profile
+      // Load user profile - use quoted post author if quote retweet
+      String userIdToLoad = _post!.userId;
+      if (_post!.isQuotedRetweet && _post!.quotedPostData != null) {
+        final quotedUserId = _post!.quotedPostData!['userId']?.toString();
+        if (quotedUserId != null && quotedUserId.isNotEmpty) {
+          userIdToLoad = quotedUserId;
+        }
+      }
+
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(_post!.userId)
+          .doc(userIdToLoad)
           .get();
 
       if (userDoc.exists) {

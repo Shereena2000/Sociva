@@ -293,6 +293,22 @@ service cloud.firestore {
     }
 
     // ========================================
+    // SAVED COMMENTS COLLECTION
+    // ========================================
+    match /savedComments/{savedCommentId} {
+      // Anyone can read saved comments (for checking if comment is saved)
+      allow read: if isAuthenticated();
+      
+      // Users can save comments (create saved comment record)
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can unsave their own saved comments
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+
+    // ========================================
     // SAVED JOBS COLLECTION
     // ========================================
     match /savedJobs/{savedJobId} {

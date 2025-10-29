@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:social_media_app/Features/feed/view_model/feed_view_model.dart';
 import 'package:social_media_app/Features/menu/saved_feed/view_model/saved_feed_view_model.dart';
 import 'package:social_media_app/Features/post/view/post_detail_screen.dart';
+import 'package:social_media_app/Features/menu/saved_comment/repository/saved_comment_repository.dart';
 import 'package:social_media_app/Settings/common/widgets/custom_app_bar.dart';
 
 import '../../../../Settings/utils/p_colors.dart';
@@ -13,14 +14,14 @@ class SavedFeedScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => SavedFeedViewModel()..loadSavedFeeds(),
+      create: (_) => SavedFeedViewModel(), // Constructor handles initialization
       child: Scaffold(
         backgroundColor: Colors.black,
         appBar: CustomAppBar(title: "Saved Feeds"),
         body: Consumer<SavedFeedViewModel>(
           builder: (context, viewModel, child) {
-            if (viewModel.isLoading || 
-                (!viewModel.hasSavedFeeds && viewModel.errorMessage == null && viewModel.savedFeeds.isEmpty)) {
+            // Only show loading if explicitly loading AND we have no data yet
+            if (viewModel.isLoading && viewModel.savedFeeds.isEmpty && viewModel.errorMessage == null) {
               return const Center(
                 child: CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -67,7 +68,7 @@ class SavedFeedScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Tap the bookmark icon on feed items to save them here',
+                      'Tap the bookmark icon on feeds and comments to save them here',
                       style: TextStyle(color: Colors.grey[600]),
                       textAlign: TextAlign.center,
                     ),
@@ -86,37 +87,63 @@ class SavedFeedScreen extends StatelessWidget {
                   crossAxisCount: 3,
                   crossAxisSpacing: 4,
                   mainAxisSpacing: 4,
-                  childAspectRatio: 0.5,
+                  childAspectRatio: 0.5, // This works well for both media and text posts
                 ),
                 itemCount: viewModel.savedFeeds.length,
                 itemBuilder: (context, index) {
-                  final savedFeedData = viewModel.savedFeeds[index];
-                  final feed = savedFeedData['feed'];
+                  final savedItemData = viewModel.savedFeeds[index];
+                  final itemType = savedItemData['type'] as String? ?? 'feed';
                   
-                  return GestureDetector(
-                    onTap: () async {
-                      debugPrint('🎯 Opening post: ${feed.postId}');
-                      debugPrint('   Media count: ${feed.mediaUrls.length}');
-                      debugPrint('   First URL: ${feed.mediaUrls.isNotEmpty ? feed.mediaUrls[0] : "none"}');
-                      
-                      // Navigate with await to ensure proper cleanup
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PostDetailScreen(
-                            key: ValueKey('post_${feed.postId}'), // Unique key
-                            postId: feed.postId,
+                  if (itemType == 'comment') {
+                    final comment = savedItemData['comment'];
+                    final postId = savedItemData['postId'] as String;
+                    
+                    return GestureDetector(
+                      onTap: () async {
+                        // Navigate to the post detail screen (same as feed)
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PostDetailScreen(
+                              postId: postId,
+                            ),
                           ),
-                        ),
-                      );
-                      
-                      debugPrint('🔙 Returned from post detail');
-                    },
-                    onLongPress: () {
-                      _showUnsaveDialog(context, viewModel, feed.postId);
-                    },
-                    child: _buildFeedThumbnail(feed, index,context),
-                  );
+                        );
+                      },
+                      onLongPress: () {
+                        _showUnsaveCommentDialog(context, viewModel, postId, comment.commentId);
+                      },
+                      child: _buildCommentThumbnail(comment, savedItemData, index, context),
+                    );
+                  } else {
+                    final feed = savedItemData['feed'];
+                    
+                    return GestureDetector(
+                      onTap: () async {
+                        debugPrint('🎯 Opening post: ${feed.postId}');
+                        debugPrint('   Media count: ${feed.mediaUrls.length}');
+                        debugPrint('   First URL: ${feed.mediaUrls.isNotEmpty ? feed.mediaUrls[0] : "none"}');
+                        debugPrint('   Caption: ${feed.caption ?? "none"}');
+                        
+                        // Navigate with await to ensure proper cleanup
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PostDetailScreen(
+                              key: ValueKey('post_${feed.postId}'), // Unique key
+                              postId: feed.postId,
+                            ),
+                          ),
+                        );
+                        
+                        debugPrint('🔙 Returned from post detail');
+                      },
+                      onLongPress: () {
+                        _showUnsaveDialog(context, viewModel, feed.postId);
+                      },
+                      child: _buildFeedThumbnail(feed, index, context),
+                    );
+                  }
                 },
               ),
             );
@@ -139,6 +166,11 @@ class SavedFeedScreen extends StatelessWidget {
     } else if (feed.mediaUrl != null && feed.mediaUrl.isNotEmpty) {
       thumbnailUrl = feed.mediaUrl;
     }
+    
+    // Check if feed has no media (text-only feed)
+    final bool hasMedia = thumbnailUrl.isNotEmpty;
+    final String caption = feed.caption ?? '';
+    final bool isTextOnly = !hasMedia && caption.isNotEmpty;
 
     return Container(
       decoration: BoxDecoration(
@@ -183,16 +215,60 @@ class SavedFeedScreen extends StatelessWidget {
                       );
                     },
                   )
-                : Container(
-                    color: Colors.grey[800],
-                    child: const Center(
-                      child: Icon(
-                        Icons.text_fields,
-                        color: Colors.white,
-                        size: 24,
+                : isTextOnly
+                    ? Container(
+                        color: Colors.grey[900],
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Text icon indicator
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.text_fields,
+                                  color: Colors.grey[400],
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Text Post',
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            // Caption text (truncated)
+                            Expanded(
+                              child: Text(
+                                caption,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  height: 1.3,
+                                ),
+                                maxLines: 6,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Container(
+                        color: Colors.grey[800],
+                        child: const Center(
+                          child: Icon(
+                            Icons.text_fields,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
           ),
           // Show indicator if multiple media
           if (feed.mediaUrls != null && feed.mediaUrls.length > 1)
@@ -287,6 +363,104 @@ class SavedFeedScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildCommentThumbnail(dynamic comment, Map<String, dynamic> savedItemData, int index, BuildContext context) {
+    final userProfile = savedItemData['userProfile'];
+    final userImage = userProfile != null && userProfile.profilePhotoUrl.isNotEmpty
+        ? userProfile.profilePhotoUrl
+        : '';
+    final commentText = comment.text ?? '';
+    final commentMediaUrls = comment.mediaUrls ?? [];
+    final firstMediaUrl = commentMediaUrls.isNotEmpty ? commentMediaUrls[0] : '';
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.grey[900],
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: firstMediaUrl.isNotEmpty
+                ? Image.network(
+                    firstMediaUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[800],
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircleAvatar(
+                              radius: 20,
+                              backgroundImage: userImage.isNotEmpty
+                                  ? NetworkImage(userImage)
+                                  : null,
+                              child: userImage.isEmpty
+                                  ? const Icon(Icons.person, color: Colors.white)
+                                  : null,
+                            ),
+                            const SizedBox(height: 8),
+                            const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 24),
+                          ],
+                        ),
+                      );
+                    },
+                  )
+                : Container(
+                    color: Colors.grey[800],
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 12,
+                              backgroundImage: userImage.isNotEmpty
+                                  ? NetworkImage(userImage)
+                                  : null,
+                              child: userImage.isEmpty
+                                  ? const Icon(Icons.person, color: Colors.white, size: 16)
+                                  : null,
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 16),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Comment',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: Text(
+                            commentText,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              height: 1.3,
+                            ),
+                            maxLines: 6,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showUnsaveDialog(BuildContext context, SavedFeedViewModel viewModel, String feedId) {
     showDialog(
       context: context,
@@ -319,6 +493,60 @@ class SavedFeedScreen extends StatelessWidget {
                     backgroundColor: Colors.green,
                   ),
                 );
+              },
+              child: const Text(
+                'Unsave',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showUnsaveCommentDialog(BuildContext context, SavedFeedViewModel viewModel, String postId, String commentId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Text(
+            'Unsave Comment',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: const Text(
+            'Are you sure you want to remove this comment from your saved items?',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                final repository = SavedCommentRepository();
+                try {
+                  await repository.unsaveComment(postId, commentId);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Comment removed from saved'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to unsave comment: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               },
               child: const Text(
                 'Unsave',

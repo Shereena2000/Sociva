@@ -17,23 +17,42 @@ class SavedFeedViewModel extends ChangeNotifier {
 
   SavedFeedViewModel() {
     _isLoading = true; // Set loading to true initially
-    // Notify listeners immediately so UI shows loading indicator
-    Future.microtask(() {
-      if (!_isDisposed) {
+    
+    // Start listening to saved feeds stream
+    _savedFeedsSubscription = _savedFeedRepository.getSavedFeeds().listen(
+      (feeds) {
+        if (!_isDisposed) {
+          print('🔍 SavedFeedViewModel: Received ${feeds.length} saved feeds');
+          _savedFeeds = feeds;
+          _isLoading = false; // Set loading to false when data arrives
+          _errorMessage = null; // Clear any errors
+          notifyListeners();
+        }
+      },
+      onError: (error) {
+        if (!_isDisposed) {
+          print('❌ SavedFeedViewModel: Error loading saved feeds: $error');
+          _errorMessage = 'Failed to load saved feeds: $error';
+          _isLoading = false; // Set loading to false on error
+          notifyListeners();
+        }
+      },
+      cancelOnError: false,
+    );
+    
+    // Add timeout to prevent infinite loading
+    // If stream doesn't emit within 5 seconds, show empty state
+    Future.delayed(const Duration(seconds: 5), () {
+      if (!_isDisposed && _isLoading && _savedFeeds.isEmpty && _errorMessage == null) {
+        print('⚠️ SavedFeedViewModel: Timeout - no data received after 5 seconds');
+        _isLoading = false;
         notifyListeners();
       }
     });
     
-    _savedFeedsSubscription = _savedFeedRepository.getSavedFeeds().listen((feeds) {
+    // Notify listeners after stream subscription is set up
+    Future.microtask(() {
       if (!_isDisposed) {
-        _savedFeeds = feeds;
-        _isLoading = false; // Set loading to false when data arrives
-        notifyListeners();
-      }
-    }, onError: (error) {
-      if (!_isDisposed) {
-        _errorMessage = 'Failed to load saved feeds: $error';
-        _isLoading = false; // Set loading to false on error
         notifyListeners();
       }
     });
@@ -51,26 +70,25 @@ class SavedFeedViewModel extends ChangeNotifier {
   Future<void> loadSavedFeeds() async {
     if (_isDisposed) return;
     
-    _isLoading = true;
+    // Don't set loading here - let the stream handle it
+    // The constructor already sets _isLoading = true and the stream will set it to false
     _errorMessage = null;
     notifyListeners();
-    try {
-      // The stream listener already handles updates, this is for initial load/refresh
-      // No direct await needed here as the stream will update _savedFeeds
-    } catch (e) {
-      if (!_isDisposed) {
-        _errorMessage = 'Failed to load saved feeds: $e';
-      }
-    } finally {
-      if (!_isDisposed) {
-        _isLoading = false;
-        notifyListeners();
-      }
-    }
+    
+    // The stream listener already handles updates, no need to manually set loading here
+    // Loading state is managed by the stream subscription in the constructor
   }
 
   Future<void> refreshSavedFeeds() async {
-    await loadSavedFeeds();
+    if (_isDisposed) return;
+    
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    
+    // The stream will automatically update when refreshed
+    // Just wait a bit for the stream to emit new data
+    await Future.delayed(const Duration(milliseconds: 500));
   }
 
   Future<void> unsaveFeed(String feedId) async {

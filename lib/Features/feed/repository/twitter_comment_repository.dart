@@ -284,7 +284,12 @@ class TwitterCommentRepository {
   /// Save/unsave a comment
   Future<void> toggleSave(String postId, String commentId) async {
     final currentUser = _auth.currentUser;
-    if (currentUser == null) throw Exception('User not authenticated');
+    if (currentUser == null) {
+      print('❌ TwitterCommentRepository.toggleSave: User not authenticated');
+      throw Exception('User not authenticated');
+    }
+
+    print('🔍 TwitterCommentRepository.toggleSave: postId=$postId, commentId=$commentId, userId=${currentUser.uid}');
 
     final commentRef = _firestore
         .collection('posts')
@@ -293,19 +298,62 @@ class TwitterCommentRepository {
         .doc(commentId);
 
     final commentDoc = await commentRef.get();
-    if (!commentDoc.exists) throw Exception('Comment not found');
+    if (!commentDoc.exists) {
+      print('❌ TwitterCommentRepository.toggleSave: Comment not found');
+      throw Exception('Comment not found');
+    }
 
     final commentData = commentDoc.data()!;
     final saves = List<String>.from(commentData['saves'] ?? []);
     final isSaved = saves.contains(currentUser.uid);
 
-    if (isSaved) {
-      saves.remove(currentUser.uid);
-    } else {
-      saves.add(currentUser.uid);
-    }
+    print('🔍 TwitterCommentRepository.toggleSave: isSaved=$isSaved');
 
-    await commentRef.update({'saves': saves});
+    if (isSaved) {
+      // Remove from saves array
+      saves.remove(currentUser.uid);
+      await commentRef.update({'saves': saves});
+      
+      // Remove from savedComments collection
+      final savedCommentId = '${currentUser.uid}_${postId}_$commentId';
+      print('🔍 TwitterCommentRepository.toggleSave: Unsave - deleting $savedCommentId');
+      try {
+        await _firestore.collection('savedComments').doc(savedCommentId).delete();
+        print('✅ TwitterCommentRepository.toggleSave: Successfully unsaved comment');
+      } catch (e) {
+        print('❌ TwitterCommentRepository.toggleSave: Error deleting saved comment: $e');
+        throw Exception('Failed to unsave comment: $e');
+      }
+    } else {
+      // Add to saves array
+      saves.add(currentUser.uid);
+      await commentRef.update({'saves': saves});
+      
+      // Add to savedComments collection
+      final savedCommentId = '${currentUser.uid}_${postId}_$commentId';
+      final savedCommentData = {
+        'id': savedCommentId,
+        'userId': currentUser.uid,
+        'postId': postId,
+        'commentId': commentId,
+        'savedAt': Timestamp.now(),
+      };
+      
+      print('🔍 TwitterCommentRepository.toggleSave: Save - creating $savedCommentId');
+      print('🔍 TwitterCommentRepository.toggleSave: Data: $savedCommentData');
+      
+      try {
+        await _firestore.collection('savedComments').doc(savedCommentId).set(savedCommentData);
+        print('✅ TwitterCommentRepository.toggleSave: Successfully saved comment');
+      } catch (e) {
+        print('❌ TwitterCommentRepository.toggleSave: Error saving comment: $e');
+        print('❌ TwitterCommentRepository.toggleSave: Error details: ${e.toString()}');
+        // Revert the saves array update if savedComments write fails
+        saves.remove(currentUser.uid);
+        await commentRef.update({'saves': saves});
+        throw Exception('Failed to save comment: $e');
+      }
+    }
   }
 
   /// Increment view count for a comment

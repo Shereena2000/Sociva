@@ -34,6 +34,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _showControls = true;
   bool _isLoading = true;
   bool _isMuted = false;
+  Duration _position = Duration.zero;
+  Duration _duration = Duration.zero;
+  bool _isDragging = false;
 
   @override
   void initState() {
@@ -69,13 +72,43 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         // Initialize volume based on mute state
         _controller!.setVolume(_isMuted ? 0.0 : 1.0);
 
-        _controller!.addListener(() {
-          if (mounted) {
-            setState(() {
-              _isPlaying = _controller!.value.isPlaying;
+        _controller!.addListener(_videoListener);
+        
+        // Wait for duration to be available (might be 0 initially)
+        if (mounted) {
+          setState(() {
+            _duration = _controller!.value.duration;
+            _position = _controller!.value.position;
+          });
+          
+          // If duration is 0, wait a bit and check again
+          if (_duration == Duration.zero || _duration.inMilliseconds == 0) {
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted && _controller != null) {
+                final newDuration = _controller!.value.duration;
+                if (newDuration != Duration.zero && newDuration.inMilliseconds > 0) {
+                  setState(() {
+                    _duration = newDuration;
+                    _position = _controller!.value.position;
+                  });
+                }
+              }
+            });
+            
+            // Also try after 1 second
+            Future.delayed(const Duration(seconds: 1), () {
+              if (mounted && _controller != null) {
+                final newDuration = _controller!.value.duration;
+                if (newDuration != Duration.zero && newDuration.inMilliseconds > 0) {
+                  setState(() {
+                    _duration = newDuration;
+                    _position = _controller!.value.position;
+                  });
+                }
+              }
             });
           }
-        });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -102,6 +135,25 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     });
   }
 
+  void _videoListener() {
+    if (mounted && !_isDragging && _controller != null) {
+      final newDuration = _controller!.value.duration;
+      final newPosition = _controller!.value.position;
+      
+      // Only update if duration is valid (greater than 0)
+      final validDuration = newDuration != Duration.zero && newDuration.inMilliseconds > 0;
+      
+      setState(() {
+        _isPlaying = _controller!.value.isPlaying;
+        _position = newPosition;
+        // Only update duration if it's valid, otherwise keep the last known duration
+        if (validDuration) {
+          _duration = newDuration;
+        }
+      });
+    }
+  }
+
   void _toggleMute() {
     if (_controller != null && _isInitialized) {
       setState(() {
@@ -111,8 +163,43 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
   }
 
+  void _seekTo(Duration position) {
+    if (_controller != null && _isInitialized) {
+      _controller!.seekTo(position);
+      setState(() {
+        _position = position;
+      });
+    }
+  }
+
+  void _onSliderChanged(double value) {
+    if (_controller != null && _isInitialized) {
+      final newPosition = Duration(milliseconds: value.toInt());
+      _seekTo(newPosition);
+    }
+  }
+
+  void _onSliderStart(double value) {
+    setState(() {
+      _isDragging = true;
+    });
+  }
+
+  void _onSliderEnd(double value) {
+    setState(() {
+      _isDragging = false;
+    });
+    // Sync with actual position after drag ends
+    if (_controller != null && _isInitialized) {
+      setState(() {
+        _position = _controller!.value.position;
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _controller?.removeListener(_videoListener);
     _controller?.dispose();
     super.dispose();
   }
@@ -212,7 +299,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 ),
               ),
 
-            // Video duration and progress (optional)
+            // Video duration, progress bar, and time (draggable)
             if (_isInitialized && widget.showControls && _showControls)
               Positioned(
                 bottom: 8,
@@ -221,31 +308,58 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 child: AnimatedOpacity(
                   opacity: _showControls ? 1.0 : 0.0,
                   duration: const Duration(milliseconds: 300),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _formatDuration(_controller!.value.position),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Draggable progress bar
+                      SliderTheme(
+                        data: SliderThemeData(
+                          trackHeight: 3.0,
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 6.0,
                           ),
-                        ),
-                        Text(
-                          _formatDuration(_controller!.value.duration),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 12.0,
                           ),
+                          activeTrackColor: Colors.white,
+                          inactiveTrackColor: Colors.white.withOpacity(0.3),
+                          thumbColor: Colors.white,
+                          overlayColor: Colors.white.withOpacity(0.2),
                         ),
-                      ],
-                    ),
+                        child: Slider(
+                          value: _duration.inMilliseconds > 0
+                              ? _position.inMilliseconds.toDouble().clamp(0.0, _duration.inMilliseconds.toDouble())
+                              : 0.0,
+                          max: _duration.inMilliseconds > 0 ? _duration.inMilliseconds.toDouble() : 1.0,
+                          onChangeStart: _onSliderStart,
+                          onChangeEnd: _onSliderEnd,
+                          onChanged: _onSliderChanged,
+                        ),
+                      ),
+                      // Time display
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              _formatDuration(_position),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                            Text(
+                              _formatDuration(_duration),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

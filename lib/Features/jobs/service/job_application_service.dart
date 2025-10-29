@@ -105,13 +105,13 @@ class JobApplicationService {
         throw Exception('Resume file not found');
       }
 
-      // Upload to Cloudinary with specific folder for resumes
+      // Use standard upload endpoint (same as other uploads) with resource_type: raw for PDFs
       final uri = Uri.parse('https://api.cloudinary.com/v1_1/${_cloudinaryService.cloudName}/upload');
       
       final request = http.MultipartRequest('POST', uri);
       request.fields['upload_preset'] = _cloudinaryService.uploadPreset;
       request.fields['folder'] = 'job_applications/resumes';
-      request.fields['resource_type'] = 'raw';
+      request.fields['resource_type'] = 'raw'; // Set resource type to raw for PDFs
 
       final multipartFile = await http.MultipartFile.fromPath(
         'file',
@@ -122,14 +122,24 @@ class JobApplicationService {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-        return responseData['secure_url'] ?? responseData['url'] ?? '';
+    if (response.statusCode == 200) {
+      final responseData = json.decode(response.body);
+      final url = responseData['secure_url'] ?? responseData['url'] ?? '';
+      // Verify it's a valid URL
+      if (url.isEmpty) {
+        print('⚠️ Cloudinary: Empty URL returned');
       } else {
-        throw Exception('Upload failed with status: ${response.statusCode}');
+        print('✅ Cloudinary: resume uploaded successfully: $url');
       }
-    } catch (e) {
-      throw Exception('Failed to upload resume: $e');
+      return url;
+    } else {
+      print('❌ Cloudinary upload failed: ${response.statusCode}');
+      print('Response: ${response.body}');
+      throw Exception('Upload failed with status: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('❌ Upload error: $e');
+    throw Exception('Failed to upload resume: $e');
     }
   }
 

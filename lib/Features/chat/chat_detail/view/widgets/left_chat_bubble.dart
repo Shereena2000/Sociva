@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:social_media_app/Features/chat/utils/resume_downloader.dart';
 import 'package:social_media_app/Features/post/view/post_detail_screen.dart';
 import 'package:social_media_app/Settings/utils/p_colors.dart';
 
@@ -102,7 +103,23 @@ class LeftChatBubble extends StatelessWidget {
         const SizedBox(height: 12),
         // Resume attachment
         GestureDetector(
-          onTap: () => _navigateToPDFViewer(context),
+          onTap: () {
+            if (mediaUrl != null && mediaUrl!.isNotEmpty) {
+              ResumeDownloader.downloadAndOpenResume(
+                context: context,
+                url: mediaUrl!,
+                fileName: metadata?['resumeFileName']?.toString() ?? _getResumeFileName(),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Resume URL is not available'),
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+          },
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -154,45 +171,7 @@ class LeftChatBubble extends StatelessWidget {
     );
   }
 
-  void _navigateToPDFViewer(BuildContext context) async {
-    
-    if (mediaUrl != null && mediaUrl!.isNotEmpty) {
-      
-      try {
-        final uri = Uri.parse(mediaUrl!);
-        
-        final canLaunch = await canLaunchUrl(uri);
-        
-        if (canLaunch) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Cannot open PDF. URL: ${uri.toString().substring(0, 50)}...'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 5),
-            ),
-          );
-        }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error opening PDF: $e'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 5),
-          ),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Resume URL is not available'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
-      );
-    }
-  }
+  // no-op: downloader handles opening
 
   String _getResumeFileName() {
     // Extract file name from message content

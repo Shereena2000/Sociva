@@ -7,6 +7,7 @@ import 'package:social_media_app/Features/feed/view/twitter_comment_detail_scree
 import 'package:social_media_app/Features/chat/utils/resume_downloader.dart';
 import 'package:social_media_app/Features/post/view/post_detail_screen.dart';
 import 'package:social_media_app/Settings/utils/p_colors.dart';
+import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 
 class RightChatBubble extends StatelessWidget {
   final String message;
@@ -396,55 +397,19 @@ class RightChatBubble extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Video thumbnail
-        GestureDetector(
-          onTap: () {
-            // TODO: Open video player
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Video playback coming soon')),
-            );
-          },
-          child: Container(
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
             width: 250,
             height: 200,
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Video thumbnail
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    mediaUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(color: Colors.black);
-                    },
-                  ),
-                ),
-                // Play button overlay
-                Center(
-                  child: Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 50,
-                    ),
-                  ),
-                ),
-              ],
+            child: VideoPlayerWidget(
+              videoUrl: mediaUrl!,
+              autoPlay: false,
+              showControls: true,
+              enableDoubleTapPlayPause: true,
             ),
           ),
         ),
-        // Caption if exists
         if (message.isNotEmpty) ...[
           const SizedBox(height: 8),
           Text(

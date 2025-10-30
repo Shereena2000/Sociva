@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:social_media_app/Features/feed/view/status_viewer_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:social_media_app/Features/feed/model/post_with_user_model.dart';
@@ -13,6 +14,7 @@ import 'package:social_media_app/Features/post/view/widgets/share_bottom_sheet.d
 import 'package:social_media_app/Features/notifications/service/notification_service.dart';
 import 'package:social_media_app/Features/notifications/service/push_notification_service.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
+import 'package:social_media_app/Settings/utils/p_colors.dart';
 
 /// Reusable Post Card Widget - Exact same design as home screen post cards
 class PostCardWidget extends StatelessWidget {
@@ -29,6 +31,15 @@ class PostCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Use provided HomeViewModel if available; otherwise try to read from Provider
+    HomeViewModel? vm = homeViewModel;
+    if (vm == null) {
+      try {
+        vm = Provider.of<HomeViewModel>(context, listen: false);
+      } catch (_) {
+        vm = null;
+      }
+    }
     return GestureDetector(
       onPanEnd: enableSwipeToProfile
           ? (details) {
@@ -66,24 +77,17 @@ class PostCardWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Profile picture - tappable to view profile
-                  GestureDetector(
-                    onTap: () {
+                  _StatusAvatarInline(
+                    userId: postWithUser.userId,
+                    imageUrl: postWithUser.userProfilePhoto,
+                    onFallbackTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              ProfileScreen(userId: postWithUser.userId),
+                          builder: (context) => ProfileScreen(userId: postWithUser.userId),
                         ),
                       );
                     },
-                    child: CircleAvatar(
-                      radius: 20,
-                      backgroundImage: postWithUser.userProfilePhoto.isNotEmpty
-                          ? NetworkImage(postWithUser.userProfilePhoto)
-                          : const NetworkImage(
-                              'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
-                            ),
-                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -111,12 +115,6 @@ class PostCardWidget extends StatelessWidget {
                                   color: Colors.black,
                                 ),
                               ),
-                              const SizedBox(width: 6),
-                              const Icon(
-                                Icons.verified,
-                                size: 16,
-                                color: Colors.blue,
-                              ),
                             ],
                           ),
                           const SizedBox(height: 2),
@@ -134,7 +132,7 @@ class PostCardWidget extends StatelessWidget {
                   // Only show three dots menu for own posts
                   if (postWithUser.userId ==
                       FirebaseAuth.instance.currentUser?.uid &&
-                      homeViewModel != null)
+                      vm != null)
                     IconButton(
                       icon: const Icon(Icons.more_vert, color: Colors.black),
                       onPressed: () {
@@ -164,124 +162,120 @@ class PostCardWidget extends StatelessWidget {
             // Actions row (like, comment, share, save)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                children: [
-                  // Like button
-                  IconButton(
-                    icon: Icon(
-                      postWithUser.post.isLikedBy(
-                                FirebaseAuth.instance.currentUser?.uid ?? '',
-                              )
-                          ? Icons.favorite
-                          : Icons.favorite_border,
-                      color: postWithUser.post.isLikedBy(
-                                FirebaseAuth.instance.currentUser?.uid ?? '',
-                              )
-                          ? Colors.red
-                          : Colors.black,
-                    ),
-                    onPressed: () async {
-                      if (homeViewModel == null) return;
-                      
-                      final currentUserId =
-                          FirebaseAuth.instance.currentUser?.uid ?? '';
-                      final isLiked =
-                          postWithUser.post.isLikedBy(currentUserId);
+              child: StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('posts')
+                    .doc(postWithUser.postId)
+                    .snapshots(),
+                builder: (context, snap) {
+                  final map = snap.data?.data() as Map<String, dynamic>?;
+                  final livePost = map != null ? PostModel.fromMap(map) : postWithUser.post;
+                  final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+                  final isLiked = livePost.isLikedBy(currentUserId);
 
-                      // Toggle like in the UI
-                      homeViewModel!.toggleLike(postWithUser.postId, isLiked);
-
-                      // Send notification if liking (not unliking)
-                      if (!isLiked) {
-                        await _sendLikeNotification(
-                          fromUserId: currentUserId,
-                          toUserId: postWithUser.userId,
-                          postId: postWithUser.postId,
-                          postImage: postWithUser.mediaUrl,
-                        );
-                      }
-                    },
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${postWithUser.post.likeCount}',
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Comment button
-                  IconButton(
-                    icon: const Icon(
-                      Icons.chat_bubble_outline,
-                      color: Colors.black,
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CommentsScreen(
-                            postId: postWithUser.postId,
-                            postOwnerName: postWithUser.username,
-                            postOwnerId: postWithUser.userId,
-                          ),
+                  return Row(
+                    children: [
+                      // Like button
+                      IconButton(
+                        icon: Icon(
+                          isLiked ? Icons.favorite : Icons.favorite_border,
+                          color: isLiked ? Colors.red : Colors.black,
                         ),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${postWithUser.post.commentCount}',
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Share button
-                  IconButton(
-                    icon: const Icon(Icons.send_outlined, color: Colors.black),
-                    onPressed: () {
-                      showModalBottomSheet(
-                        context: context,
-                        backgroundColor: Colors.transparent,
-                        isScrollControlled: true,
-                        builder: (context) => ShareBottomSheet(
-                          postId: postWithUser.postId,
-                          postCaption: postWithUser.post.caption,
-                          postImage: postWithUser.mediaUrl.isNotEmpty
-                              ? postWithUser.mediaUrl
-                              : null,
-                          postOwnerName: postWithUser.username,
-                          postData: postWithUser.post.toMap(),
+                        onPressed: () async {
+                          if (vm == null) return;
+                          await vm.toggleLike(postWithUser.postId, isLiked);
+                          if (!isLiked) {
+                            await _sendLikeNotification(
+                              fromUserId: currentUserId,
+                              toUserId: postWithUser.userId,
+                              postId: postWithUser.postId,
+                              postImage: postWithUser.mediaUrl,
+                            );
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${livePost.likeCount}',
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w600,
                         ),
-                      );
-                    },
-                  ),
-                  const Spacer(),
+                      ),
+                      const SizedBox(width: 12),
 
-                  // Save button with saved state
-                  if (homeViewModel != null)
-                    FutureBuilder<bool>(
-                      future: homeViewModel!.isPostSaved(postWithUser.postId),
-                      builder: (context, snapshot) {
-                        final isSaved = snapshot.data ?? false;
-                        return IconButton(
-                          icon: Icon(
-                            isSaved ? Icons.bookmark : Icons.bookmark_border,
-                            color: isSaved ? Colors.blue : Colors.black,
-                          ),
-                          onPressed: () async {
-                            await homeViewModel!.toggleSave(postWithUser.postId);
-                            (context as Element).markNeedsBuild();
+                      // Comment button
+                      IconButton(
+                        icon: const Icon(
+                          Icons.chat_bubble_outline,
+                          color: Colors.black,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CommentsScreen(
+                                postId: postWithUser.postId,
+                                postOwnerName: postWithUser.username,
+                                postOwnerId: postWithUser.userId,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${livePost.commentCount}',
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      // Share button
+                      IconButton(
+                        icon: const Icon(Icons.send_outlined, color: Colors.black),
+                        onPressed: () {
+                          showModalBottomSheet(
+                            context: context,
+                            backgroundColor: Colors.transparent,
+                            isScrollControlled: true,
+                            builder: (context) => ShareBottomSheet(
+                              postId: postWithUser.postId,
+                              postCaption: livePost.caption,
+                              postImage: postWithUser.mediaUrl.isNotEmpty
+                                  ? postWithUser.mediaUrl
+                                  : null,
+                              postOwnerName: postWithUser.username,
+                              postData: livePost.toMap(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Spacer(),
+
+                      // Save button with saved state
+                      if (vm != null)
+                        FutureBuilder<bool>(
+                          future: vm.isPostSaved(postWithUser.postId),
+                          builder: (context, snapshot) {
+                            final isSaved = snapshot.data ?? false;
+                            return IconButton(
+                              icon: Icon(
+                                isSaved ? Icons.bookmark : Icons.bookmark_border,
+                                color: isSaved ? Colors.blue : Colors.black,
+                              ),
+                              onPressed: () async {
+                                await vm!.toggleSave(postWithUser.postId);
+                                (context as Element).markNeedsBuild();
+                              },
+                            );
                           },
-                        );
-                      },
-                    ),
-                ],
+                        ),
+                    ],
+                  );
+                },
               ),
             ),
 
@@ -310,10 +304,9 @@ class PostCardWidget extends StatelessWidget {
   }
 
   Widget _buildSingleMediaContainer(PostWithUserModel postWithUser) {
-    const double height = 400.0;
+    const double videoHeight = 400.0;
 
     return Container(
-      height: height,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
@@ -324,7 +317,7 @@ class PostCardWidget extends StatelessWidget {
         child: postWithUser.mediaType == 'video'
             ? VideoPlayerWidget(
                 videoUrl: postWithUser.mediaUrl,
-                height: height,
+                height: videoHeight,
                 width: double.infinity,
                 autoPlay: false,
                 showControls: true,
@@ -334,10 +327,10 @@ class PostCardWidget extends StatelessWidget {
                 postWithUser.mediaUrl,
                 fit: BoxFit.cover,
                 width: double.infinity,
-                height: height,
+                height: videoHeight,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
-                    height: height,
+                    height: videoHeight,
                     color: Colors.grey[300],
                     child: const Center(
                       child: Icon(
@@ -351,7 +344,7 @@ class PostCardWidget extends StatelessWidget {
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
                   return Container(
-                    height: height,
+                    height: videoHeight,
                     color: Colors.grey[300],
                     child: const Center(child: CircularProgressIndicator()),
                   );
@@ -598,4 +591,88 @@ class PostCardWidget extends StatelessWidget {
     }
   }
 }
+
+class _StatusAvatarInline extends StatelessWidget {
+  final String userId;
+  final String imageUrl;
+  final VoidCallback onFallbackTap;
+
+  const _StatusAvatarInline({
+    required this.userId,
+    required this.imageUrl,
+    required this.onFallbackTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    HomeViewModel? homeViewModel;
+    try {
+      homeViewModel = Provider.of<HomeViewModel>(context, listen: false);
+    } catch (_) {
+      homeViewModel = null;
+    }
+
+    // Safely find status group by user
+    final matches = homeViewModel?.statusGroups
+            .where((g) => g.userId == userId)
+            .toList() ??
+        const [];
+    final group = matches.isNotEmpty ? matches.first : null;
+
+    final hasStatus = group != null;
+    final hasUnseen = hasStatus ? group.hasUnseenStatus == true : false;
+
+    void openStatus() {
+      if (homeViewModel == null || group == null) {
+        onFallbackTap();
+        return;
+      }
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (ctx) => StatusViewerDialog(
+          statusGroup: group,
+          onStatusViewed: (statusId) => homeViewModel?.markStatusAsViewed(userId, statusId),
+        ),
+      );
+    }
+
+    final avatar = CircleAvatar(
+      radius: 20,
+      backgroundImage: imageUrl.isNotEmpty
+          ? NetworkImage(imageUrl)
+          : const NetworkImage(
+              'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
+            ),
+    );
+
+    if (!hasStatus) {
+      return GestureDetector(onTap: onFallbackTap, child: avatar);
+    }
+
+    final gradient = hasUnseen
+        ? LinearGradient(
+            colors: [
+              PColors.blueColor,
+              PColors.purpleColor,
+            ],
+          )
+        : const LinearGradient(colors: [Colors.grey, Colors.grey]);
+
+    return GestureDetector(
+      onTap: openStatus,
+      child: Container(
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(shape: BoxShape.circle, gradient: gradient),
+        child: Container(
+          padding: const EdgeInsets.all(2),
+          decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
+          child: avatar,
+        ),
+      ),
+    );
+  }
+}
+
+// (moved to bottom)
 

@@ -12,6 +12,10 @@ import 'package:social_media_app/Features/post/view/post_detail_screen.dart';
 import 'package:social_media_app/Settings/constants/sized_box.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 import 'package:social_media_app/Features/feed/model/post_with_user_model.dart';
+import 'package:provider/provider.dart';
+import 'package:social_media_app/Features/home/view_model/home_view_model.dart';
+import 'package:social_media_app/Features/feed/view/status_viewer_dialog.dart';
+import 'package:social_media_app/Settings/utils/p_colors.dart';
 
 class FeedCardWidget extends StatelessWidget {
   final PostWithUserModel postWithUser;
@@ -66,8 +70,10 @@ class FeedCardWidget extends StatelessWidget {
             // Header with profile info
             Row(
               children: [
-                GestureDetector(
-                  onTap: () {
+                _FeedStatusAvatar(
+                  userId: postWithUser.userId,
+                  imageUrl: postWithUser.userProfilePhoto,
+                  onFallbackTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -75,14 +81,6 @@ class FeedCardWidget extends StatelessWidget {
                       ),
                     );
                   },
-                  child: CircleAvatar(
-                    radius: 20,
-                    backgroundImage: postWithUser.userProfilePhoto.isNotEmpty
-                        ? NetworkImage(postWithUser.userProfilePhoto)
-                        : const NetworkImage(
-                            'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
-                          ),
-                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -111,13 +109,7 @@ class FeedCardWidget extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            const Icon(
-                              Icons.verified,
-                              color: Colors.blue,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
+                                const SizedBox(width: 4),
                             Flexible(
                               child: Text(
                                 '@${postWithUser.username}',
@@ -181,7 +173,7 @@ class FeedCardWidget extends StatelessWidget {
               const SizedBox(height: 12),
 
             // Post image/video - Grid if multiple, single if one
-            if (postWithUser.mediaUrl.isNotEmpty)
+                if (postWithUser.mediaUrl.isNotEmpty)
               GestureDetector(
                 onTap: () {
                   // Navigate to full screen post detail
@@ -194,48 +186,25 @@ class FeedCardWidget extends StatelessWidget {
                     ),
                   );
                 },
-                child: postWithUser.post.hasMultipleMedia
+                    child: postWithUser.post.hasMultipleMedia
                     ? _buildMediaGrid(postWithUser.post)
-                    : Container(
-                        width: double.infinity,
-                        height: 300,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: Colors.grey[800],
-                        ),
-                        child: postWithUser.mediaType == 'video'
+                        : (postWithUser.mediaType == 'video'
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
-                                child: VideoPlayerWidget(
-                                  videoUrl: postWithUser.mediaUrl,
-                                  height: 300,
+                                child: SizedBox(
                                   width: double.infinity,
-                                  autoPlay: false,
-                                  showControls: true,
+                                  height: 300,
+                                  child: VideoPlayerWidget(
+                                    videoUrl: postWithUser.mediaUrl,
+                                    autoPlay: false,
+                                    showControls: true,
+                                  ),
                                 ),
                               )
                             : ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
-                                child: Image.network(
-                                  postWithUser.mediaUrl,
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: Colors.grey[800],
-                                      child: const Center(
-                                        child: Icon(
-                                          Icons.image_not_supported,
-                                          size: 64,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                      ),
+                                child: _IntrinsicAspectImage(url: postWithUser.mediaUrl),
+                              )),
               ),
 
             if (postWithUser.mediaUrl.isNotEmpty) const SizedBox(height: 12),
@@ -409,6 +378,14 @@ class FeedCardWidget extends StatelessWidget {
       ),
     );
   }
+
+  // Intrinsic aspect image: measures image and enforces exact aspect ratio
+  // to prevent cropping or incorrect heights in the card.
+  Widget _IntrinsicAspectImage({required String url}) {
+    return _IntrinsicAspectImageWidget(url: url);
+  }
+
+// (moved to file bottom) _IntrinsicAspectImageWidget classes
 
   // Build media grid with dynamic layout based on number of images
   Widget _buildMediaGrid(dynamic post) {
@@ -1044,6 +1021,193 @@ class FeedCardWidget extends StatelessWidget {
         );
       }
     }
+  }
+}
+
+class _FeedStatusAvatar extends StatelessWidget {
+  final String userId;
+  final String imageUrl;
+  final VoidCallback onFallbackTap;
+
+  const _FeedStatusAvatar({
+    required this.userId,
+    required this.imageUrl,
+    required this.onFallbackTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    HomeViewModel? homeViewModel;
+    try {
+      homeViewModel = Provider.of<HomeViewModel>(context, listen: false);
+    } catch (_) {
+      homeViewModel = null;
+    }
+
+    final matches = homeViewModel?.statusGroups
+            .where((g) => g.userId == userId)
+            .toList() ??
+        const [];
+    final group = matches.isNotEmpty ? matches.first : null;
+
+    final hasStatus = group != null;
+    final hasUnseen = hasStatus ? group.hasUnseenStatus == true : false;
+
+    void openStatus() {
+      if (homeViewModel == null || group == null) {
+        onFallbackTap();
+        return;
+      }
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (ctx) => StatusViewerDialog(
+          statusGroup: group,
+          onStatusViewed: (statusId) => homeViewModel!.markStatusAsViewed(userId, statusId),
+        ),
+      );
+    }
+
+    final avatar = CircleAvatar(
+      radius: 20,
+      backgroundImage: imageUrl.isNotEmpty
+          ? NetworkImage(imageUrl)
+          : const NetworkImage(
+              'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
+            ),
+    );
+
+    if (!hasStatus) {
+      return GestureDetector(onTap: onFallbackTap, child: avatar);
+    }
+
+    final gradient = hasUnseen
+        ? LinearGradient(
+            colors: [
+              PColors.blueColor,
+              PColors.purpleColor,
+            ],
+          )
+        : const LinearGradient(colors: [Colors.grey, Colors.grey]);
+
+    return GestureDetector(
+      onTap: openStatus,
+      child: Container(
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(shape: BoxShape.circle, gradient: gradient),
+        child: Container(
+          padding: const EdgeInsets.all(2),
+          decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
+          child: avatar,
+        ),
+      ),
+    );
+  }
+}
+
+// Top-level helper widget to render a network image at its intrinsic aspect ratio
+class _IntrinsicAspectImageWidget extends StatefulWidget {
+  final String url;
+  const _IntrinsicAspectImageWidget({required this.url});
+
+  @override
+  State<_IntrinsicAspectImageWidget> createState() => _IntrinsicAspectImageWidgetState();
+}
+
+class _IntrinsicAspectImageWidgetState extends State<_IntrinsicAspectImageWidget> {
+  double? _aspectRatio; // width / height
+  ImageStream? _stream;
+  ImageStreamListener? _listener;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveImage();
+  }
+
+  void _resolveImage() {
+    final imageProvider = NetworkImage(widget.url);
+    final stream = imageProvider.resolve(const ImageConfiguration());
+    _listener = ImageStreamListener((ImageInfo info, bool _) {
+      final width = info.image.width.toDouble();
+      final height = info.image.height.toDouble();
+      if (mounted) {
+        setState(() {
+          _aspectRatio = width > 0 && height > 0 ? width / height : 1.0;
+        });
+      }
+    }, onError: (error, stackTrace) {
+      if (mounted) {
+        setState(() {
+          _aspectRatio = 1.0; // fallback to square on error
+        });
+      }
+    });
+    stream.addListener(_listener!);
+    _stream = stream;
+  }
+
+  @override
+  void didUpdateWidget(covariant _IntrinsicAspectImageWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _disposeStream();
+      _aspectRatio = null;
+      _resolveImage();
+    }
+  }
+
+  void _disposeStream() {
+    if (_stream != null && _listener != null) {
+      _stream!.removeListener(_listener!);
+    }
+    _stream = null;
+    _listener = null;
+  }
+
+  @override
+  void dispose() {
+    _disposeStream();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final aspect = _aspectRatio;
+    if (aspect == null) {
+      return AspectRatio(
+        aspectRatio: 1,
+        child: Container(
+          color: Colors.grey[800],
+          child: const Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
+    return AspectRatio(
+      aspectRatio: aspect,
+      child: Container(
+        width: double.infinity,
+        color: Colors.grey[800],
+        child: Image.network(
+          widget.url,
+          width: double.infinity,
+          fit: BoxFit.contain, // Changed from cover to contain to show full image
+          errorBuilder: (context, error, stack) {
+            return Container(
+              color: Colors.grey[800],
+              child: const Center(
+                child: Icon(
+                  Icons.image_not_supported,
+                  size: 64,
+                  color: Colors.grey,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 }
 

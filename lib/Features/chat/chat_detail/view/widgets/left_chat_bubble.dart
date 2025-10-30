@@ -7,6 +7,7 @@ import 'package:social_media_app/Features/feed/view/twitter_comment_detail_scree
 import 'package:social_media_app/Features/chat/utils/resume_downloader.dart';
 import 'package:social_media_app/Features/post/view/post_detail_screen.dart';
 import 'package:social_media_app/Settings/utils/p_colors.dart';
+import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 
 class LeftChatBubble extends StatelessWidget {
   final String message;
@@ -96,9 +97,42 @@ class LeftChatBubble extends StatelessWidget {
       debugPrint('✅ LeftChatBubble - Rendering comment preview');
       return _ChatCommentPreview(metadata: metadata);
     }
+    // Handle video messages
+    if (messageType == 'video' && mediaUrl != null) {
+      return _buildVideoMessage(context);
+    }
     
     // Handle regular text messages
     return _buildClickableText(context, message);
+  }
+
+  Widget _buildVideoMessage(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            width: 250,
+            height: 200,
+            child: VideoPlayerWidget(
+              videoUrl: mediaUrl!,
+              autoPlay: false,
+              showControls: true,
+              enableDoubleTapPlayPause: true,
+            ),
+          ),
+        ),
+        if (message.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: TextStyle(fontSize: 16, color: Colors.white),
+          ),
+        ],
+      ],
+    );
   }
 
   Widget _buildResumeAttachment(BuildContext context) {

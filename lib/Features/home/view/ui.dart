@@ -24,6 +24,7 @@ import 'package:social_media_app/Settings/utils/svgs.dart';
 import 'package:social_media_app/Settings/widgets/video_player_widget.dart';
 
 import '../../../Settings/utils/p_text_styles.dart';
+import 'package:social_media_app/Settings/utils/p_colors.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -648,25 +649,17 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Profile picture - tappable to view profile
-                GestureDetector(
-                  onTap: () {
-                    // Navigate to profile screen with userId
+                _StatusAvatar(
+                  userId: postWithUser.userId,
+                  imageUrl: postWithUser.userProfilePhoto,
+                  onFallbackTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) =>
-                            ProfileScreen(userId: postWithUser.userId),
+                        builder: (context) => ProfileScreen(userId: postWithUser.userId),
                       ),
                     );
                   },
-                  child: CircleAvatar(
-                    radius: 20,
-                    backgroundImage: postWithUser.userProfilePhoto.isNotEmpty
-                        ? NetworkImage(postWithUser.userProfilePhoto)
-                        : const NetworkImage(
-                            'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
-                          ),
-                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -694,12 +687,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                 fontSize: 14,
                                 color: Colors.black,
                               ),
-                            ),
-                            const SizedBox(width: 6),
-                            const Icon(
-                              Icons.verified,
-                              size: 16,
-                              color: Colors.blue,
                             ),
                           ],
                         ),
@@ -1419,5 +1406,98 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     }
+  }
+}
+
+class _StatusAvatar extends StatelessWidget {
+  final String userId;
+  final String imageUrl;
+  final VoidCallback onFallbackTap;
+
+  const _StatusAvatar({
+    required this.userId,
+    required this.imageUrl,
+    required this.onFallbackTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    HomeViewModel? homeViewModel;
+    try {
+      homeViewModel = Provider.of<HomeViewModel>(context, listen: false);
+    } catch (_) {
+      homeViewModel = null;
+    }
+
+    // Safely find this user's status group
+    final matching = homeViewModel?.statusGroups
+            .where((g) => g.userId == userId)
+            .toList() ??
+        const [];
+    final statusGroup = matching.isNotEmpty ? matching.first : null;
+
+    final hasStatus = statusGroup != null;
+    final hasUnseen = hasStatus ? statusGroup.hasUnseenStatus == true : false;
+
+    void openStatus() {
+      if (homeViewModel == null || statusGroup == null) {
+        onFallbackTap();
+        return;
+      }
+
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (ctx) => StatusViewerDialog(
+          statusGroup: statusGroup,
+          onStatusViewed: (statusId) {
+            homeViewModel?.markStatusAsViewed(userId, statusId);
+          },
+        ),
+      );
+    }
+
+    final avatar = CircleAvatar(
+      radius: 20,
+      backgroundImage: imageUrl.isNotEmpty
+          ? NetworkImage(imageUrl)
+          : const NetworkImage(
+              'https://i.pinimg.com/1200x/dc/08/0f/dc080fd21b57b382a1b0de17dac1dfe6.jpg',
+            ),
+      backgroundColor: Colors.grey[800],
+    );
+
+    if (!hasStatus) {
+      return GestureDetector(onTap: onFallbackTap, child: avatar);
+    }
+
+    // Gradient for unseen; grey for seen
+    final gradient = hasUnseen
+        ? LinearGradient(
+            colors: [
+              PColors.blueColor,
+              PColors.purpleColor,
+            ],
+          )
+        : const LinearGradient(colors: [Colors.grey, Colors.grey]);
+
+    return GestureDetector(
+      onTap: openStatus,
+      child: Container(
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: gradient,
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(2),
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+          ),
+          child: avatar,
+        ),
+      ),
+    );
   }
 }
